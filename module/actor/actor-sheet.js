@@ -31,8 +31,13 @@ export class LaundryActorSheet extends ActorSheet {
         // Sort items by type for convenience
         context.skills     = items.filter(i => i.type === "skill");
         context.talents    = items.filter(i => i.type === "talent");
-        context.gear       = items.filter(i => ["gear", "weapon", "armour"].includes(i.type));
+        context.gear       = items
+            .filter(i => ["gear", "weapon", "armour"].includes(i.type))
+            .sort((a, b) => a.name.localeCompare(b.name));
         context.spells     = items.filter(i => i.type === "spell");
+        context.weapons    = items.filter(i => i.type === "weapon");
+        context.armour     = items.filter(i => i.type === "armour");
+        context.miscGear   = items.filter(i => i.type === "gear");
 
         const skillItemsByName = new Map(context.skills.map(s => [s.name, s]));
         const skillDefs = CONFIG.LAUNDRY.skills ?? [];
@@ -108,6 +113,9 @@ export class LaundryActorSheet extends ActorSheet {
         // Item creation
         html.find(".item-create").click(this._onItemCreate.bind(this));
         html.find(".skill-adjust").click(this._onSkillAdjust.bind(this));
+        html.find(".skill-attr").change(this._onSkillAttributeChange.bind(this));
+        html.find(".inv-tab").click(this._onInventoryTab.bind(this));
+        html.find(".inv-search").on("input", this._onInventorySearch.bind(this));
 
         // Item editing
         html.find(".item-edit").click(ev => {
@@ -122,8 +130,8 @@ export class LaundryActorSheet extends ActorSheet {
             const item = this.actor.items.get(li.dataset.itemId);
             if (!item) return;
             const confirmed = await Dialog.confirm({
-                title: "Delete Item",
-                content: `<p>Delete <strong>${item.name}</strong>?</p>`
+                title: game.i18n.localize("LAUNDRY.DeleteItem"),
+                content: `<p>${game.i18n.format("LAUNDRY.DeleteItemConfirm", { name: item.name })}</p>`
             });
             if (confirmed) {
                 await this.actor.deleteEmbeddedDocuments("Item", [li.dataset.itemId]);
@@ -162,12 +170,13 @@ export class LaundryActorSheet extends ActorSheet {
         ev.preventDefault();
         const el      = ev.currentTarget;
         const dataset = el.dataset;
+        const quick = !!ev.shiftKey;
 
         // Skill / item roll
         if (dataset.rollType === "item") {
             const li   = el.closest(".item");
             const item = this.actor.items.get(li?.dataset.itemId);
-            if (item) return item.roll();
+            if (item) return item.roll({ quick });
             return;
         }
 
@@ -179,14 +188,15 @@ export class LaundryActorSheet extends ActorSheet {
             if (!skillItem && this.actor.isOwner) {
                 skillItem = await this._getOrCreateSkillItem(skillName, attribute);
             }
-            if (skillItem) return skillItem.roll();
+            if (skillItem) return skillItem.roll({ quick });
 
             const attrVal = this.actor.system.attributes?.[attribute]?.value ?? 1;
             return rollDice({
                 pool: attrVal,
                 focus: 0,
                 complexity: 1,
-                flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`
+                flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`,
+                prompt: !quick
             });
         }
 
@@ -198,9 +208,39 @@ export class LaundryActorSheet extends ActorSheet {
                 pool:   attrVal,
                 focus:  0,
                 complexity: 1,
-                flavor: `Rolling ${attrName.charAt(0).toUpperCase() + attrName.slice(1)}`
+                flavor: game.i18n.format("LAUNDRY.RollingAttribute", {
+                    attribute: attrName.charAt(0).toUpperCase() + attrName.slice(1)
+                }),
+                prompt: !quick
             });
         }
+    }
+
+    _onInventoryTab(ev) {
+        ev.preventDefault();
+        const tab = ev.currentTarget.dataset.invTab ?? "all";
+        const tabs = this.element.find(".inv-tab");
+        tabs.removeClass("active");
+        ev.currentTarget.classList.add("active");
+        this._applyInventoryFilters();
+    }
+
+    _onInventorySearch(ev) {
+        ev.preventDefault();
+        this._applyInventoryFilters();
+    }
+
+    _applyInventoryFilters() {
+        const activeTab = this.element.find(".inv-tab.active").data("invTab") ?? "all";
+        const query = (this.element.find(".inv-search").val() ?? "").toString().trim().toLowerCase();
+        const rows = this.element.find(".inv-row");
+        rows.each((_, row) => {
+            row.classList.remove("inv-hidden", "inv-search-hidden");
+            const kind = row.dataset.invType ?? "all";
+            const name = (row.querySelector(".item-name")?.textContent ?? "").toLowerCase();
+            if (activeTab !== "all" && kind !== activeTab) row.classList.add("inv-hidden");
+            if (query && !name.includes(query)) row.classList.add("inv-search-hidden");
+        });
     }
 
     async _onSkillAdjust(ev) {
@@ -218,6 +258,19 @@ export class LaundryActorSheet extends ActorSheet {
         if (next === current) return;
 
         await skill.update({ [`system.${stat}`]: next });
+        this.render(false);
+    }
+
+    async _onSkillAttributeChange(ev) {
+        const select = ev.currentTarget;
+        const skillName = select.dataset.skillName;
+        const attribute = select.value;
+        if (!skillName || !attribute) return;
+
+        const skill = await this._getOrCreateSkillItem(skillName, attribute);
+        if ((skill.system?.attribute ?? "mind") === attribute) return;
+
+        await skill.update({ "system.attribute": attribute });
         this.render(false);
     }
 
@@ -271,7 +324,11 @@ export class LaundryActorSheet extends ActorSheet {
             ? sys.coreSkills.split(",").map(s => s.trim()).filter(Boolean)
             : (Array.isArray(sys.coreSkills) ? sys.coreSkills : []);
 
+        const existingSkillNames = new Set(this.actor.items
+            .filter(i => i.type === "skill")
+            .map(i => i.name));
         for (const skillName of skillNames) {
+            if (existingSkillNames.has(skillName)) continue;
             const pack  = game.packs.get("laundry-rpg.skills");
             let skillItem = null;
 
@@ -288,16 +345,22 @@ export class LaundryActorSheet extends ActorSheet {
             };
 
             await this.actor.createEmbeddedDocuments("Item", [skillItem]);
+            existingSkillNames.add(skillName);
         }
 
         // Equipment
         if (sys.equipment) {
             const equipList = sys.equipment.split(",").map(s => s.trim()).filter(Boolean);
-            const items = equipList.map(name => ({
+            const existingGear = new Set(this.actor.items
+                .filter(i => ["gear", "weapon", "armour"].includes(i.type))
+                .map(i => i.name.toLowerCase()));
+            const items = equipList
+                .filter(name => !existingGear.has(name.toLowerCase()))
+                .map(name => ({
                 name, type: "gear",
                 img: "icons/svg/item-bag.svg",
                 system: { quantity: 1, weight: 0 }
-            }));
+                }));
             if (items.length) await this.actor.createEmbeddedDocuments("Item", items);
         }
 

@@ -10,14 +10,14 @@ export class LaundryItem extends Item {
     /**
      * Handle item roll — dispatches to the appropriate handler by type.
      */
-    async roll() {
+    async roll({ quick = false } = {}) {
         switch (this.type) {
             case "skill":
-                return this._rollSkill();
+                return this._rollSkill({ quick });
             case "weapon":
-                return this._rollWeapon();
+                return this._rollWeapon({ quick });
             case "spell":
-                return this._rollSpell();
+                return this._rollSpell({ quick });
             default:
                 return this._postDescription();
         }
@@ -25,7 +25,7 @@ export class LaundryItem extends Item {
 
     // ─── Skill roll ───────────────────────────────────────────────────────────
 
-    async _rollSkill() {
+    async _rollSkill({ quick = false } = {}) {
         const actor = this.actor;
         if (!actor) return;
 
@@ -38,13 +38,14 @@ export class LaundryItem extends Item {
         return rollDice({
             pool,
             focus,
-            flavor: `${this.name} (${attrName.charAt(0).toUpperCase() + attrName.slice(1)} ${attrValue} + Training ${training})`
+            flavor: `${this.name} (${attrName.charAt(0).toUpperCase() + attrName.slice(1)} ${attrValue} + Training ${training})`,
+            prompt: !quick
         });
     }
 
     // ─── Weapon roll ──────────────────────────────────────────────────────────
 
-    async _rollWeapon() {
+    async _rollWeapon({ quick = false } = {}) {
         const actor = this.actor;
         if (!actor) return;
 
@@ -64,13 +65,14 @@ export class LaundryItem extends Item {
             pool,
             focus,
             flavor: `Attack with ${this.name} (${linkedSkillName})`,
-            damage: this.system.damage
+            damage: this.system.damage,
+            prompt: !quick
         });
     }
 
     // ─── Spell roll ───────────────────────────────────────────────────────────
 
-    async _rollSpell() {
+    async _rollSpell({ quick = false } = {}) {
         const actor = this.actor;
         if (!actor) return;
 
@@ -90,7 +92,8 @@ export class LaundryItem extends Item {
             focus,
             dn,
             complexity,
-            flavor: `Cast ${this.name} (Magic — Level ${this.system.level ?? 1}, DN ${dn}:${complexity})`
+            flavor: `Cast ${this.name} (Magic — Level ${this.system.level ?? 1}, DN ${dn}:${complexity})`,
+            prompt: !quick
         });
     }
 

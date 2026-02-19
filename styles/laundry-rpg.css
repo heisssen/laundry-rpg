@@ -336,6 +336,9 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 4px 6px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .laundry-rpg .items-list .item {
@@ -384,6 +387,15 @@
 
 .laundry-rpg .skill-row .item-formula {
     min-width: 90px;
+}
+
+.laundry-rpg .skill-attr {
+    max-width: 86px;
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.7);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    margin-right: 4px;
 }
 
 .laundry-rpg .skill-adjust-group {
@@ -475,6 +487,50 @@
 .laundry-rpg .item-create { color: var(--laundry-accent-2); font-size: 11px; }
 .laundry-rpg .item-create:hover { color: var(--laundry-accent); }
 
+.laundry-rpg .inventory-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 0 0 8px;
+}
+
+.laundry-rpg .inv-tab {
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.55);
+    color: var(--laundry-muted);
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.laundry-rpg .inv-tab.active {
+    color: var(--laundry-text);
+    border-color: var(--laundry-border-dark);
+    background: var(--laundry-bg-panel);
+}
+
+.laundry-rpg .inv-hidden {
+    display: none !important;
+}
+
+.laundry-rpg .inv-search-hidden {
+    display: none !important;
+}
+
+.laundry-rpg .inventory-search-row {
+    margin: 0 0 8px;
+}
+
+.laundry-rpg .inv-search {
+    width: 100%;
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.6);
+    padding: 3px 6px;
+    font-family: var(--laundry-font);
+    font-size: 11px;
+}
+
 /* ── Rollable ───────────────────────────────────────────────────────────── */
 .laundry-rpg .rollable { cursor: pointer; }
 .laundry-rpg .rollable:hover {
@@ -532,6 +588,32 @@
     color: var(--laundry-muted);
     margin-top: 6px;
     text-align: center;
+}
+
+@media (max-width: 700px) {
+    .laundry-rpg .items-list .item {
+        gap: 4px;
+        padding: 3px 4px;
+    }
+
+    .laundry-rpg .item-name {
+        font-size: 12px;
+        max-width: 38vw;
+    }
+
+    .laundry-rpg .item-formula,
+    .laundry-rpg .item-detail {
+        font-size: 10px;
+    }
+
+    .laundry-rpg .skill-adjust {
+        width: 16px;
+        height: 16px;
+    }
+
+    .laundry-rpg .inventory-tabs {
+        flex-wrap: wrap;
+    }
 }
 
 /* ── Chat dice card ─────────────────────────────────────────────────────── */

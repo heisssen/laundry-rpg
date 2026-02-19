@@ -18,8 +18,13 @@
  * @param {number}  [opts.dn]     Difficulty Number (default 4).
  * @param {number}  [opts.complexity] Successes required (default 1).
  * @param {string}  [opts.damage] Damage formula to show (weapons only).
+ * @param {boolean} [opts.prompt] Show roll dialog first (default true).
  */
-export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn = 4, complexity = 1, damage } = {}) {
+export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn = 4, complexity = 1, damage, prompt = true } = {}) {
+    if (!prompt) {
+        return _executeRoll(pool, focus, dn, complexity, flavor, damage);
+    }
+
     const content = `
     <form class="laundry-roll-dialog">
         <div class="form-group">
