@@ -258,13 +258,6 @@
     color: var(--laundry-muted);
 }
 
-/* BSRP highlight */
-.laundry-rpg .bsrp-block {
-    border-color: var(--laundry-accent);
-    background: rgba(139,0,0,0.04);
-}
-.laundry-rpg .bsrp-block .derived-label { color: var(--laundry-accent); }
-
 /* ── The Ladder ─────────────────────────────────────────────────────────── */
 .laundry-rpg .ladder-grid {
     display: grid;
@@ -401,7 +394,8 @@
 .laundry-rpg .weapon-tag  { background: #6b2c2c; }
 .laundry-rpg .armour-tag  { background: #2c4a6b; }
 .laundry-rpg .spell-tag   { background: #4b0082; }
-.laundry-rpg .bsrp-tag    { background: var(--laundry-accent); }
+.laundry-rpg .dn-tag      { background: #355270; }
+.laundry-rpg .complexity-tag { background: #355270; }
 
 .laundry-rpg .item-controls {
     flex: 0 0 auto;
@@ -541,6 +535,15 @@
 
 .laundry-dice-roll .dice-outcome.outcome-success { color: #2d6a2d; }
 .laundry-dice-roll .dice-outcome.outcome-failure  { color: #8b0000; }
+
+.laundry-dice-roll .success-count,
+.laundry-dice-roll .benefit-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: normal;
+    color: #555;
+    margin-left: 6px;
+}
 
 .laundry-dice-roll .focus-spent {
     font-size: 11px;

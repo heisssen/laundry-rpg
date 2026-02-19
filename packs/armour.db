@@ -1,0 +1,4 @@
+{"_id": "mkgvrxjssi4wa1jo", "name": "Stab/ Spike", "type": "armour", "img": "icons/svg/shield.svg", "system": {"protection": 2, "traits": "Body (2)", "equipped": false, "description": "Requisition DN: 3:1"}, "effects": [], "flags": {}}
+{"_id": "zs9xv0ts4ef0ov1j", "name": "Soft (Dyneema/ Kevlar)", "type": "armour", "img": "icons/svg/shield.svg", "system": {"protection": 2, "traits": "Body (2)", "equipped": false, "description": "Requisition DN: 3:1"}, "effects": [], "flags": {}}
+{"_id": "insy7zpqh87fydgj", "name": "Hard (Ceremic/ Steel)", "type": "armour", "img": "icons/svg/shield.svg", "system": {"protection": 3, "traits": "Body (2)", "equipped": false, "description": "Requisition DN: 4:1"}, "effects": [], "flags": {}}
+{"_id": "f4xd5b4y70m3p8v3", "name": "Bomb Suit", "type": "armour", "img": "icons/svg/shield.svg", "system": {"protection": 5, "traits": "Body (4)", "equipped": false, "description": "Requisition DN: 5:1"}, "effects": [], "flags": {}}

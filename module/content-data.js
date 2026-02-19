@@ -5,22 +5,20 @@ export const SKILLS = [
     { "name": "Bureaucracy", "attribute": "mind" },
     { "name": "Close Combat", "attribute": "body" },
     { "name": "Computers", "attribute": "mind" },
-    { "name": "Demolitions", "attribute": "mind" },
-    { "name": "Drive", "attribute": "reflexes" }, // Wait, Reflexes is a defined attribute? No, it's Body usually, or Mind? Rules check. Ah, Reflexes is a SKILL in text? "Reflexes Skill".
-    { "name": "Fast Talk", "attribute": "spirit" }, // Charisma/Presence
+    { "name": "Dexterity", "attribute": "body" },
+    { "name": "Engineering", "attribute": "mind" },
+    { "name": "Fast Talk", "attribute": "spirit" },
     { "name": "Fortitude", "attribute": "body" },
-    { "name": "Heavy Weapons", "attribute": "body" },
     { "name": "Intuition", "attribute": "mind" },
-    { "name": "Magic", "attribute": "mind" }, // Or Spirit?
+    { "name": "Magic", "attribute": "mind" },
     { "name": "Medicine", "attribute": "mind" },
+    { "name": "Might", "attribute": "body" },
     { "name": "Occult", "attribute": "mind" },
-    { "name": "Pilot", "attribute": "reflexes" }, // Again, Reflexes?
     { "name": "Presence", "attribute": "spirit" },
-    { "name": "Ranged Combat", "attribute": "body" }, // or Agility? Text says "Ranged Combat Skill... check level of Training... using weapon Body"
+    { "name": "Ranged", "attribute": "body" },
     { "name": "Reflexes", "attribute": "body" }, // It acts like Agility
     { "name": "Resolve", "attribute": "spirit" },
     { "name": "Science", "attribute": "mind" },
-    { "name": "Sleight of Hand", "attribute": "body" },
     { "name": "Stealth", "attribute": "body" },
     { "name": "Survival", "attribute": "mind" },
     { "name": "Technology", "attribute": "mind" },
@@ -48,7 +46,7 @@ export const ASSIGNMENTS = [
         "name": "Action Officer",
         "description": "Field agent dealing with threats directly.",
         "attributes": { "body": 3, "mind": 1, "spirit": 1 },
-        "coreSkills": "Athletics, Close Combat, Drive, Ranged Combat, Stealth",
+        "coreSkills": "Athletics, Close Combat, Ranged, Stealth",
         "equipment": "Handgun, Kevlar Vest, Secure Comm"
     },
     {

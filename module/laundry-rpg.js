@@ -2,6 +2,7 @@ import { LaundryActor } from "./actor/actor.js";
 import { LaundryActorSheet } from "./actor/actor-sheet.js";
 import { LaundryItem } from "./item/item.js";
 import { LaundryItemSheet } from "./item/item-sheet.js";
+import { migrateWorld } from "./migration.js";
 
 /**
  * Global system configuration — consumed by templates via `config.*`
@@ -33,7 +34,7 @@ const LAUNDRY = {
         { min:  6, label: "Great" },
         { min:  4, label: "Good" },
         { min:  2, label: "Average" },
-        { min:  0, label: "Poor" }
+        { min:  1, label: "Poor" }
     ]
 };
 
@@ -68,6 +69,15 @@ Hooks.once("init", async function () {
     await preloadTemplates();
 
     console.log("Laundry RPG | System ready.");
+});
+
+Hooks.once("ready", async function () {
+    if (!game.user.isGM) return;
+    try {
+        await migrateWorld();
+    } catch (err) {
+        console.error("Laundry RPG | Migration failed", err);
+    }
 });
 
 async function preloadTemplates() {

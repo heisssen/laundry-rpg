@@ -16,9 +16,10 @@
  * @param {number}  opts.focus    Focus points available.
  * @param {string}  [opts.flavor] Chat message flavour text.
  * @param {number}  [opts.dn]     Difficulty Number (default 4).
+ * @param {number}  [opts.complexity] Successes required (default 1).
  * @param {string}  [opts.damage] Damage formula to show (weapons only).
  */
-export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn = 4, damage } = {}) {
+export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn = 4, complexity = 1, damage } = {}) {
     const content = `
     <form class="laundry-roll-dialog">
         <div class="form-group">
@@ -27,11 +28,15 @@ export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn =
         </div>
         <div class="form-group">
             <label>Focus</label>
-            <input type="number" name="focus" value="${focus}" min="0" max="10" />
+            <input type="number" name="focus" value="${focus}" min="0" max="3" />
         </div>
         <div class="form-group">
             <label>Difficulty Number (DN)</label>
             <input type="number" name="dn" value="${dn}" min="2" max="6" />
+        </div>
+        <div class="form-group">
+            <label>Complexity (Successes Needed)</label>
+            <input type="number" name="complexity" value="${complexity}" min="1" max="10" />
         </div>
     </form>`;
 
@@ -46,7 +51,8 @@ export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn =
                     const newPool  = parseInt(html.find('[name="pool"]').val())  || 1;
                     const newFocus = parseInt(html.find('[name="focus"]').val()) || 0;
                     const newDN    = parseInt(html.find('[name="dn"]').val())    || 4;
-                    await _executeRoll(newPool, newFocus, newDN, flavor, damage);
+                    const newComplexity = parseInt(html.find('[name="complexity"]').val()) || 1;
+                    await _executeRoll(newPool, newFocus, newDN, newComplexity, flavor, damage);
                 }
             },
             cancel: { label: "Cancel" }
@@ -57,32 +63,47 @@ export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn =
 
 // ─── Internal ─────────────────────────────────────────────────────────────────
 
-async function _executeRoll(pool, focus, dn, flavor, damage) {
+async function _executeRoll(pool, focus, dn, complexity, flavor, damage) {
     // Build and evaluate the roll (v12+ API — no async option needed)
     const roll = new Roll(`${pool}d6`);
     await roll.evaluate();
 
     const rawDice = roll.terms[0].results.map(d => d.result);
 
-    // Apply Focus optimally: spend the minimum Focus needed to push a near-miss
-    // (value === dn - 1) to a success, highest first.
+    // Apply Focus optimally: spend the minimum Focus needed to turn the closest misses into successes.
     let focusLeft = focus;
-    const results = rawDice.map(val => {
-        const needed = dn - val;
-        if (needed <= 0) {
-            // Already a success
-            return { original: val, modified: val, success: true, boosted: false };
-        }
-        if (focusLeft >= needed) {
-            focusLeft -= needed;
-            return { original: val, modified: val + needed, success: true, boosted: true };
-        }
-        return { original: val, modified: val, success: false, boosted: false };
-    });
+    const results = rawDice.map(val => ({
+        original: val,
+        modified: val,
+        success: val >= dn,
+        boosted: false
+    }));
+
+    const candidates = results
+        .map((r, idx) => ({ idx, needed: dn - r.original }))
+        .filter(c => c.needed > 0)
+        .sort((a, b) => a.needed - b.needed);
+
+    for (const c of candidates) {
+        if (focusLeft < c.needed) continue;
+        focusLeft -= c.needed;
+        const r = results[c.idx];
+        r.modified = r.original + c.needed;
+        r.success = true;
+        r.boosted = true;
+    }
 
     const successes = results.filter(r => r.success).length;
     const focusUsed = focus - focusLeft;
-    const isSuccess = successes > 0;
+    const isSuccess = successes >= complexity;
+    const margin = successes - complexity;
+
+    let outcomeLabel = isSuccess ? "Success" : "Failure";
+    let benefitLabel = "";
+    if (isSuccess) {
+        if (margin >= 3) benefitLabel = "Major Benefit";
+        else if (margin >= 1) benefitLabel = "Minor Benefit";
+    }
 
     // ─── Chat card ────────────────────────────────────────────────────────────
 
@@ -98,10 +119,12 @@ async function _executeRoll(pool, focus, dn, flavor, damage) {
 
     const content = `
     <div class="laundry-dice-roll">
-        <div class="dice-formula">${pool}d6 vs DN ${dn}</div>
+        <div class="dice-formula">${pool}d6 vs DN ${dn}:${complexity}</div>
         <ol class="dice-rolls">${diceHtml}</ol>
         <div class="dice-outcome ${isSuccess ? "outcome-success" : "outcome-failure"}">
-            <strong>${successes} ${successes === 1 ? "Success" : "Successes"}</strong>
+            <strong>${outcomeLabel}</strong>
+            <span class="success-count">(Successes: ${successes}/${complexity})</span>
+            ${benefitLabel ? `<span class="benefit-label">${benefitLabel}</span>` : ""}
             ${focusUsed > 0 ? `<span class="focus-spent">(Focus spent: ${focusUsed})</span>` : ""}
         </div>
         ${damageSection}

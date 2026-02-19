@@ -32,7 +32,6 @@ export class LaundryActor extends Actor {
         sys.derived.toughness = sys.derived.toughness || { value: 0 };
         sys.derived.injuries = sys.derived.injuries || { value: 0, max: 0 };
         sys.derived.adrenaline = sys.derived.adrenaline || { value: 0, max: 0 };
-        sys.derived.bsrp = sys.derived.bsrp || { value: 0, max: 0 };
 
         const body = sys.attributes.body.value ?? 1;
         const mind = sys.attributes.mind.value ?? 1;
@@ -57,12 +56,6 @@ export class LaundryActor extends Actor {
             sys.derived.adrenaline.max
         );
 
-        // BSRP max = Mind * 5 (sanity-track analogue)
-        sys.derived.bsrp.max = mind * 5;
-        sys.derived.bsrp.value = Math.min(
-            sys.derived.bsrp.value ?? sys.derived.bsrp.max,
-            sys.derived.bsrp.max
-        );
     }
 
     // ─── NPCs ─────────────────────────────────────────────────────────────────

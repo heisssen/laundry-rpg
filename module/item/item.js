@@ -48,7 +48,7 @@ export class LaundryItem extends Item {
         const actor = this.actor;
         if (!actor) return;
 
-        // Look up the linked skill (e.g. "Close Combat" or "Ranged Combat")
+        // Look up the linked skill (e.g. "Close Combat" or "Ranged")
         const linkedSkillName = this.system.skill ?? "Close Combat";
         const linkedSkill     = actor.items.find(
             i => i.type === "skill" && i.name === linkedSkillName
@@ -82,11 +82,15 @@ export class LaundryItem extends Item {
         const training  = magicSkill?.system.training ?? 0;
         const focus     = magicSkill?.system.focus     ?? 0;
         const pool      = attrValue + training;
+        const dn        = this.system.dn ?? 4;
+        const complexity = this.system.complexity ?? this.system.level ?? 1;
 
         return rollDice({
             pool,
             focus,
-            flavor: `Cast ${this.name} (Magic — Level ${this.system.level ?? 1}, Cost: ${this.system.cost || "—"})`
+            dn,
+            complexity,
+            flavor: `Cast ${this.name} (Magic — Level ${this.system.level ?? 1}, DN ${dn}:${complexity})`
         });
     }
 

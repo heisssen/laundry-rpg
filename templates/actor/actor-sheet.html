@@ -103,20 +103,6 @@
                     </div>
                 </div>
 
-                {{!-- BSRP (Sanity) --}}
-                <div class="derived-block editable-derived bsrp-block">
-                    <span class="derived-label" title="{{localize 'LAUNDRY.BSRPFull'}}">
-                        {{localize "LAUNDRY.BSRP"}}
-                    </span>
-                    <div class="derived-tracker">
-                        <input type="number" name="system.derived.bsrp.value"
-                               value="{{system.derived.bsrp.value}}"
-                               min="0" max="{{system.derived.bsrp.max}}" data-dtype="Number" />
-                        <span class="sep">/</span>
-                        <span class="derived-max">{{system.derived.bsrp.max}}</span>
-                    </div>
-                </div>
-
             </div>
 
             {{!-- The Ladder --}}
@@ -286,7 +272,9 @@
                 <li class="item flexrow item-header">
                     <div class="item-image"></div>
                     <div class="item-name">{{localize "LAUNDRY.Name"}}</div>
-                    <div class="item-detail">Lvl / Cost</div>
+                    <div class="item-detail">
+                        {{localize "LAUNDRY.Level"}} / {{localize "LAUNDRY.DN"}} / {{localize "LAUNDRY.Complexity"}}
+                    </div>
                     <div class="item-controls">
                         <a class="item-control item-create" data-type="spell" title="{{localize 'LAUNDRY.AddSpell'}}">
                             <i class="fas fa-plus"></i> {{localize "LAUNDRY.AddSpell"}}
@@ -301,9 +289,12 @@
                     <h4 class="item-name rollable" data-roll-type="item">{{item.name}}</h4>
                     <div class="item-detail">
                         <span class="gear-tag spell-tag">L{{item.system.level}}</span>
-                        {{#if item.system.cost}}
-                        <span class="gear-tag bsrp-tag">{{item.system.cost}} BSRP</span>
-                        {{/if}}
+                        <span class="gear-tag dn-tag">
+                            DN {{#if item.system.dn}}{{item.system.dn}}{{else}}4{{/if}}
+                        </span>
+                        <span class="gear-tag complexity-tag">
+                            C {{#if item.system.complexity}}{{item.system.complexity}}{{else}}{{item.system.level}}{{/if}}
+                        </span>
                     </div>
                     <div class="item-controls">
                         <a class="item-control item-edit" title="Edit"><i class="fas fa-edit"></i></a>

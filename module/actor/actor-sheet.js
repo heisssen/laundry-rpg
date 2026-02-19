@@ -39,6 +39,7 @@ export class LaundryActorSheet extends ActorSheet {
             ),
             accuracy: this._getLadderRating(
                 actorData.attributes.body.value,
+                this._getSkillTraining(context.items, "Ranged") ||
                 this._getSkillTraining(context.items, "Ranged Combat")
             ),
             defence:  this._getLadderRating(
@@ -150,6 +151,7 @@ export class LaundryActorSheet extends ActorSheet {
             return rollDice({
                 pool:   attrVal,
                 focus:  0,
+                complexity: 1,
                 flavor: `Rolling ${attrName.charAt(0).toUpperCase() + attrName.slice(1)}`
             });
         }
