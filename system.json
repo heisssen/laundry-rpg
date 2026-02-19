@@ -46,6 +46,6 @@
   ],
   "url": "https://github.com/heisssen/laundry-rpg",
   "manifest": "https://github.com/heisssen/laundry-rpg/releases/latest/download/system.json",
-  "download": "https://github.com/heisssen/laundry-rpg/releases/latest/download/laundry-rpg-master.zip",
+  "download": "https://github.com/heisssen/laundry-rpg/releases/latest/download/system.zip",
   "license": "LICENSE"
 }

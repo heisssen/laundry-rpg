@@ -65,12 +65,25 @@
             "weapon",
             "armour",
             "gear",
-            "spell"
+            "spell",
+            "assignment"
         ],
         "templates": {
             "base": {
                 "description": ""
             }
+        },
+        "assignment": {
+            "templates": [
+                "base"
+            ],
+            "attributes": {
+                "body": 0,
+                "mind": 0,
+                "spirit": 0
+            },
+            "coreSkills": "",
+            "equipment": ""
         },
         "skill": {
             "templates": [

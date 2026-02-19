@@ -11,8 +11,10 @@ const { SKILLS, TALENTS, ASSIGNMENTS } = require('./content-data.js'); // We'll 
  * We will create `skills.db`, `talents.db`, `assignments.db` as pure JSONL files.
  */
 
+// Full list of Skills from the rulebook (approximate)
 const skillsData = [
     { "name": "Academics", "attribute": "mind" },
+    { "name": "Arts", "attribute": "spirit" },
     { "name": "Athletics", "attribute": "body" },
     { "name": "Awareness", "attribute": "mind" },
     { "name": "Bureaucracy", "attribute": "mind" },
@@ -35,48 +37,60 @@ const skillsData = [
     { "name": "Science", "attribute": "mind" },
     { "name": "Sleight of Hand", "attribute": "body" },
     { "name": "Stealth", "attribute": "body" },
+    { "name": "Subterfuge", "attribute": "mind" },
     { "name": "Survival", "attribute": "mind" },
     { "name": "Technology", "attribute": "mind" },
     { "name": "Zeal", "attribute": "spirit" }
 ];
 
 const talentsData = [
-    { "name": "Computational Demonologist", "description": "Can cast spells using computational devices." },
-    { "name": "Glancing Blow", "description": "Reduce damage from a hit." },
+    { "name": "Computational Demonologist", "description": "Can cast spells using computational devices. Requires: Computers, Occult." },
+    { "name": "Glancing Blow", "description": "Reduce damage from a hit by 1d6. Can use once per scene." },
     { "name": "Lucky", "description": "Reroll a failed test once per session." },
-    { "name": "Strong Stomach", "description": "Resistant to nausea and disgust." },
-    { "name": "License to Kill", "description": "Authorized to use lethal force." },
-    { "name": "Occultist", "description": "Gains access to Occult skill and rituals." }
+    { "name": "Strong Stomach", "description": "Resistant to nausea and disgust. +2 to Fortitude tests vs sickening effects." },
+    { "name": "License to Kill", "description": "Authorized to use lethal force in the line of duty without filling out form 1099-DEAD." },
+    { "name": "Occultist", "description": "Gains access to Occult skill and rituals. Can sense magic." },
+    { "name": "Eidetic Memory", "description": "Perfect recall of facts and images." },
+    { "name": "Brave", "description": "+2 to Resolve tests against fear." },
+    { "name": "Polyglot", "description": "You know additional languages equal to your Mind score." }
 ];
 
 const assignmentsData = [
     {
         "name": "Analyst",
-        "description": "Desk jockey processing intelligence.",
-        "attributes": { "body": 1, "mind": 3, "spirit": 1 },
-        "coreSkills": "Academics, Bureaucracy, Computers, Science, Technology",
-        "equipment": "Laptop, ID Card, Office Supplies"
+        "system": {
+            "description": "Desk jockey processing intelligence.",
+            "attributes": { "body": 1, "mind": 3, "spirit": 1 },
+            "coreSkills": "Academics, Bureaucracy, Computers, Science, Technology",
+            "equipment": "Laptop, ID Card, Office Supplies"
+        }
     },
     {
         "name": "Action Officer",
-        "description": "Field agent dealing with threats directly.",
-        "attributes": { "body": 3, "mind": 1, "spirit": 1 },
-        "coreSkills": "Athletics, Close Combat, Drive, Ranged Combat, Stealth",
-        "equipment": "Handgun, Kevlar Vest, Secure Comm"
+        "system": {
+            "description": "Field agent dealing with threats directly.",
+            "attributes": { "body": 3, "mind": 1, "spirit": 1 },
+            "coreSkills": "Athletics, Close Combat, Drive, Ranged Combat, Stealth",
+            "equipment": "Handgun, Kevlar Vest, Secure Comm"
+        }
     },
     {
         "name": "Computational Demonologist",
-        "description": "Hacker wizard.",
-        "attributes": { "body": 1, "mind": 2, "spirit": 2 },
-        "coreSkills": "Computers, Magic, Occult, Science, Technology",
-        "equipment": "Wards, Pentagram Chalk, Laptop"
+        "system": {
+            "description": "Hacker wizard.",
+            "attributes": { "body": 1, "mind": 2, "spirit": 2 },
+            "coreSkills": "Computers, Magic, Occult, Science, Technology",
+            "equipment": "Wards, Pentagram Chalk, Laptop"
+        }
     },
     {
-        "name": "Plumber",
-        "description": "Fixes 'leaks' and cleans up messes.",
-        "attributes": { "body": 2, "mind": 2, "spirit": 1 },
-        "coreSkills": "Bureaucracy, Fast Talk, Stealth, Demolitions, Close Combat",
-        "equipment": "Toolkit, Shotgun, Bleach"
+        "name": "radius",
+        "system": {
+            "description": "Undercover plumbing and wetwork.",
+            "attributes": { "body": 2, "mind": 2, "spirit": 1 },
+            "coreSkills": "Bureaucracy, Fast Talk, Stealth, Demolitions, Close Combat",
+            "equipment": "Toolkit, Shotgun, Bleach"
+        }
     }
 ];
 
@@ -94,7 +108,7 @@ function generateSkills() {
             "img": "icons/svg/book.svg",
             "system": {
                 "attribute": s.attribute,
-                "training": 1,
+                "training": 0,
                 "focus": 0,
                 "description": `Standard ${s.name} skill.`
             },
@@ -134,12 +148,7 @@ function generateAssignments() {
             "name": a.name,
             "type": "assignment",
             "img": "icons/svg/mystery-man.svg",
-            "system": {
-                "description": a.description,
-                "attributes": a.attributes,
-                "coreSkills": a.coreSkills,
-                "equipment": a.equipment
-            },
+            "system": a.system,
             "effects": [],
             "flags": {}
         };
