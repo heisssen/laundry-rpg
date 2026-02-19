@@ -169,42 +169,36 @@ async function _allocateFocusManually(rawDice, focus) {
     const totalFocus = Math.max(0, Number(focus) || 0);
     if (!totalFocus) return rawDice.map(() => 0);
 
-    const rows = rawDice.map((die, idx) => `
-        <div class="form-group">
-            <label>Die ${idx + 1} (rolled ${die})</label>
-            <input type="number" class="focus-spend" data-idx="${idx}" value="0" min="0" max="${totalFocus}" />
+    const allocations = rawDice.map(() => 0);
+    const diceRows = rawDice.map((die, idx) => `
+        <div class="focus-die-row" data-idx="${idx}">
+            <button type="button" class="focus-die-button" data-idx="${idx}" title="Click to spend 1 Focus on this die">
+                <span class="focus-original">${die}</span>
+                <span class="focus-arrow">→</span>
+                <span class="focus-modified" data-idx="${idx}">${die}</span>
+            </button>
+            <button type="button" class="focus-remove" data-idx="${idx}" title="Remove 1 Focus from this die">-1</button>
+            <span class="focus-spent-label">+<span class="focus-spent" data-idx="${idx}">0</span></span>
         </div>
     `).join("");
 
     const content = `
     <form class="laundry-focus-dialog">
         <p>You have <strong>${totalFocus}</strong> Focus to allocate (+1 per point).</p>
-        <p>You may split points across dice or stack multiple points on one die.</p>
-        ${rows}
+        <p>Click a die to spend Focus on it. You can split points or stack them on one die.</p>
+        <p>Remaining Focus: <strong class="focus-remaining">${totalFocus}</strong></p>
+        <div class="focus-dice-grid">${diceRows}</div>
     </form>`;
 
     return new Promise(resolve => {
-        new Dialog({
+        const dialog = new Dialog({
             title: "Allocate Focus",
             content,
             buttons: {
                 apply: {
                     icon: '<i class="fas fa-check"></i>',
                     label: "Apply Focus",
-                    callback: (html) => {
-                        const allocations = rawDice.map(() => 0);
-                        let remaining = totalFocus;
-                        html.find(".focus-spend").each((_, input) => {
-                            if (remaining <= 0) return;
-                            const idx = Number(input.dataset.idx ?? -1);
-                            if (idx < 0 || idx >= allocations.length) return;
-                            const requested = Math.max(0, parseInt(input.value, 10) || 0);
-                            const spend = Math.min(requested, remaining);
-                            allocations[idx] = spend;
-                            remaining -= spend;
-                        });
-                        resolve(allocations);
-                    }
+                    callback: () => resolve([...allocations])
                 },
                 skip: {
                     icon: '<i class="fas fa-forward"></i>',
@@ -214,6 +208,51 @@ async function _allocateFocusManually(rawDice, focus) {
             },
             default: "apply",
             close: () => resolve(rawDice.map(() => 0))
-        }).render(true);
+        });
+
+        dialog.render(true);
+
+        const attachHandlers = () => {
+            const html = dialog.element;
+            if (!html?.length) {
+                setTimeout(attachHandlers, 0);
+                return;
+            }
+
+            const updateUi = () => {
+                const spentTotal = allocations.reduce((a, b) => a + b, 0);
+                const remaining = Math.max(0, totalFocus - spentTotal);
+                html.find(".focus-remaining").text(remaining);
+                rawDice.forEach((die, idx) => {
+                    html.find(`.focus-spent[data-idx="${idx}"]`).text(allocations[idx]);
+                    html.find(`.focus-modified[data-idx="${idx}"]`).text(die + allocations[idx]);
+                });
+                return remaining;
+            };
+
+            const bind = () => {
+                html.find(".focus-die-button").on("click", (ev) => {
+                    ev.preventDefault();
+                    const idx = Number(ev.currentTarget.dataset.idx ?? -1);
+                    if (idx < 0) return;
+                    const remaining = updateUi();
+                    if (remaining <= 0) return;
+                    allocations[idx] += 1;
+                    updateUi();
+                });
+                html.find(".focus-remove").on("click", (ev) => {
+                    ev.preventDefault();
+                    const idx = Number(ev.currentTarget.dataset.idx ?? -1);
+                    if (idx < 0) return;
+                    allocations[idx] = Math.max(0, allocations[idx] - 1);
+                    updateUi();
+                });
+            };
+
+            updateUi();
+            bind();
+        };
+
+        attachHandlers();
     });
 }
