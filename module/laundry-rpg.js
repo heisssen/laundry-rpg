@@ -94,6 +94,7 @@ Hooks.once("init", async function () {
         ["gear", "weapon", "armour"].includes(type)
     );
 
+    registerSystemSettings();
     await preloadTemplates();
 
     console.log("Laundry RPG | System ready.");
@@ -103,6 +104,7 @@ Hooks.once("ready", async function () {
     if (!game.user.isGM) return;
     try {
         await migrateWorld();
+        await initializeTeamLuckDefaults();
     } catch (err) {
         console.error("Laundry RPG | Migration failed", err);
     }
@@ -118,4 +120,43 @@ async function preloadTemplates() {
         "systems/laundry-rpg/templates/actor/character-builder.html",
         "systems/laundry-rpg/templates/item/item-sheet.html"
     ]);
+}
+
+function registerSystemSettings() {
+    game.settings.register("laundry-rpg", "teamLuck", {
+        name: "Team Luck",
+        hint: "Current team Luck pool used for Luck spending and Luck Tests.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0
+    });
+
+    game.settings.register("laundry-rpg", "teamLuckMax", {
+        name: "Team Luck Maximum",
+        hint: "Maximum team Luck pool (typically number of player characters).",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0
+    });
+}
+
+async function initializeTeamLuckDefaults() {
+    const current = Number(game.settings.get("laundry-rpg", "teamLuck")) || 0;
+    let max = Number(game.settings.get("laundry-rpg", "teamLuckMax")) || 0;
+
+    if (max <= 0) {
+        const inferred = Math.max(
+            1,
+            game.actors.filter(a => a.type === "character" && a.hasPlayerOwner).length
+        );
+        max = inferred;
+        await game.settings.set("laundry-rpg", "teamLuckMax", max);
+    }
+
+    const clampedCurrent = Math.max(0, Math.min(max, current));
+    if (clampedCurrent !== current) {
+        await game.settings.set("laundry-rpg", "teamLuck", clampedCurrent);
+    }
 }

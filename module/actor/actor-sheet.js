@@ -184,7 +184,8 @@ export class LaundryActorSheet extends ActorSheet {
             return rollDice({
                 pool: attrVal,
                 complexity: 1,
-                flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`
+                flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`,
+                actorId: this.actor.id
             });
         }
 
@@ -195,6 +196,7 @@ export class LaundryActorSheet extends ActorSheet {
             return rollDice({
                 pool:   attrVal,
                 complexity: 1,
+                actorId: this.actor.id,
                 flavor: game.i18n.format("LAUNDRY.RollingAttribute", {
                     attribute: attrName.charAt(0).toUpperCase() + attrName.slice(1)
                 })
