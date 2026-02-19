@@ -32,5 +32,10 @@
     "LAUNDRY.Description": "Description",
     "LAUNDRY.Details": "Details",
     "LAUNDRY.Roll": "Roll",
-    "LAUNDRY.Equip": "Equip"
+    "LAUNDRY.Equip": "Equip",
+    "LAUNDRY.CoreSkills": "Core Skills",
+    "LAUNDRY.StartingEquipment": "Starting Equipment",
+    "LAUNDRY.BaseAttributes": "Base Attributes",
+    "LAUNDRY.Assignment": "Assignment",
+    "LAUNDRY.RelatedAttribute": "Related Attribute"
 }

@@ -34,6 +34,31 @@
             </div>
             {{/if}}
 
+            {{#if (eq item.type "assignment")}}
+            <h3>{{localize "LAUNDRY.BaseAttributes"}}</h3>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Body"}}</label>
+                <input type="number" name="system.attributes.body" value="{{system.attributes.body}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Mind"}}</label>
+                <input type="number" name="system.attributes.mind" value="{{system.attributes.mind}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Spirit"}}</label>
+                <input type="number" name="system.attributes.spirit" value="{{system.attributes.spirit}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.CoreSkills"}} (Separate by comma)</label>
+                <input type="text" name="system.coreSkills" value="{{system.coreSkills}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.StartingEquipment"}}</label>
+                <input type="text" name="system.equipment" value="{{system.equipment}}" />
+            </div>
+            <p class="notes">Drag this item onto a character to apply standard stats.</p>
+            {{/if}}
+
             {{#if (eq item.type "weapon")}}
             <div class="form-group">
                 <label>{{localize "LAUNDRY.Damage"}}</label>
