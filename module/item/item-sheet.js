@@ -1,28 +1,26 @@
 export class LaundryItemSheet extends ItemSheet {
+
     /** @override */
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             classes: ["laundry-rpg", "sheet", "item"],
             template: "systems/laundry-rpg/templates/item/item-sheet.html",
             width: 520,
-            height: 480,
+            height: 500,
             tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "description" }]
         });
     }
 
     /** @override */
     getData() {
-        const context = super.getData();
-        const itemData = context.item;
+        const context  = super.getData();
+        context.system = context.item.system;
+        context.flags  = context.item.flags;
+        context.config = CONFIG.LAUNDRY;
 
-        context.rollData = {};
-        let actor = this.object?.parent ?? null;
-        if (actor) {
-            context.rollData = actor.getRollData();
-        }
-
-        context.system = itemData.system;
-        context.flags = itemData.flags;
+        // Roll data from parent actor (for formula enrichment if needed)
+        const actor = this.object?.parent ?? null;
+        context.rollData = actor ? actor.getRollData() : {};
 
         return context;
     }
@@ -30,7 +28,6 @@ export class LaundryItemSheet extends ItemSheet {
     /** @override */
     activateListeners(html) {
         super.activateListeners(html);
-        if (!this.options.editable) return;
-        // Listeners for item sheet only events
+        if (!this.isEditable) return;
     }
 }

@@ -1,14 +1,16 @@
 import { rollDice } from "../dice.js";
 
 export class LaundryActorSheet extends ActorSheet {
+
     /** @override */
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             classes: ["laundry-rpg", "sheet", "actor"],
             template: "systems/laundry-rpg/templates/actor/actor-sheet.html",
-            width: 600,
-            height: 600,
-            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }]
+            width: 640,
+            height: 680,
+            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }],
+            dragDrop: [{ dragSelector: ".item-list .item", dropSelector: null }]
         });
     }
 
@@ -18,42 +20,150 @@ export class LaundryActorSheet extends ActorSheet {
         const actorData = context.actor.system;
 
         context.system = actorData;
-        context.flags = context.actor.flags;
+        context.flags  = context.actor.flags;
 
-        // Add lookup tables for The Ladder
+        // Pass system config to templates (used by {{selectOptions}})
+        context.config = CONFIG.LAUNDRY;
+
+        // Sort items by type for convenience
+        context.skills     = context.items.filter(i => i.type === "skill");
+        context.talents    = context.items.filter(i => i.type === "talent");
+        context.gear       = context.items.filter(i => ["gear", "weapon", "armour"].includes(i.type));
+        context.spells     = context.items.filter(i => i.type === "spell");
+
+        // The Ladder combat ratings
         context.ladder = {
-            melee: this._getLadderRating(actorData.attributes.body.value, this._getSkillTotal(context.items, "Close Combat")),
-            accuracy: this._getLadderRating(actorData.attributes.mind.value, this._getSkillTotal(context.items, "Ranged Combat")),
-            defence: this._getLadderRating(actorData.attributes.body.value, this._getSkillTotal(context.items, "Reflexes"))
+            melee:    this._getLadderRating(
+                actorData.attributes.body.value,
+                this._getSkillTraining(context.items, "Close Combat")
+            ),
+            accuracy: this._getLadderRating(
+                actorData.attributes.body.value,
+                this._getSkillTraining(context.items, "Ranged Combat")
+            ),
+            defence:  this._getLadderRating(
+                actorData.attributes.body.value,
+                this._getSkillTraining(context.items, "Reflexes")
+            )
         };
+
+        // NPC-only extras
+        context.isNpc       = context.actor.type === "npc";
+        context.isCharacter = context.actor.type === "character";
 
         return context;
     }
 
-    _getSkillTotal(items, skillName) {
+    // ─── Ladder helpers ───────────────────────────────────────────────────────
+
+    _getSkillTraining(items, skillName) {
         if (!items) return 0;
-        const skill = items.find(i => i.type === 'skill' && i.name === skillName);
-        return skill ? skill.system.training : 0;
+        const skill = items.find(i => i.type === "skill" && i.name === skillName);
+        return skill ? (skill.system.training ?? 0) : 0;
     }
 
     _getLadderRating(attribute, training) {
-        const total = attribute + training;
-        if (total >= 12) return "Unprecedented";
-        if (total >= 10) return "Extraordinary";
-        if (total >= 8) return "Superb";
-        if (total >= 6) return "Great";
-        if (total >= 4) return "Good";
-        if (total >= 2) return "Average";
-        return "Poor";
+        const total   = (attribute ?? 1) + (training ?? 0);
+        const ladder  = CONFIG.LAUNDRY.ladder;
+        const matched = ladder.find(entry => total >= entry.min);
+        return matched ? matched.label : "Poor";
     }
+
+    // ─── Listeners ────────────────────────────────────────────────────────────
+
+    /** @override */
+    activateListeners(html) {
+        super.activateListeners(html);
+
+        // Render only for owners
+        if (!this.isEditable) return;
+
+        // Item creation
+        html.find(".item-create").click(this._onItemCreate.bind(this));
+
+        // Item editing
+        html.find(".item-edit").click(ev => {
+            const li   = ev.currentTarget.closest(".item");
+            const item = this.actor.items.get(li.dataset.itemId);
+            item?.sheet.render(true);
+        });
+
+        // Item deletion
+        html.find(".item-delete").click(async ev => {
+            const li   = ev.currentTarget.closest(".item");
+            const item = this.actor.items.get(li.dataset.itemId);
+            if (!item) return;
+            const confirmed = await Dialog.confirm({
+                title: "Delete Item",
+                content: `<p>Delete <strong>${item.name}</strong>?</p>`
+            });
+            if (confirmed) {
+                await this.actor.deleteEmbeddedDocuments("Item", [li.dataset.itemId]);
+                li.remove();
+            }
+        });
+
+        // Equip toggle (weapons / armour)
+        html.find(".item-equip").click(ev => {
+            const li   = ev.currentTarget.closest(".item");
+            const item = this.actor.items.get(li.dataset.itemId);
+            if (!item) return;
+            item.update({ "system.equipped": !item.system.equipped });
+        });
+
+        // Rollable items and attributes
+        html.find(".rollable").click(this._onRoll.bind(this));
+    }
+
+    // ─── Item creation ────────────────────────────────────────────────────────
+
+    async _onItemCreate(ev) {
+        ev.preventDefault();
+        const header = ev.currentTarget;
+        const type   = header.dataset.type;
+        const name   = `New ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+        const data   = foundry.utils.deepClone(header.dataset);
+        delete data.type;
+
+        return Item.create({ name, type, system: data }, { parent: this.actor });
+    }
+
+    // ─── Rolling ──────────────────────────────────────────────────────────────
+
+    _onRoll(ev) {
+        ev.preventDefault();
+        const el      = ev.currentTarget;
+        const dataset = el.dataset;
+
+        // Skill / item roll
+        if (dataset.rollType === "item") {
+            const li   = el.closest(".item");
+            const item = this.actor.items.get(li?.dataset.itemId);
+            if (item) return item.roll();
+            return;
+        }
+
+        // Attribute roll (data-roll-type="attribute" data-attribute="body")
+        if (dataset.rollType === "attribute") {
+            const attrName = dataset.attribute;
+            const attrVal  = this.actor.system.attributes[attrName]?.value ?? 1;
+            return rollDice({
+                pool:   attrVal,
+                focus:  0,
+                flavor: `Rolling ${attrName.charAt(0).toUpperCase() + attrName.slice(1)}`
+            });
+        }
+    }
+
+    // ─── Drag & Drop: Assignment ───────────────────────────────────────────────
 
     /** @override */
     async _onDropItem(event, data) {
         if (!this.actor.isOwner) return false;
-        const item = await Item.implementation.fromDropData(data);
+
+        const item     = await Item.implementation.fromDropData(data);
         const itemData = item.toObject();
 
-        // Handle dropping an Assignment
         if (itemData.type === "assignment") {
             return this._applyAssignment(itemData);
         }
@@ -64,121 +174,49 @@ export class LaundryActorSheet extends ActorSheet {
     async _applyAssignment(assignmentData) {
         const sys = assignmentData.system;
 
-        // Update Attributes
+        // Attributes
         await this.actor.update({
-            "system.attributes.body.value": sys.attributes.body,
-            "system.attributes.mind.value": sys.attributes.mind,
-            "system.attributes.spirit.value": sys.attributes.spirit
+            "system.attributes.body.value":   sys.attributes.body,
+            "system.attributes.mind.value":   sys.attributes.mind,
+            "system.attributes.spirit.value": sys.attributes.spirit,
+            "system.details.assignment":      assignmentData.name
         });
 
-        // Parse and add Skills
-        let skillsToAdd = [];
-        if (typeof sys.coreSkills === 'string') {
-            skillsToAdd = sys.coreSkills.split(',').map(s => s.trim()).filter(s => s);
-        } else if (Array.isArray(sys.coreSkills)) {
-            skillsToAdd = sys.coreSkills;
-        }
+        // Skills
+        const skillNames = typeof sys.coreSkills === "string"
+            ? sys.coreSkills.split(",").map(s => s.trim()).filter(Boolean)
+            : (Array.isArray(sys.coreSkills) ? sys.coreSkills : []);
 
-        for (let skillName of skillsToAdd) {
-            // Check if skill exists in compendium "laundry-rpg.skills"
-            const pack = game.packs.get("laundry-rpg.skills");
-            let skillItem;
+        for (const skillName of skillNames) {
+            const pack  = game.packs.get("laundry-rpg.skills");
+            let skillItem = null;
 
             if (pack) {
                 const index = await pack.getIndex();
                 const entry = index.find(e => e.name === skillName);
-                if (entry) {
-                    skillItem = (await pack.getDocument(entry._id)).toObject();
-                }
+                if (entry) skillItem = (await pack.getDocument(entry._id)).toObject();
             }
 
-            if (!skillItem) {
-                // Fallback: Create generic
-                skillItem = {
-                    name: skillName,
-                    type: "skill",
-                    img: "icons/svg/book.svg",
-                    system: { training: 1, focus: 0, attribute: "mind" }
-                };
-            }
+            skillItem ??= {
+                name: skillName, type: "skill",
+                img: "icons/svg/book.svg",
+                system: { training: 1, focus: 0, attribute: "mind" }
+            };
 
             await this.actor.createEmbeddedDocuments("Item", [skillItem]);
         }
 
-        // Add Equipment if present
+        // Equipment
         if (sys.equipment) {
-            const equipmentList = sys.equipment.split(',').map(s => s.trim()).filter(s => s);
-            for (let item of equipmentList) {
-                await this.actor.createEmbeddedDocuments("Item", [{
-                    name: item,
-                    type: "gear",
-                    img: "icons/svg/item-bag.svg"
-                }]);
-            }
+            const equipList = sys.equipment.split(",").map(s => s.trim()).filter(Boolean);
+            const items = equipList.map(name => ({
+                name, type: "gear",
+                img: "icons/svg/item-bag.svg",
+                system: { quantity: 1, weight: 0 }
+            }));
+            if (items.length) await this.actor.createEmbeddedDocuments("Item", items);
         }
 
-        ui.notifications.info(`Applied Assignment: ${assignmentData.name}`);
-    }
-
-    /** @override */
-    activateListeners(html) {
-        super.activateListeners(html);
-
-        if (!this.options.editable) return;
-
-        // Add Inventory Item
-        html.find('.item-create').click(this._onItemCreate.bind(this));
-
-        // Edit Inventory Item
-        html.find('.item-edit').click(ev => {
-            const li = $(ev.currentTarget).parents(".item");
-            const item = this.actor.items.get(li.data("itemId"));
-            item.sheet.render(true);
-        });
-
-        // Delete Inventory Item
-        html.find('.item-delete').click(ev => {
-            const li = $(ev.currentTarget).parents(".item");
-            this.actor.deleteEmbeddedDocuments("Item", [li.data("itemId")]);
-            li.slideUp(200, () => this.render(false));
-        });
-
-        // Rollable attributes
-        html.find('.rollable').click(this._onRoll.bind(this));
-    }
-
-    async _onItemCreate(event) {
-        event.preventDefault();
-        const header = event.currentTarget;
-        const type = header.dataset.type; // skill, gear, etc.
-        const data = duplicate(header.dataset);
-        const name = `New ${type.capitalize()}`;
-        const itemData = {
-            name: name,
-            type: type,
-            system: data
-        };
-        delete itemData.system["type"];
-        return await Item.create(itemData, { parent: this.actor });
-    }
-
-    _onRoll(event) {
-        event.preventDefault();
-        const element = event.currentTarget;
-        const dataset = element.dataset;
-
-        if (dataset.rollType) {
-            if (dataset.rollType == 'item') {
-                const itemId = element.closest('.item').dataset.itemId;
-                const item = this.actor.items.get(itemId);
-                if (item) return item.roll();
-            }
-        }
-
-        // Handle attribute rolls or custom rolls
-        // For now, let's assume skills are rolled via the item.roll() method, 
-        // but attributes might be rolled directly?
-        // In Laundry, it's usually Attribute + Skill.
-        // So we might need a generic roll dialog here.
+        ui.notifications.info(`Laundry RPG | Applied Assignment: ${assignmentData.name}`);
     }
 }

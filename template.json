@@ -7,37 +7,20 @@
         "templates": {
             "base": {
                 "attributes": {
-                    "body": {
-                        "value": 1
-                    },
-                    "mind": {
-                        "value": 1
-                    },
-                    "spirit": {
-                        "value": 1
-                    }
+                    "body": { "value": 1 },
+                    "mind": { "value": 1 },
+                    "spirit": { "value": 1 }
                 },
                 "derived": {
-                    "toughness": {
-                        "value": 0,
-                        "max": 0
-                    },
-                    "injuries": {
-                        "value": 0,
-                        "max": 0
-                    },
-                    "adrenaline": {
-                        "value": 0,
-                        "max": 0
-                    },
-                    "luck": {
-                        "value": 0,
-                        "max": 0
-                    }
+                    "toughness": { "value": 0 },
+                    "injuries": { "value": 0, "max": 0 },
+                    "adrenaline": { "value": 0, "max": 0 },
+                    "bsrp": { "value": 10, "max": 10 }
                 },
                 "details": {
                     "assignment": "",
                     "department": "",
+                    "clearance": "UNCLASSIFIED",
                     "xp": {
                         "value": 0,
                         "unspent": 0
@@ -46,16 +29,13 @@
             }
         },
         "character": {
-            "templates": [
-                "base"
-            ],
+            "templates": ["base"],
             "biography": ""
         },
         "npc": {
-            "templates": [
-                "base"
-            ],
-            "biography": ""
+            "templates": ["base"],
+            "biography": "",
+            "threat": "minor"
         }
     },
     "Item": {
@@ -74,60 +54,46 @@
             }
         },
         "assignment": {
-            "templates": [
-                "base"
-            ],
-            "attributes": {
-                "body": 0,
-                "mind": 0,
-                "spirit": 0
-            },
+            "templates": ["base"],
+            "attributes": { "body": 0, "mind": 0, "spirit": 0 },
             "coreSkills": "",
             "equipment": ""
         },
         "skill": {
-            "templates": [
-                "base"
-            ],
+            "templates": ["base"],
             "attribute": "mind",
             "training": 0,
             "focus": 0
         },
         "talent": {
-            "templates": [
-                "base"
-            ],
+            "templates": ["base"],
             "requirements": ""
         },
         "weapon": {
-            "templates": [
-                "base"
-            ],
+            "templates": ["base"],
             "damage": "1d6",
-            "range": "close",
+            "range": "Close",
             "skill": "Ranged Combat",
-            "traits": ""
+            "traits": "",
+            "equipped": false
         },
         "armour": {
-            "templates": [
-                "base"
-            ],
+            "templates": ["base"],
             "protection": 0,
-            "traits": ""
+            "traits": "",
+            "equipped": false
         },
         "gear": {
-            "templates": [
-                "base"
-            ],
+            "templates": ["base"],
             "quantity": 1,
             "weight": 0
         },
         "spell": {
-            "templates": [
-                "base"
-            ],
+            "templates": ["base"],
             "level": 1,
-            "cost": ""
+            "cost": "",
+            "castingTime": "",
+            "school": ""
         }
     }
 }

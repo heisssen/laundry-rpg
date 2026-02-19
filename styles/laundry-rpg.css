@@ -1,196 +1,583 @@
-/* The Laundry RPG System Styles */
+/* ═══════════════════════════════════════════════════════════════════════════
+   The Laundry RPG — Foundry VTT System Styles
+   Bureaucratic-horror aesthetic: monochrome, courier, classified documents
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Base Styles */
+/* ── Variables ─────────────────────────────────────────────────────────── */
+:root {
+    --laundry-bg:          #f5f3ee;
+    --laundry-bg-panel:    #eeece6;
+    --laundry-border:      #888;
+    --laundry-border-dark: #333;
+    --laundry-accent:      #8b0000;
+    --laundry-accent-2:    #4a5568;
+    --laundry-text:        #1a1a1a;
+    --laundry-muted:       #666;
+    --laundry-success:     #2d6a2d;
+    --laundry-failure:     #8b0000;
+    --laundry-font:        "Courier New", Courier, monospace;
+    --laundry-watermark:   url('data:image/svg+xml;utf8,<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><text x="10" y="110" font-family="Courier New" font-size="16" fill="rgba(139,0,0,0.06)" transform="rotate(-35 0 100)">TOP SECRET // LAUNDRY</text></svg>');
+}
+
+/* ── Base shell ─────────────────────────────────────────────────────────── */
 .laundry-rpg {
-  font-family: "Courier New", Courier, monospace;
-  color: #333;
+    font-family: var(--laundry-font);
+    color: var(--laundry-text);
+    font-size: 13px;
 }
 
-.notes {
-  font-size: 11px;
-  font-style: italic;
-  color: #555;
-  margin-top: 5px;
-  text-align: center;
+.window-app.laundry-rpg .window-content,
+.laundry-rpg .sheet-body {
+    background: var(--laundry-bg);
+    background-image: var(--laundry-watermark);
 }
 
-.window-app .window-content {
-  background: #fdfdfd;
-  background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><text x="10" y="50" font-family="Courier New" font-size="12" fill="rgba(0,0,0,0.05)" transform="rotate(-45 10 50)">TOP SECRET</text></svg>');
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.laundry-rpg .sheet-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 3px double var(--laundry-border-dark);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
 }
 
-/* Header */
-.sheet-header {
-  border-bottom: 2px solid #333;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  display: flex;
-  align-items: center;
+.laundry-rpg .profile-img {
+    flex: 0 0 90px;
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border: 2px solid var(--laundry-border-dark);
+    background: #fff;
 }
 
-.sheet-header img.profile-img {
-  flex: 0 0 100px;
-  height: 100px;
-  margin-right: 15px;
-  border: 1px solid #777;
-  padding: 2px;
-  background: #fff;
+.laundry-rpg .header-fields {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.sheet-header h1.charname {
-  flex: 1;
-  margin: 0;
-  padding: 0;
+.laundry-rpg .charname input {
+    width: 100%;
+    font-family: var(--laundry-font);
+    font-size: 20px;
+    font-weight: bold;
+    border: none;
+    border-bottom: 2px solid var(--laundry-border-dark);
+    background: transparent;
+    color: var(--laundry-text);
+    padding: 2px 0;
 }
 
-.sheet-header h1.charname input {
-  width: 100%;
-  height: 40px;
-  font-size: 24px;
-  border: none;
-  border-bottom: 1px solid #777;
-  background: transparent;
-  font-family: "Courier New", Courier, monospace;
-  font-weight: bold;
+/* Clearance / Department / Assignment row */
+.laundry-rpg .clearance-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
 }
 
-/* Resources Grid */
-.resources {
-  margin-top: 10px;
+.laundry-rpg .dept-input,
+.laundry-rpg .assign-input {
+    flex: 1;
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.4);
+    padding: 2px 4px;
+    font-size: 11px;
+    font-family: var(--laundry-font);
 }
 
-.resource {
-  text-align: center;
-  border: 1px solid #ccc;
-  padding: 5px;
-  background: rgba(255, 255, 255, 0.5);
-  margin: 0 5px;
+.laundry-rpg .clearance-select-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
 }
 
-.resource-label {
-  font-weight: bold;
-  text-transform: uppercase;
-  font-size: 12px;
-  display: block;
-  margin-bottom: 3px;
+.laundry-rpg .clearance-select-row select {
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.4);
 }
 
-.resource input {
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
-  background: transparent;
-  border-bottom: 1px solid #000;
+/* Clearance badge */
+.laundry-rpg .clearance-badge {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border: 1px solid;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+}
+.clearance-UNCLASSIFIED  { color: #2d6a2d; border-color: #2d6a2d; }
+.clearance-CONFIDENTIAL  { color: #1a4f8a; border-color: #1a4f8a; }
+.clearance-SECRET        { color: #8b0000; border-color: #8b0000; }
+.clearance-TOP_SECRET    { color: #8b0000; border-color: #8b0000; background: rgba(139,0,0,0.06); }
+.clearance-COSMIC        { color: #4b0082; border-color: #4b0082; background: rgba(75,0,130,0.08); }
+
+/* Attributes grid */
+.laundry-rpg .attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 6px;
 }
 
-/* Tabs */
-.sheet-tabs {
-  border-bottom: 2px solid #333;
-  margin-bottom: 15px;
+.laundry-rpg .attr-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid var(--laundry-border);
+    padding: 4px;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.laundry-rpg .attr-block:hover { border-color: var(--laundry-accent); }
+
+.laundry-rpg .attr-label {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-muted);
 }
 
-.sheet-tabs .item {
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #555;
-  border: 1px solid transparent;
-  border-radius: 5px 5px 0 0;
+.laundry-rpg .attr-block input {
+    width: 48px;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    border: none;
+    border-bottom: 2px solid var(--laundry-border-dark);
+    background: transparent;
+    font-family: var(--laundry-font);
+    cursor: text;
 }
 
-.sheet-tabs .item.active {
-  color: #000;
-  border: 1px solid #333;
-  border-bottom: 1px solid #fdfdfd;
-  background: #fdfdfd;
-  margin-bottom: -2px;
-  text-decoration: none;
-  text-shadow: none;
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+.laundry-rpg .sheet-tabs {
+    border-bottom: 2px solid var(--laundry-border-dark);
+    margin-bottom: 10px;
+    display: flex;
+    gap: 2px;
 }
 
-/* Lists */
-.items-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.laundry-rpg .sheet-tabs .item {
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--laundry-muted);
+    padding: 4px 10px;
+    border: 1px solid transparent;
+    border-radius: 3px 3px 0 0;
+    cursor: pointer;
 }
 
-.items-list .item-header {
-  background: #e0e0e0;
-  border: 1px solid #aaa;
-  font-weight: bold;
-  padding: 5px;
-  font-size: 12px;
-  text-transform: uppercase;
+.laundry-rpg .sheet-tabs .item.active {
+    color: var(--laundry-text);
+    border: 1px solid var(--laundry-border-dark);
+    border-bottom: 2px solid var(--laundry-bg);
+    background: var(--laundry-bg);
+    margin-bottom: -2px;
 }
 
-.items-list .item {
-  align-items: center;
-  padding: 5px;
-  border-bottom: 1px solid #ccc;
+.laundry-rpg .sheet-tabs .item:hover:not(.active) {
+    color: var(--laundry-accent);
 }
 
-.items-list .item:last-child {
-  border-bottom: none;
+/* ── Section headers ────────────────────────────────────────────────────── */
+.laundry-rpg .section-header,
+.laundry-rpg h3 {
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--laundry-muted);
+    border-bottom: 1px dashed var(--laundry-border);
+    padding-bottom: 2px;
+    margin: 10px 0 6px;
 }
 
-.items-list .item-image {
-  flex: 0 0 24px;
-  margin-right: 5px;
+/* ── Derived Stats ──────────────────────────────────────────────────────── */
+.laundry-rpg .derived-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 4px;
 }
 
-.items-list .item-image img {
-  border: none;
+.laundry-rpg .derived-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid var(--laundry-border);
+    padding: 6px;
+    background: rgba(255,255,255,0.4);
 }
 
-.items-list .item-name {
-  flex: 2;
-  margin: 0;
-  font-size: 14px;
-  font-weight: bold;
+.laundry-rpg .derived-label {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-muted);
+    margin-bottom: 4px;
 }
 
-.items-list .item-controls {
-  flex: 0 0 50px;
-  text-align: right;
+.laundry-rpg .derived-value {
+    font-size: 20px;
+    font-weight: bold;
 }
 
-.item-control {
-  margin-left: 5px;
-  color: #555;
+.laundry-rpg .derived-tracker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.item-control:hover {
-  color: #000;
-  text-shadow: 0 0 2px #aaa;
+.laundry-rpg .derived-tracker input {
+    width: 44px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    border: none;
+    border-bottom: 2px solid var(--laundry-border-dark);
+    background: transparent;
+    font-family: var(--laundry-font);
 }
 
-/* Ladder Ratings */
-h3 {
-  border-bottom: 1px dashed #777;
-  padding-bottom: 3px;
-  margin-top: 15px;
+.laundry-rpg .derived-tracker .sep,
+.laundry-rpg .derived-tracker .derived-max {
+    font-size: 14px;
+    color: var(--laundry-muted);
 }
 
-/* Rollable items */
-.rollable {
-  cursor: pointer;
+/* BSRP highlight */
+.laundry-rpg .bsrp-block {
+    border-color: var(--laundry-accent);
+    background: rgba(139,0,0,0.04);
+}
+.laundry-rpg .bsrp-block .derived-label { color: var(--laundry-accent); }
+
+/* ── The Ladder ─────────────────────────────────────────────────────────── */
+.laundry-rpg .ladder-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
-.rollable:hover {
-  color: darkred;
-  text-shadow: 0 0 2px #f00;
+.laundry-rpg .ladder-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 5px;
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.3);
 }
 
-/* Grid Utilities */
-.grid {
-  display: grid;
-  gap: 10px;
+.laundry-rpg .ladder-label {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--laundry-muted);
 }
 
-.grid-2col {
-  grid-template-columns: repeat(2, 1fr);
+.laundry-rpg .ladder-rating {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--laundry-accent);
 }
 
-.grid-3col {
-  grid-template-columns: repeat(3, 1fr);
+/* ── XP ─────────────────────────────────────────────────────────────────── */
+.laundry-rpg .xp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.laundry-rpg .xp-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid var(--laundry-border);
+    padding: 5px;
+}
+
+.laundry-rpg .xp-block label {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--laundry-muted);
+}
+
+.laundry-rpg .xp-block input {
+    width: 60px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    border: none;
+    border-bottom: 2px solid var(--laundry-border-dark);
+    background: transparent;
+    font-family: var(--laundry-font);
+}
+
+/* ── Item lists ─────────────────────────────────────────────────────────── */
+.laundry-rpg .items-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.laundry-rpg .items-list .item-header {
+    background: var(--laundry-bg-panel);
+    border: 1px solid var(--laundry-border);
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 6px;
+}
+
+.laundry-rpg .items-list .item {
+    display: flex;
+    align-items: center;
+    padding: 4px 6px;
+    border-bottom: 1px solid #ddd;
+    gap: 6px;
+}
+.laundry-rpg .items-list .item:last-child { border-bottom: none; }
+.laundry-rpg .items-list .item:hover { background: rgba(255,255,255,0.6); }
+
+.laundry-rpg .item-image img {
+    border: none;
+    display: block;
+}
+
+.laundry-rpg .item-name {
+    flex: 1;
+    margin: 0;
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.laundry-rpg .item-formula,
+.laundry-rpg .item-detail {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: var(--laundry-muted);
+    white-space: nowrap;
+}
+
+.laundry-rpg .attr-tag {
+    background: var(--laundry-accent-2);
+    color: #fff;
+    border-radius: 2px;
+    padding: 0 4px;
+    font-size: 9px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-left: 4px;
+}
+
+.laundry-rpg .gear-tag {
+    background: var(--laundry-accent-2);
+    color: #fff;
+    border-radius: 2px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 2px;
+}
+.laundry-rpg .weapon-tag  { background: #6b2c2c; }
+.laundry-rpg .armour-tag  { background: #2c4a6b; }
+.laundry-rpg .spell-tag   { background: #4b0082; }
+.laundry-rpg .bsrp-tag    { background: var(--laundry-accent); }
+
+.laundry-rpg .item-controls {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.laundry-rpg .item-control {
+    color: var(--laundry-muted);
+    cursor: pointer;
+    font-size: 12px;
+    transition: color 0.15s;
+}
+.laundry-rpg .item-control:hover { color: var(--laundry-accent); }
+.laundry-rpg .item-control.equipped { color: var(--laundry-success); }
+
+.laundry-rpg .item-create { color: var(--laundry-accent-2); font-size: 11px; }
+.laundry-rpg .item-create:hover { color: var(--laundry-accent); }
+
+/* ── Rollable ───────────────────────────────────────────────────────────── */
+.laundry-rpg .rollable { cursor: pointer; }
+.laundry-rpg .rollable:hover {
+    color: var(--laundry-accent);
+    text-shadow: 0 0 3px rgba(139,0,0,0.3);
+}
+
+/* ── Form groups ────────────────────────────────────────────────────────── */
+.laundry-rpg .form-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.laundry-rpg .form-group label {
+    flex: 0 0 140px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--laundry-muted);
+}
+.laundry-rpg .form-group input[type="text"],
+.laundry-rpg .form-group input[type="number"],
+.laundry-rpg .form-group select {
+    flex: 1;
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.5);
+    padding: 2px 5px;
+    font-family: var(--laundry-font);
+    font-size: 12px;
+}
+
+/* ── Grid utilities ─────────────────────────────────────────────────────── */
+.laundry-rpg .grid     { display: grid; gap: 8px; }
+.laundry-rpg .grid-2col { grid-template-columns: repeat(2, 1fr); }
+.laundry-rpg .grid-3col { grid-template-columns: repeat(3, 1fr); }
+
+/* ── Item type badge ────────────────────────────────────────────────────── */
+.laundry-rpg .item-type-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-muted);
+    border: 1px solid var(--laundry-border);
+    padding: 1px 6px;
+    margin-top: 3px;
+}
+
+/* ── Notes / hints ──────────────────────────────────────────────────────── */
+.laundry-rpg .notes,
+.laundry-rpg p.notes {
+    font-size: 10px;
+    font-style: italic;
+    color: var(--laundry-muted);
+    margin-top: 6px;
+    text-align: center;
+}
+
+/* ── Chat dice card ─────────────────────────────────────────────────────── */
+.laundry-dice-roll {
+    font-family: var(--laundry-font, "Courier New", monospace);
+    border: 1px solid #888;
+    padding: 8px;
+    background: #f5f3ee;
+}
+
+.laundry-dice-roll .dice-formula {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.laundry-dice-roll .dice-rolls {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0;
+    margin: 0 0 6px;
+}
+
+.laundry-dice-roll .roll.die {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 2px solid #888;
+    font-size: 12px;
+    font-weight: bold;
+    background: #fff;
+}
+
+.laundry-dice-roll .roll.die.success {
+    border-color: #2d6a2d;
+    color: #2d6a2d;
+    background: #f0fff0;
+}
+
+.laundry-dice-roll .roll.die.failure {
+    border-color: #8b0000;
+    color: #8b0000;
+}
+
+.laundry-dice-roll .roll.die.boosted {
+    border-style: dashed;
+}
+
+.laundry-dice-roll .dice-outcome {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    padding: 4px;
+    border-top: 1px solid #ccc;
+}
+
+.laundry-dice-roll .dice-outcome.outcome-success { color: #2d6a2d; }
+.laundry-dice-roll .dice-outcome.outcome-failure  { color: #8b0000; }
+
+.laundry-dice-roll .focus-spent {
+    font-size: 11px;
+    font-weight: normal;
+    color: #555;
+    margin-left: 6px;
+}
+
+.laundry-dice-roll .damage-section {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+    text-align: center;
+    border-top: 1px dashed #ccc;
+    padding-top: 4px;
+}
+
+/* ── Roll dialog ────────────────────────────────────────────────────────── */
+.laundry-roll-dialog .form-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.laundry-roll-dialog .form-group label {
+    flex: 0 0 140px;
+    font-size: 12px;
+}
+.laundry-roll-dialog .form-group input {
+    flex: 1;
+    border: 1px solid #888;
+    padding: 2px 5px;
+}
+
+/* ── Dividers ───────────────────────────────────────────────────────────── */
+.laundry-rpg hr {
+    border: none;
+    border-top: 1px dashed var(--laundry-border);
+    margin: 8px 0;
 }

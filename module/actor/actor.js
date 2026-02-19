@@ -1,150 +1,152 @@
 export class LaundryActor extends Actor {
+
     /** @override */
     prepareData() {
-        // Prepare data for the actor. Data preparation involves three steps:
-        // 1. Prepare data for the specific actor type (e.g. character, npc, etc.)
-        // 2. Prepare embedded documents (e.g. items, active effects, etc.)
-        // 3. Prepare derived data (e.g. calculate ability scores, etc.)
         super.prepareData();
     }
 
     /** @override */
     prepareBaseData() {
-        // Data modifications in this step occur before processing embedded
-        // documents or derived data.
+        // No extra base-data overrides needed; template.json handles defaults.
     }
 
     /** @override */
     prepareDerivedData() {
-        const actorData = this;
-        const systemData = actorData.system;
-        const flags = actorData.flags.laundry || {};
+        const systemData = this.system;
 
-        // Make separate methods for each Actor type (character, npc, etc.) to keep
-        // things organized.
-        this._prepareCharacterData(actorData);
+        switch (this.type) {
+            case "character":
+                this._prepareCharacterData(systemData);
+                break;
+            case "npc":
+                this._prepareNpcData(systemData);
+                break;
+        }
     }
 
-    /**
-     * Prepare Character type specific data
-     */
-    _prepareCharacterData(actorData) {
-        if (actorData.type !== 'character') return;
+    // ─── Characters ──────────────────────────────────────────────────────────
 
-        // Make shortcuts to attributes
-        const systemData = actorData.system;
-        const body = systemData.attributes.body.value;
-        const mind = systemData.attributes.mind.value;
-        const spirit = systemData.attributes.spirit.value;
+    _prepareCharacterData(sys) {
+        const body   = sys.attributes.body.value   ?? 1;
+        const mind   = sys.attributes.mind.value   ?? 1;
+        const spirit = sys.attributes.spirit.value ?? 1;
+        const total  = body + mind + spirit;
 
-        // Calculate Derived Stats
-        // Toughness: Body + Mind + Spirit
-        systemData.derived.toughness.value = body + mind + spirit;
+        // Toughness = Body + Mind + Spirit
+        sys.derived.toughness.value = total;
 
-        // Injuries: (Body + Mind + Spirit) / 2, rounded up
-        systemData.derived.injuries.max = Math.ceil((body + mind + spirit) / 2);
+        // Max Injuries = ceil(total / 2)
+        sys.derived.injuries.max = Math.ceil(total / 2);
+        // Clamp current value
+        sys.derived.injuries.value = Math.min(
+            sys.derived.injuries.value ?? 0,
+            sys.derived.injuries.max
+        );
 
-        // Adrenaline: Spirit / 2, rounded up
-        systemData.derived.adrenaline.max = Math.ceil(spirit / 2);
+        // Max Adrenaline = ceil(Spirit / 2)
+        sys.derived.adrenaline.max = Math.ceil(spirit / 2);
+        sys.derived.adrenaline.value = Math.min(
+            sys.derived.adrenaline.value ?? 0,
+            sys.derived.adrenaline.max
+        );
 
-        // Luck: Currently 0 max as per base rules (team resource), but we initialize it
-        // systemData.derived.luck.max = 0; 
+        // BSRP max = Mind * 5 (sanity-track analogue)
+        sys.derived.bsrp.max = mind * 5;
+        sys.derived.bsrp.value = Math.min(
+            sys.derived.bsrp.value ?? sys.derived.bsrp.max,
+            sys.derived.bsrp.max
+        );
     }
+
+    // ─── NPCs ─────────────────────────────────────────────────────────────────
+
+    _prepareNpcData(sys) {
+        // NPCs use the same derived formula as characters.
+        this._prepareCharacterData(sys);
+    }
+
+    // ─── Assignment application ───────────────────────────────────────────────
+
     /** @override */
     _onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId) {
         super._onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId);
-
         if (embeddedName !== "Item") return;
-
         documents.forEach(doc => {
-            if (doc.type === "assignment") {
-                this.applyAssignment(doc);
-            }
+            if (doc.type === "assignment") this.applyAssignment(doc);
         });
     }
 
     /**
-     * Apply the stats and items from an Assignment to the Actor
-     * @param {Item} assignment 
+     * Apply stats and starting items from a dropped Assignment.
+     * @param {Item} assignment
      */
     async applyAssignment(assignment) {
-        const assignmentData = assignment.system;
+        const sys = assignment.system;
         const updateData = {};
 
-        // 1. Apply Attributes
-        // If the actor is still at default (1), simply set them.
-        // Otherwise, we might want to ask? For now, we overwrite.
-        if (assignmentData.attributes) {
-            updateData["system.attributes.body.value"] = assignmentData.attributes.body;
-            updateData["system.attributes.mind.value"] = assignmentData.attributes.mind;
-            updateData["system.attributes.spirit.value"] = assignmentData.attributes.spirit;
+        // 1 · Attributes
+        if (sys.attributes) {
+            updateData["system.attributes.body.value"]   = sys.attributes.body;
+            updateData["system.attributes.mind.value"]   = sys.attributes.mind;
+            updateData["system.attributes.spirit.value"] = sys.attributes.spirit;
         }
 
-        // Apply the update to the Actor
+        // Record the assignment name in Details
+        updateData["system.details.assignment"] = assignment.name;
+
         await this.update(updateData);
 
-        // 2. Add Core Skills
-        if (assignmentData.coreSkills) {
-            const skillNames = assignmentData.coreSkills.split(',').map(s => s.trim());
-            const pack = game.packs.get("laundry-rpg.skills");
+        // 2 · Core Skills (look up in compendium first, fall back to stub)
+        if (sys.coreSkills) {
+            const skillNames = sys.coreSkills.split(",").map(s => s.trim()).filter(Boolean);
+            const pack       = game.packs.get("laundry-rpg.skills");
             const skillItems = [];
 
             if (pack) {
-                // We need to load the pack content to match names
-                // Note: getDocuments() is async
                 const packContent = await pack.getDocuments();
-
-                for (const skillName of skillNames) {
-                    const existingSkill = packContent.find(i => i.name === skillName);
-                    if (existingSkill) {
-                        // Create a copy of the skill data
-                        const skillData = existingSkill.toObject();
-                        skillItems.push(skillData);
-                    } else {
-                        // Create a placeholder skill if not found in compendium
-                        skillItems.push({
-                            name: skillName,
-                            type: "skill",
-                            img: "icons/svg/book.svg",
-                            system: {
-                                description: "Skill added from Assignment.",
-                                attribute: "mind" // Default
-                            }
-                        });
-                    }
+                for (const name of skillNames) {
+                    const found = packContent.find(i => i.name === name);
+                    skillItems.push(found
+                        ? found.toObject()
+                        : _stubSkill(name));
                 }
             } else {
-                // Fallback if pack is missing
-                for (const skillName of skillNames) {
-                    skillItems.push({
-                        name: skillName,
-                        type: "skill",
-                        img: "icons/svg/book.svg"
-                    });
-                }
+                skillNames.forEach(name => skillItems.push(_stubSkill(name)));
             }
 
-            if (skillItems.length > 0) {
+            if (skillItems.length) {
                 await this.createEmbeddedDocuments("Item", skillItems);
-                ui.notifications.info(`Added ${skillItems.length} skills from Assignment: ${assignment.name}`);
+                ui.notifications.info(
+                    `Laundry RPG | Added ${skillItems.length} skills from Assignment: ${assignment.name}`
+                );
             }
         }
 
-        // 3. Add Equipment (as simple items for now)
-        if (assignmentData.equipment) {
-            const equipmentNames = assignmentData.equipment.split(',').map(e => e.trim());
-            const equipmentItems = equipmentNames.map(name => ({
-                name: name,
-                type: "gear",
+        // 3 · Starting Equipment
+        if (sys.equipment) {
+            const equipNames  = sys.equipment.split(",").map(e => e.trim()).filter(Boolean);
+            const equipItems  = equipNames.map(name => ({
+                name, type: "gear",
                 img: "icons/svg/item-bag.svg",
-                system: {
-                    quantity: 1
-                }
+                system: { quantity: 1, weight: 0 }
             }));
-
-            if (equipmentItems.length > 0) {
-                await this.createEmbeddedDocuments("Item", equipmentItems);
-            }
+            if (equipItems.length) await this.createEmbeddedDocuments("Item", equipItems);
         }
     }
+
+    /** @override */
+    getRollData() {
+        const data = super.getRollData();
+        return data;
+    }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function _stubSkill(name) {
+    return {
+        name, type: "skill",
+        img: "icons/svg/book.svg",
+        system: { description: "Skill added from Assignment.", attribute: "mind", training: 1, focus: 0 }
+    };
 }

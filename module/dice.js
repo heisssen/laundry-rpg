@@ -1,123 +1,118 @@
-export async function rollDice({ pool, focus, flavor = "Rolling Dice", dn = 4 } = {}) {
-    // Show a dialog to confirm/modify the roll
+/**
+ * The Laundry RPG dice roller.
+ *
+ * Mechanics:
+ *  • Roll a pool of d6s.
+ *  • Each die equal to or above the Difficulty Number (DN, default 4) is a success.
+ *  • Focus points may each raise one die's result by +1 (optimally applied).
+ *  • Results are displayed in a styled chat card.
+ */
+
+/**
+ * Open a roll dialog then execute the roll.
+ *
+ * @param {object}  opts
+ * @param {number}  opts.pool     Base dice pool (Attribute + Training).
+ * @param {number}  opts.focus    Focus points available.
+ * @param {string}  [opts.flavor] Chat message flavour text.
+ * @param {number}  [opts.dn]     Difficulty Number (default 4).
+ * @param {string}  [opts.damage] Damage formula to show (weapons only).
+ */
+export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn = 4, damage } = {}) {
     const content = `
-    <form>
+    <form class="laundry-roll-dialog">
         <div class="form-group">
             <label>Dice Pool</label>
-            <input type="number" name="pool" value="${pool}"/>
+            <input type="number" name="pool" value="${pool}" min="1" max="20" />
         </div>
         <div class="form-group">
             <label>Focus</label>
-            <input type="number" name="focus" value="${focus}"/>
+            <input type="number" name="focus" value="${focus}" min="0" max="10" />
         </div>
         <div class="form-group">
             <label>Difficulty Number (DN)</label>
-            <input type="number" name="dn" value="${dn}"/>
+            <input type="number" name="dn" value="${dn}" min="2" max="6" />
         </div>
-    </form>
-    `;
+    </form>`;
 
     new Dialog({
         title: "Roll Dice",
-        content: content,
+        content,
         buttons: {
             roll: {
+                icon: '<i class="fas fa-dice"></i>',
                 label: "Roll",
                 callback: async (html) => {
-                    const newPool = parseInt(html.find('[name="pool"]').val());
-                    const newFocus = parseInt(html.find('[name="focus"]').val());
-                    const newDN = parseInt(html.find('[name="dn"]').val());
-
-                    await _executeRoll(newPool, newFocus, newDN, flavor);
+                    const newPool  = parseInt(html.find('[name="pool"]').val())  || 1;
+                    const newFocus = parseInt(html.find('[name="focus"]').val()) || 0;
+                    const newDN    = parseInt(html.find('[name="dn"]').val())    || 4;
+                    await _executeRoll(newPool, newFocus, newDN, flavor, damage);
                 }
-            }
+            },
+            cancel: { label: "Cancel" }
         },
         default: "roll"
     }).render(true);
 }
 
-async function _executeRoll(pool, focus, dn, flavor) {
+// ─── Internal ─────────────────────────────────────────────────────────────────
+
+async function _executeRoll(pool, focus, dn, flavor, damage) {
+    // Build and evaluate the roll (v12+ API — no async option needed)
     const roll = new Roll(`${pool}d6`);
-    await roll.evaluate({ async: true });
+    await roll.evaluate();
 
-    // Basic logic: Count successes (>= DN)
-    // Detailed logic with Focus: Focus adds +1 to a die.
-    // We should optimize Focus usage.
-    // For each Focus point, we can turn a (DN-1) into a DN (Success).
-    // Or a (DN-2) into (DN-1) [not useful unless we have more Focus].
+    const rawDice = roll.terms[0].results.map(d => d.result);
 
-    // Let's implement auto-focus usage for optimal successes.
-
-    let dice = roll.terms[0].results.map(d => d.result);
-    // Sort descending
-    dice.sort((a, b) => b - a);
-
-    let successes = 0;
-    let focusUsed = 0;
-    let modifiedDice = [];
-
-    for (let die of dice) {
-        let currentVal = die;
-        let isSuccess = currentVal >= dn;
-        let wasModified = false;
-
-        if (!isSuccess && focus > 0) {
-            // Check if we can bump it to DN
-            const needed = dn - currentVal;
-            if (focus >= needed) {
-                focus -= needed;
-                focusUsed += needed;
-                currentVal += needed; // Visually cap at DN? Or show true value? Rules say "adds +1 to result".
-                isSuccess = true;
-                wasModified = true;
-            }
+    // Apply Focus optimally: spend the minimum Focus needed to push a near-miss
+    // (value === dn - 1) to a success, highest first.
+    let focusLeft = focus;
+    const results = rawDice.map(val => {
+        const needed = dn - val;
+        if (needed <= 0) {
+            // Already a success
+            return { original: val, modified: val, success: true, boosted: false };
         }
+        if (focusLeft >= needed) {
+            focusLeft -= needed;
+            return { original: val, modified: val + needed, success: true, boosted: true };
+        }
+        return { original: val, modified: val, success: false, boosted: false };
+    });
 
-        if (isSuccess) successes++;
+    const successes = results.filter(r => r.success).length;
+    const focusUsed = focus - focusLeft;
+    const isSuccess = successes > 0;
 
-        modifiedDice.push({
-            original: die,
-            modified: currentVal,
-            isSuccess: isSuccess,
-            wasModified: wasModified
-        });
-    }
+    // ─── Chat card ────────────────────────────────────────────────────────────
 
-    // Construct Chat Message
-    // visual rendering of dice
+    const diceHtml = results.map(r => {
+        const cls = ["roll", "die", "d6", r.success ? "success" : "failure", r.boosted ? "boosted" : ""].join(" ").trim();
+        const display = r.boosted ? `${r.original}→${r.modified}` : r.modified;
+        return `<li class="${cls}" title="${r.boosted ? `Focus spent: +${r.modified - r.original}` : ""}">${display}</li>`;
+    }).join("");
 
-    let msgContent = `
-    <div class="dice-roll">
-        <div class="dice-result">
-            <div class="dice-formula">${pool}d6 (DN ${dn})</div>
-            <div class="dice-tooltip">
-                <section class="tooltip-part">
-                    <div class="dice">
-                        <header class="part-header flexrow">
-                            <span class="part-formula">${pool}d6</span>
-                            <span class="part-total">${roll.total}</span>
-                        </header>
-                        <ol class="dice-rolls">
-                            ${modifiedDice.map(d => {
-        const classes = `roll die d6 ${d.isSuccess ? 'success' : ''} ${d.wasModified ? 'modified' : ''}`;
-        return `<li class="${classes}">${d.modified}</li>`;
-    }).join('')}
-                        </ol>
-                    </div>
-                </section>
-            </div>
-            <h4 class="dice-total">${successes} Successes</h4>
-             ${focusUsed > 0 ? `<div class="focus-used">Focus Spent: ${focusUsed}</div>` : ''}
+    const damageSection = damage
+        ? `<div class="damage-section"><strong>Damage:</strong> ${damage}</div>`
+        : "";
+
+    const content = `
+    <div class="laundry-dice-roll">
+        <div class="dice-formula">${pool}d6 vs DN ${dn}</div>
+        <ol class="dice-rolls">${diceHtml}</ol>
+        <div class="dice-outcome ${isSuccess ? "outcome-success" : "outcome-failure"}">
+            <strong>${successes} ${successes === 1 ? "Success" : "Successes"}</strong>
+            ${focusUsed > 0 ? `<span class="focus-spent">(Focus spent: ${focusUsed})</span>` : ""}
         </div>
-    </div>
-    `;
+        ${damageSection}
+    </div>`;
 
-    ChatMessage.create({
-        user: game.user.id,
+    // In Foundry v12+ pass rolls array; omit deprecated `type` field.
+    await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
-        flavor: flavor,
-        content: msgContent,
-        type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-        roll: roll
+        flavor,
+        content,
+        rolls: [roll],
+        sound: CONFIG.sounds.dice
     });
 }
