@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Thick Clothing",
+    "type": "armour",
+    "img": "icons/equipment/chest/shirt-collared-brown.webp",
+    "system": {
+      "description": "<p>A heavy leather jacket or winter coat. Offers minimal protection.</p>",
+      "protection": 1,
+      "traits": "Concealable",
+      "equipped": false
+    }
+  },
+  {
+    "name": "Kevlar Vest",
+    "type": "armour",
+    "img": "icons/equipment/chest/breastplate-quilted-grey.webp",
+    "system": {
+      "description": "<p>Standard covert body armour worn under clothing. Protects against small arms fire.</p>",
+      "protection": 2,
+      "traits": "Concealable",
+      "equipped": false
+    }
+  },
+  {
+    "name": "Tactical Body Armour",
+    "type": "armour",
+    "img": "icons/equipment/chest/breastplate-layered-steel-black.webp",
+    "system": {
+      "description": "<p>Heavy tactical gear worn by OCCULUS strike teams. Includes ceramic plates.</p>",
+      "protection": 4,
+      "traits": "Heavy, Obvious",
+      "equipped": false
+    }
+  },
+  {
+    "name": "Riot Shield",
+    "type": "armour",
+    "img": "icons/equipment/shield/heater-steel-grey.webp",
+    "system": {
+      "description": "<p>A transparent polycarbonate shield. Requires one hand to use.</p>",
+      "protection": 2,
+      "traits": "Bulky, Obvious",
+      "equipped": false
+    }
+  },
+  {
+    "name": "Warded Clothing",
+    "type": "armour",
+    "img": "icons/equipment/chest/robe-collared-blue.webp",
+    "system": {
+      "description": "<p>Specially treated garments woven with conductive threads to protect against computational demonology.</p>",
+      "protection": 1,
+      "traits": "Concealable, Magical Defence",
+      "equipped": false
+    }
+  }
+]

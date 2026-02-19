@@ -1,0 +1,1136 @@
+[
+  {
+    "name": "Acute Sense",
+    "type": "talent",
+    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "system": {
+      "description": "<p>One of your senses is highly developed, allowing you to spot what others might miss. Choose one from sight, sound, touch, taste, and smell. When making an Awareness Test using that sense, the dice gained from Training is doubled.</p>",
+      "requirements": "Training (1) in Awareness"
+    }
+  },
+  {
+    "name": "Affinity with Intricacies",
+    "type": "talent",
+    "img": "icons/skills/trades/smithing-smelter-tongs.webp",
+    "system": {
+      "description": "<p>You have a natural aptitude with the inner workings of intricate devices like locks, clockwork, automatons, gizmos, and gadgets. Double the bonus gained from Focus in the Skill when testing delicate internals.</p>",
+      "requirements": "Focus (1) in Dexterity, and Focus (1) in either Engineering or Technology"
+    }
+  },
+  {
+    "name": "Ambidextrous",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>You are equally skilled at manipulating objects and wielding weapons in any hand. When you are dual-wielding, add a die (1d6) to your total dice pool before splitting the dice.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Animal Friend",
+    "type": "talent",
+    "img": "icons/environment/creatures/hound-wolf-grey.webp",
+    "system": {
+      "description": "<p>You have a natural affinity for animals. You have Advantage on Tests when trying to get an animal to follow your commands or earn its trust. You naturally know what might be causing it stress.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Applied Anatomy",
+    "type": "talent",
+    "img": "icons/skills/wounds/anatomy-organ-heart-red.webp",
+    "system": {
+      "description": "<p>When you successfully hit a living creature with an attack, add 1 Damage for each 6 rolled. This additional Damage cannot exceed your Training or Focus in Medicine (whichever is higher).</p>",
+      "requirements": "Training (1) and Focus (1) in Medicine"
+    }
+  },
+  {
+    "name": "Backstab",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-dagger-backstab.webp",
+    "system": {
+      "description": "<p>If you make an Attack with a Subtle weapon and the target is unaware of you, the attack deals double Damage and ignores Armour.</p>",
+      "requirements": "Training (1) or Focus (1) in Stealth"
+    }
+  },
+  {
+    "name": "Backup Plan",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>If you fail a Test and one of the dice rolled was a 1, you can reroll the Test, but its Complexity increases by 1. Cannot reroll more than once. Must Take a Breather or Rest before using again.</p>",
+      "requirements": "Mind (3)"
+    }
+  },
+  {
+    "name": "Bad Cop",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>When you succeed on a Presence Test against a target, any Fast Talk Tests other characters make against that target for the rest of the day double their Skill Training.</p>",
+      "requirements": "Training (1) in Presence"
+    }
+  },
+  {
+    "name": "Bodge Job",
+    "type": "talent",
+    "img": "icons/tools/hand/hammer-and-nail.webp",
+    "system": {
+      "description": "<p>Once per mission, you can build yourself a common weapon or piece of spy gear in the field. Test uses Mind (Engineering or Technology) instead of Bureaucracy. The device breaks after an hour.</p>",
+      "requirements": "Training (1) and Focus (1) in Engineering or Technology"
+    }
+  },
+  {
+    "name": "Careful Casting",
+    "type": "talent",
+    "img": "icons/magic/symbols/rune-sigma-purple.webp",
+    "system": {
+      "description": "<p>When rolling on the Computational Complication Table or Magical Mishap Table, you may spend 1 Luck to re-roll, but must abide by the second result.</p>",
+      "requirements": "Focus (2) in Magic"
+    }
+  },
+  {
+    "name": "Caregiver",
+    "type": "talent",
+    "img": "icons/magic/life/cross-glowing-green.webp",
+    "system": {
+      "description": "<p>When you make a Test to restore Toughness or remove Injuries from someone other than yourself, you double the dice gained from any Training in the tested Skill.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Clairvoyance",
+    "type": "talent",
+    "img": "icons/magic/perception/third-eye-blue-red.webp",
+    "system": {
+      "description": "<p>With a successful Spirit (Zeal) Test, your character can sense what can otherwise not be seen or heard. The DN is determined by the GM.</p>",
+      "requirements": "Training (2) and Focus (1) in Zeal"
+    }
+  },
+  {
+    "name": "Codemaster",
+    "type": "talent",
+    "img": "icons/commodities/tech/computer-terminal-green.webp",
+    "system": {
+      "description": "<p>You have Advantage on Tests to programme, hack, or debug computer code.</p>",
+      "requirements": "Focus (1) in Computers"
+    }
+  },
+  {
+    "name": "Collected",
+    "type": "talent",
+    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "system": {
+      "description": "<p>You can immediately make a DN 6:1 Mind (Resolve) Test to resist the effects of becoming Stunned due to failing a Test or being supernaturally stricken with confusion.</p>",
+      "requirements": "Training (1) and Focus (1) in Resolve"
+    }
+  },
+  {
+    "name": "Combat Ready",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-sword-fast-blue.webp",
+    "system": {
+      "description": "<p>You gain a +2 bonus to your Initiative and can never be Surprised in combat. You can take this Talent multiple times.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Combat Sense",
+    "type": "talent",
+    "img": "icons/skills/targeting/crosshair-pointed-orange.webp",
+    "system": {
+      "description": "<p>You don't suffer a penalty to Melee, Accuracy, or Defence when Blinded or attacked by a hidden creature.</p>",
+      "requirements": "Focus (1) in Awareness and Intuition"
+    }
+  },
+  {
+    "name": "Computational Sorcerer",
+    "type": "talent",
+    "img": "icons/magic/symbols/star-inverted-yellow.webp",
+    "system": {
+      "description": "<p>You gain the ability to cast spells using computational sorcery or mental magic. Choose 4 spells you know how to cast.</p>",
+      "requirements": "Training (1) and Focus (1) in Magic"
+    }
+  },
+  {
+    "name": "Conditioned to Fight",
+    "type": "talent",
+    "img": "icons/skills/melee/unarmed-punch-fist.webp",
+    "system": {
+      "description": "<p>When determining your Initiative, you may use your Body instead of Mind.</p>",
+      "requirements": "Body (3), Focus (2) in Reflexes"
+    }
+  },
+  {
+    "name": "Contortionist",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>You have Advantage on Tests when attempting to escape someone's grasp. Additionally, you can fit into unusually small or cramped locations.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Counsellor",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>As an Action, target a creature in Close Range. Make a DN 4:1 Spirit (Presence) Test. Target recovers 1 Toughness per success. Can also treat Psychological Injuries during rest.</p>",
+      "requirements": "Training (1) and Focus (1) in Presence"
+    }
+  },
+  {
+    "name": "Counterattack",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>Once per turn, when an enemy hits you with a melee Attack, you can immediately use a Free Action to Attack that enemy if it is within range.</p>",
+      "requirements": "Focus (2) in Reflexes and Close Combat Skill"
+    }
+  },
+  {
+    "name": "Covering Fire",
+    "type": "talent",
+    "img": "icons/weapons/guns/gun-pistol-steampunk.webp",
+    "system": {
+      "description": "<p>Choose a Zone and make a DN 4:1 Body (Ranged) Test. Enemies in that Zone make Opposed DN 4:1 Body (Reflexes) Test or suffer Damage equal to the difference in successes.</p>",
+      "requirements": "Training (1) or Focus (1) in Ranged Skill, a ranged weapon"
+    }
+  },
+  {
+    "name": "Crack Shot",
+    "type": "talent",
+    "img": "icons/skills/targeting/crosshair-bars-yellow.webp",
+    "system": {
+      "description": "<p>You deal +1 Damage when you take the Called Shot Action.</p>",
+      "requirements": "Training (2) and Focus (2) in Ranged Skill"
+    }
+  },
+  {
+    "name": "Creator",
+    "type": "talent",
+    "img": "icons/tools/hand/hammer-and-nail.webp",
+    "system": {
+      "description": "<p>The Complexity of Tests you make to build new items (but not repair/modify existing ones) is reduced by 1.</p>",
+      "requirements": "Training (1) and Focus (1) in Engineering or Technology"
+    }
+  },
+  {
+    "name": "Criminal Background",
+    "type": "talent",
+    "img": "icons/skills/social/theft-pickpocket-bribery-brown.webp",
+    "system": {
+      "description": "<p>You have Advantage on Tests when stealing or hiding illicit activities. Can easily track down black market dealers and illegal dens.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Crushing Blow",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-hammer-destructive.webp",
+    "system": {
+      "description": "<p>If you get a 6 on an attack with a Crushing weapon against a Large or smaller creature, the target is Stunned until the end of their next turn.</p>",
+      "requirements": "Body (3), a Crushing weapon."
+    }
+  },
+  {
+    "name": "Curiouser and Curiouser",
+    "type": "talent",
+    "img": "icons/tools/navigation/magnifying-glass.webp",
+    "system": {
+      "description": "<p>Any Tests when looking for clues or investigating are at Advantage.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Data Wrangler",
+    "type": "talent",
+    "img": "icons/commodities/tech/computer-monitor-blue.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to extrapolate intelligence from data sources. Taking an hour to immerse maximizes successes.</p>",
+      "requirements": "Training (1) in Academics or Computers"
+    }
+  },
+  {
+    "name": "Demolitions Expert",
+    "type": "talent",
+    "img": "icons/weapons/explosives/bomb-fuse-short.webp",
+    "system": {
+      "description": "<p>When you use an explosive or weapon with the Blast Trait, you can choose a number of targets equal to your Focus in Engineering to be unaffected.</p>",
+      "requirements": "Focus (1) in Engineering"
+    }
+  },
+  {
+    "name": "Departmental Liaison",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>When making a Bureaucracy Test to acquire information from other teams, add bonus dice equal to your Training in Fast Talk.</p>",
+      "requirements": "Training (1) in Fast Talk"
+    }
+  },
+  {
+    "name": "Dig Deep",
+    "type": "talent",
+    "img": "icons/skills/wounds/injury-face-impact-orange.webp",
+    "system": {
+      "description": "<p>While your Adrenaline and Toughness are both at 0, you can use a Free Action to regain 1 Adrenaline. Once per round.</p>",
+      "requirements": "Spirit (3), Training (1) and Focus (1) in Resolve"
+    }
+  },
+  {
+    "name": "Diplomat",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to resolve conflicts, gauge moods, and tell if people are lying.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Dirty Fighting",
+    "type": "talent",
+    "img": "icons/skills/melee/unarmed-punch-fist.webp",
+    "system": {
+      "description": "<p>When you hit with an unarmed attack, you may choose to deal no Damage. If so, target makes a DN 4:S Body (Fortitude) Test. On failure, Blinded or Stunned.</p>",
+      "requirements": "Training (1) in Close Combat Skill"
+    }
+  },
+  {
+    "name": "Dispel",
+    "type": "talent",
+    "img": "icons/magic/defensive/shield-barrier-blue.webp",
+    "system": {
+      "description": "<p>As an Action, dispel a spell after it has been cast. DN is equal to the DN of the spell, Complexity is one higher.</p>",
+      "requirements": "Training (1) and Focus (1) in Magic"
+    }
+  },
+  {
+    "name": "Dogged Pursuer",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>Whenever you are involved in an on-foot Pursuit, you have Advantage on your Body (Athletics) Tests.</p>",
+      "requirements": "Training (1) in Athletics"
+    }
+  },
+  {
+    "name": "Duelist",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-sword-fast-blue.webp",
+    "system": {
+      "description": "<p>If only one enemy and no allies are within Close Range of you, your Melee and Defence increase one step against that enemy.</p>",
+      "requirements": "Training (2) and Focus (2) in Close Combat Skill"
+    }
+  },
+  {
+    "name": "Effortless Deceit",
+    "type": "talent",
+    "img": "icons/skills/social/theft-pickpocket-bribery-brown.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to deceive others. Unaffected by non-magical truth effects, and ignore Truth Geas cast at Level lower than your Training in Resolve.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Eidetic Memory",
+    "type": "talent",
+    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "system": {
+      "description": "<p>You can recall moments from memory with near perfection. You can recall major elements without a test.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Empathic",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>When interacting socially, add 1d6 to your dice pool for each level of Training in Intuition. When identifying a mood, double your Training in Intuition.</p>",
+      "requirements": "Training (1) in Intuition"
+    }
+  },
+  {
+    "name": "Evasive",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>After using your Move to leave your Zone and enter another, your Defence increases by one step. Increase Defence by two steps when Dodging.</p>",
+      "requirements": "Training (1) in Athletics and Reflexes"
+    }
+  },
+  {
+    "name": "Evasive Driving",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>When driving, vehicle's Defence increases by one step. Ignore Speed penalty when piloting through Difficult Terrain.</p>",
+      "requirements": "Licence"
+    }
+  },
+  {
+    "name": "Expert Coordinator",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>All team members add 1 to their Initiative while they can see or hear you.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Eye in the Sky",
+    "type": "talent",
+    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "system": {
+      "description": "<p>When you have a good vantage position, you can communicate with an ally as a Free Action to improve their Defence one step until your next turn.</p>",
+      "requirements": "Training (1) in Awareness"
+    }
+  },
+  {
+    "name": "Face in the Crowd",
+    "type": "talent",
+    "img": "icons/skills/social/theft-pickpocket-bribery-brown.webp",
+    "system": {
+      "description": "<p>When trying not to be spotted by people or cameras, any Stealth Test is at Advantage. Witnesses struggle to describe you.</p>",
+      "requirements": "Training (1) in Stealth"
+    }
+  },
+  {
+    "name": "Fearless",
+    "type": "talent",
+    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "system": {
+      "description": "<p>Whenever you become Frightened or influenced against your will, you may immediately attempt a DN 6:1 Mind (Resolve) Test to resist.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Field Strip",
+    "type": "talent",
+    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "system": {
+      "description": "<p>When you successfully Grapple, Shove, or make a Called Shot to arms, you can disassemble their weapon as a Free Action.</p>",
+      "requirements": "Training (1) in Ranged"
+    }
+  },
+  {
+    "name": "Forgotten Knowledge",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>Choose Academics, Occult, or Science. Double the dice gained from Training for that Skill. Failing the Test increases Threat by 1.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Gearhead",
+    "type": "talent",
+    "img": "icons/tools/hand/wrench-metal-silver.webp",
+    "system": {
+      "description": "<p>Difficulty of repairing a vehicle is reduced by 1. Can repair a wrecked vehicle one additional time during an adventure.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Good Cop",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>When you succeed on a Fast Talk Test, any Presence Tests other characters make against that target for the rest of the day double their Skill Training.</p>",
+      "requirements": "Training (1) in Fast Talk"
+    }
+  },
+  {
+    "name": "Gunslinger",
+    "type": "talent",
+    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "system": {
+      "description": "<p>While wielding a ranged weapon in each hand, your Accuracy increases by one step.</p>",
+      "requirements": "Training (1) and Focus (1) in Ranged Skill"
+    }
+  },
+  {
+    "name": "Guts",
+    "type": "talent",
+    "img": "icons/skills/wounds/anatomy-organ-heart-red.webp",
+    "system": {
+      "description": "<p>You gain +1 Toughness for each level of Training in the Resolve Skill.</p>",
+      "requirements": "Training (1) in Resolve"
+    }
+  },
+  {
+    "name": "Hard to Kill",
+    "type": "talent",
+    "img": "icons/magic/life/cross-glowing-green.webp",
+    "system": {
+      "description": "<p>The first time you fail a Death Test in combat, you do not increase the DN.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Heavy Hitter",
+    "type": "talent",
+    "img": "icons/skills/melee/unarmed-punch-fist.webp",
+    "system": {
+      "description": "<p>Your Unarmed strikes deal 1+S Damage, have the Crushing Trait, and lose the Ineffective Trait.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Helpful",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>When you make a Help Action, the recipient of your aid adds one additional die to their pool.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Hit and Run",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>Once per turn, if you deal Damage with a melee attack, you can move to an adjacent Zone as a Free Action.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Hunter",
+    "type": "talent",
+    "img": "icons/skills/targeting/crosshair-pointed-orange.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to track, find, trap, or hunt. Choose a terrain type to always find secure rest.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Hurler",
+    "type": "talent",
+    "img": "icons/skills/ranged/throw-rock-grey.webp",
+    "system": {
+      "description": "<p>When you throw an item or weapon, its Range increases one step.</p>",
+      "requirements": "Body (2), Training (1) or Focus (1) in Athletics"
+    }
+  },
+  {
+    "name": "I Know a Guy",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>Once per session you can call on friends to gain Help worth +3d6 on an appropriate Test or perform a harmless task.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "In the Right Hands",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>A sturdy tool or object loses the Ineffective Trait when you use it as an Improvised Weapon.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Incidental Incendiaries",
+    "type": "talent",
+    "img": "icons/weapons/explosives/bomb-fuse-short.webp",
+    "system": {
+      "description": "<p>Can create improvised incendiaries during a Rest. Max carried equals combined Training/Focus in Engineering.</p>",
+      "requirements": "Training (2) in Engineering"
+    }
+  },
+  {
+    "name": "Insightful Interrogator",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>When coercing someone, use Mind instead of Body or Spirit, and add Training/Focus in Intuition to the Test.</p>",
+      "requirements": "Focus (1) in Presence and Intuition"
+    }
+  },
+  {
+    "name": "Intimidating Manner",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to threaten, intimidate, cajole, and start arguments.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Iron Grip",
+    "type": "talent",
+    "img": "icons/skills/melee/unarmed-punch-fist.webp",
+    "system": {
+      "description": "<p>Double bonus from Training in Might when grip strength is involved. Ignore effects that make you drop items.</p>",
+      "requirements": "Training (1) in Might"
+    }
+  },
+  {
+    "name": "Iron Lung",
+    "type": "talent",
+    "img": "icons/magic/air/wind-weather-blue.webp",
+    "system": {
+      "description": "<p>You can hold your breath and survive a lack of air for twice as long.</p>",
+      "requirements": "Body (2)"
+    }
+  },
+  {
+    "name": "Iron Stomach",
+    "type": "talent",
+    "img": "icons/skills/wounds/anatomy-organ-heart-red.webp",
+    "system": {
+      "description": "<p>Immune to Weakened Conditions from toxins/smells, Advantage on Tests to resist poison and disease.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Knock-Out Blow",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-hammer-destructive.webp",
+    "system": {
+      "description": "<p>On a Called Shot from stealth with blunt weapon/hands, Incapacitate target instead of dealing Damage for minutes equal to Damage.</p>",
+      "requirements": "Training (2) in Stealth and Close Combat"
+    }
+  },
+  {
+    "name": "The Knowledge",
+    "type": "talent",
+    "img": "icons/tools/navigation/map-marked-green.webp",
+    "system": {
+      "description": "<p>Double dice from Training in Survival for navigation Tests in a chosen city.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Licence",
+    "type": "talent",
+    "img": "icons/tools/navigation/map-marked-green.webp",
+    "system": {
+      "description": "<p>You have a licence to drive a category of vehicle and own a basic civilian version (car/bike) or access to agency pool.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Lip Reader",
+    "type": "talent",
+    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "system": {
+      "description": "<p>Can read lips within Long Range if you see the face.</p>",
+      "requirements": "Training (1) in Intuition"
+    }
+  },
+  {
+    "name": "Lunge",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>Close combat weapons you wield gain the Reach Trait.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Master of Disguise",
+    "type": "talent",
+    "img": "icons/skills/social/theft-pickpocket-bribery-brown.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to disguise yourself. Creates an airtight cover persona.</p>",
+      "requirements": "Disguise Kit"
+    }
+  },
+  {
+    "name": "Medical Training",
+    "type": "talent",
+    "img": "icons/magic/life/cross-glowing-green.webp",
+    "system": {
+      "description": "<p>Action to patch wounds (DN 4:1 Medicine) restores 1 Toughness per success. Treat Physical Injuries during rest.</p>",
+      "requirements": "Training (1) and Focus (1) in Medicine, suitable tools and supplies"
+    }
+  },
+  {
+    "name": "Mental Arithmetic",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>Advantage on Academics Tests involving math. Negate Complexity penalty for mental magic.</p>",
+      "requirements": "Focus (2) in Academics"
+    }
+  },
+  {
+    "name": "Mickey Finn",
+    "type": "talent",
+    "img": "icons/skills/toxins/poison-bottle-corked-purple.webp",
+    "system": {
+      "description": "<p>Apply poison as a Free Action. Advantage to conceal it. Cannot accidentally poison yourself.</p>",
+      "requirements": "Training (1) and Focus (1) in Dexterity"
+    }
+  },
+  {
+    "name": "Military Rank",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>Advantage on Opposed Tests using rank to enter secure locations or pressure people. Can be bought multiple times.</p>",
+      "requirements": "A military background"
+    }
+  },
+  {
+    "name": "Misfiler",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>Bury information so it's impossible to find. Opposed searchers face your Bureaucracy Test with Advantage.</p>",
+      "requirements": "Training (1) in Bureaucracy"
+    }
+  },
+  {
+    "name": "Modder",
+    "type": "talent",
+    "img": "icons/commodities/tech/computer-terminal-green.webp",
+    "system": {
+      "description": "<p>Advantage on Technology Tests with your personal device. Device immune to possession below your Computer Training level.</p>",
+      "requirements": "Focus (1) and Training (1) in Computers"
+    }
+  },
+  {
+    "name": "Mollifier",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to resolve situations when using the Talk It Out Action.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Naturally Lucky",
+    "type": "talent",
+    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "system": {
+      "description": "<p>Roll 2d6 vs GM's 1d6 on Rest. Win = +2 Luck. Lose = Threat +1.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Night Vision",
+    "type": "talent",
+    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "system": {
+      "description": "<p>No Disadvantage on Tests relating to sight in low light or darkness.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Observant",
+    "type": "talent",
+    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "system": {
+      "description": "<p>Advantage to spot hidden enemies. Natural Awareness +1. No Defence penalty vs hidden attackers.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Obvious Threat",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>While within Close Range of an enemy, its Defence decreases one step against Attacks from anyone but you.</p>",
+      "requirements": "Training (2) in Presence"
+    }
+  },
+  {
+    "name": "Opportunist",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>Once per round, make an Attack when an opponent attempts to move away from you.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Orientation",
+    "type": "talent",
+    "img": "icons/tools/navigation/map-marked-green.webp",
+    "system": {
+      "description": "<p>Can always orient north. Find things in known spaces in 1 Action. Can adapt to alien spatial laws in 1 minute.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Patient Strike",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>Delay your turn to act last, but increase Melee and Accuracy by one step.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Percussive Maintenance",
+    "type": "talent",
+    "img": "icons/tools/hand/hammer-and-nail.webp",
+    "system": {
+      "description": "<p>Double the dice gained from Training in Engineering to fix something for one last use before it breaks fully.</p>",
+      "requirements": "Training (1) in Engineering"
+    }
+  },
+  {
+    "name": "Pierce Defences",
+    "type": "talent",
+    "img": "icons/skills/targeting/crosshair-pointed-orange.webp",
+    "system": {
+      "description": "<p>Ignore a point of Armour for every 6 on an Attack with a Piercing weapon.</p>",
+      "requirements": "Training (1) in Awareness"
+    }
+  },
+  {
+    "name": "Point Blank Range",
+    "type": "talent",
+    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "system": {
+      "description": "<p>No penalty to Accuracy when using a ranged weapon at Close Range.</p>",
+      "requirements": "Training (1) and Focus (1) in Ranged Skill"
+    }
+  },
+  {
+    "name": "Prepared",
+    "type": "talent",
+    "img": "icons/skills/targeting/crosshair-pointed-orange.webp",
+    "system": {
+      "description": "<p>Add 1d6 to Tests made during your first turn in combat.</p>",
+      "requirements": "Training (1) and Focus (1) in Awareness"
+    }
+  },
+  {
+    "name": "Pressing Attack",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>If you roll a 6 on a melee Attack, use a Free Action to Shove the target (and optionally knock Prone).</p>",
+      "requirements": "Training (1) or Focus (1) in Might"
+    }
+  },
+  {
+    "name": "Project Planning",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>You are an expert at creating project plans and assigning workloads.</p>",
+      "requirements": "Mind (3)"
+    }
+  },
+  {
+    "name": "Quick Reload",
+    "type": "talent",
+    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "system": {
+      "description": "<p>Ignore the Reload Trait on any weapon you use.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Red Tape",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>Advantage on any Test when requisitioning items, filing paperwork, and expediting a request for support.</p>",
+      "requirements": "Training (1) and Focus (1) in Bureaucracy"
+    }
+  },
+  {
+    "name": "Relentless Assault",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>While wielding a melee weapon in each hand, your Melee increases by one step.</p>",
+      "requirements": "Training (1) and Focus (1) in Close Combat Skill"
+    }
+  },
+  {
+    "name": "Retrievals Specialist",
+    "type": "talent",
+    "img": "icons/tools/navigation/magnifying-glass.webp",
+    "system": {
+      "description": "<p>Advantage to locate lost/hidden items. Ignore Subtle penalties. Can catch a dropped item as a Free Action.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Ricochet",
+    "type": "talent",
+    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "system": {
+      "description": "<p>When you make an Attack with a ranged weapon, the weapon gains the Spread Trait.</p>",
+      "requirements": "Training (2) and Focus (2) in Ranged Skill"
+    }
+  },
+  {
+    "name": "Ruthless",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>When you win an Opposed Test, add 1 success for each level of Training in Resolve.</p>",
+      "requirements": "Training (1) in Resolve"
+    }
+  },
+  {
+    "name": "Scholar",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>Choose a specific subject to master. Double the dice from Training in Academics/Science for related Tests.</p>",
+      "requirements": "Training (1) and Focus (1) in Academics or Science"
+    }
+  },
+  {
+    "name": "Secrets of Sorcery",
+    "type": "talent",
+    "img": "icons/magic/symbols/star-inverted-yellow.webp",
+    "system": {
+      "description": "<p>Identify and cast Level 5 spells (requires Computational Sorcerer or Traditional Magician).</p>",
+      "requirements": "Mind (4) and Training (4) in Magic"
+    }
+  },
+  {
+    "name": "Sever",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-sword-fast-blue.webp",
+    "system": {
+      "description": "<p>If you get a 6 on an Attack with a Slashing weapon, target is Prone and takes 1 Damage (ignoring Armour) on Move.</p>",
+      "requirements": "Training (1) in Medicine, a Slashing weapon"
+    }
+  },
+  {
+    "name": "Sleight of Hand",
+    "type": "talent",
+    "img": "icons/skills/social/theft-pickpocket-bribery-brown.webp",
+    "system": {
+      "description": "<p>Advantage on Tests to distract/misdirect, steal or hide items. Can conceal a palm-sized object even if searched.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Speed Freak",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>Grants the driver an extra Action in a round without having to spend Adrenaline.</p>",
+      "requirements": "Training (2) in Reflexes, Licence"
+    }
+  },
+  {
+    "name": "Speed Reading",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>Read books in an hour. Fast study for temporary knowledge (piloting, spells) at Disadvantage.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Stalwart",
+    "type": "talent",
+    "img": "icons/magic/defensive/shield-barrier-blue.webp",
+    "system": {
+      "description": "<p>When taking the Defend Action, Defence increases by one step. Advantage on Might Tests to block entry.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Stand and Fire",
+    "type": "talent",
+    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "system": {
+      "description": "<p>Once per round, when an enemy moves into your Zone, use a Free Action to make a ranged Attack against it.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Status",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>Advantage on Tests when throwing your weight around to requisition equipment or boss someone around.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Stay on Target",
+    "type": "talent",
+    "img": "icons/skills/targeting/crosshair-pointed-orange.webp",
+    "system": {
+      "description": "<p>When firing from a moving vehicle, Accuracy increases one step. Can make Called Shots with vehicle weapons (Large targets).</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Stay on Your Toes",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>Your Defence increases one step against Attacks made by enemies lower in the Initiative order than you.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Stirring Voice",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>When you take a Help Action, provide bonus dice from your Presence Training. Your voice is easily recognized.</p>",
+      "requirements": "Training (1) in Presence"
+    }
+  },
+  {
+    "name": "Studied Defence",
+    "type": "talent",
+    "img": "icons/magic/defensive/shield-barrier-blue.webp",
+    "system": {
+      "description": "<p>Spend Action to study enemy in sight. Until next Rest, Defence increases one step against their attacks.</p>",
+      "requirements": "Training (1) and Focus (1) in Awareness"
+    }
+  },
+  {
+    "name": "Sure-Footed",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>Ignore ground Difficult Terrain. Roll 1d6 when forced Prone; on a 6, stay standing. Stand up as Free Action.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Swagger",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>Advantage on Tests where confidence is key (bluffing, threats, areas access). People accept your claims.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Tactician",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>Action: Target ally can Attack an enemy. They add bonus dice equal to your Mind.</p>",
+      "requirements": "Military background"
+    }
+  },
+  {
+    "name": "Take Aim",
+    "type": "talent",
+    "img": "icons/skills/targeting/crosshair-pointed-orange.webp",
+    "system": {
+      "description": "<p>Action: Aim at target. Accuracy increases by steps equal to Focus in Dexterity for next attack.</p>",
+      "requirements": "Focus (1) in Dexterity"
+    }
+  },
+  {
+    "name": "Tech-Savvy",
+    "type": "talent",
+    "img": "icons/commodities/tech/computer-terminal-green.webp",
+    "system": {
+      "description": "<p>Double the dice gained from Training when operating or repairing electronic technology/computers.</p>",
+      "requirements": "Focus (1) in Technology"
+    }
+  },
+  {
+    "name": "Thoughtful",
+    "type": "talent",
+    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "system": {
+      "description": "<p>Double the dice gained from Training when making a Mind Test where you can take your time to think.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Tinkerer",
+    "type": "talent",
+    "img": "icons/tools/hand/hammer-and-nail.webp",
+    "system": {
+      "description": "<p>The Complexity of Tests to modify or repair existing items is reduced by 1.</p>",
+      "requirements": "Training (1) and Focus (1) in Engineering"
+    }
+  },
+  {
+    "name": "Tireless",
+    "type": "talent",
+    "img": "icons/skills/wounds/anatomy-organ-heart-red.webp",
+    "system": {
+      "description": "<p>Advantage on Endeavours. Let off with a warning the first time you fail Business As Usual.</p>",
+      "requirements": "Training (1) in Resolve and Fortitude"
+    }
+  },
+  {
+    "name": "Traditional Magician",
+    "type": "talent",
+    "img": "icons/magic/symbols/star-inverted-yellow.webp",
+    "system": {
+      "description": "<p>Ability to cast traditional/mental magic. Choose 4 known spells.</p>",
+      "requirements": "Training (1) and Focus (1) in Magic"
+    }
+  },
+  {
+    "name": "Underdog",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>If two or more enemies are within Close Range at start of turn, Melee increases one step.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Unnerving Grace",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>Use Stealth instead of Presence for Body (Presence) Tests with Advantage. People ignore your conspicuous creeping.</p>",
+      "requirements": "Body (4), Training (1) in Stealth"
+    }
+  },
+  {
+    "name": "Unstoppable Force",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>Ignore Difficult Terrain when Charging. Add 1d6 to dice pool for the attack.</p>",
+      "requirements": "Body (3), Training (1) in Close Combat Skill"
+    }
+  },
+  {
+    "name": "Up Close and Personal",
+    "type": "talent",
+    "img": "icons/skills/melee/strike-weapons-orange.webp",
+    "system": {
+      "description": "<p>Melee increases one step when making an unarmed attack or using a Subtle melee weapon.</p>",
+      "requirements": "Training (1) and Focus (2) in Close Combat Skill"
+    }
+  },
+  {
+    "name": "Vanish",
+    "type": "talent",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": {
+      "description": "<p>You can attempt to hide even when there is no cover or shadow.</p>",
+      "requirements": "Focus (1) in Stealth"
+    }
+  },
+  {
+    "name": "Vexation",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>When an enemy within Medium Range makes a Test, spend Adrenaline to remove dice equal to your Training in Zeal.</p>",
+      "requirements": "Training (1) in Zeal and Intuition"
+    }
+  },
+  {
+    "name": "Virtuoso",
+    "type": "talent",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": {
+      "description": "<p>You are a skilled performer, but you have exceptional talent with one type of performance in particular.</p>",
+      "requirements": "Focus (1) in Presence"
+    }
+  }
+]
