@@ -7,8 +7,8 @@
     </header>
 
     <nav class="sheet-tabs tabs" data-group="primary">
-        <a class="item" data-tab="description">Description</a>
-        <a class="item" data-tab="details">Details</a>
+        <a class="item" data-tab="description">{{localize "LAUNDRY.Description"}}</a>
+        <a class="item" data-tab="details">{{localize "LAUNDRY.Details"}}</a>
     </nav>
 
     <section class="sheet-body">
@@ -19,25 +19,73 @@
         <div class="tab details" data-group="primary" data-tab="details">
             {{#if (eq item.type "skill")}}
             <div class="form-group">
-                <label>Related Attribute</label>
+                <label>{{localize "LAUNDRY.RelatedAttribute"}}</label>
                 <select name="system.attribute">
                     {{selectOptions config.attributes selected=system.attribute labelAttr="label"}}
                 </select>
             </div>
             <div class="form-group">
-                <label>Training Level</label>
+                <label>{{localize "LAUNDRY.Training"}}</label>
                 <input type="number" name="system.training" value="{{system.training}}" min="0" max="5" />
             </div>
             <div class="form-group">
-                <label>Focus Level</label>
+                <label>{{localize "LAUNDRY.Focus"}}</label>
                 <input type="number" name="system.focus" value="{{system.focus}}" min="0" max="5" />
             </div>
             {{/if}}
 
             {{#if (eq item.type "weapon")}}
             <div class="form-group">
-                <label>Damage</label>
+                <label>{{localize "LAUNDRY.Damage"}}</label>
                 <input type="text" name="system.damage" value="{{system.damage}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Range"}}</label>
+                <input type="text" name="system.range" value="{{system.range}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Traits"}}</label>
+                <input type="text" name="system.traits" value="{{system.traits}}" />
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "armour")}}
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Protection"}}</label>
+                <input type="number" name="system.protection" value="{{system.protection}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Traits"}}</label>
+                <input type="text" name="system.traits" value="{{system.traits}}" />
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "gear")}}
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Quantity"}}</label>
+                <input type="number" name="system.quantity" value="{{system.quantity}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Weight"}}</label>
+                <input type="number" name="system.weight" value="{{system.weight}}" />
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "talent")}}
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Requirements"}}</label>
+                <input type="text" name="system.requirements" value="{{system.requirements}}" />
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "spell")}}
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Level"}}</label>
+                <input type="number" name="system.level" value="{{system.level}}" />
+            </div>
+            <div class="form-group">
+                <label>{{localize "LAUNDRY.Cost"}}</label>
+                <input type="text" name="system.cost" value="{{system.cost}}" />
             </div>
             {{/if}}
         </div>

@@ -14,9 +14,16 @@
   "styles": [
     "styles/laundry-rpg.css"
   ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
   "packs": [],
-  "url": "",
-  "manifest": "",
-  "download": "",
+  "url": "https://github.com/[YOUR_GITHUB_USERNAME]/[YOUR_REPO_NAME]",
+  "manifest": "https://github.com/[YOUR_GITHUB_USERNAME]/[YOUR_REPO_NAME]/releases/latest/download/system.json",
+  "download": "https://github.com/[YOUR_GITHUB_USERNAME]/[YOUR_REPO_NAME]/releases/latest/download/system.zip",
   "license": "LICENSE"
 }

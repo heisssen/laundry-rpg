@@ -1,54 +1,188 @@
-/* Basic styling for The Laundry RPG system */
+/* The Laundry RPG System Styles */
 
+/* Base Styles */
 .laundry-rpg {
   font-family: "Courier New", Courier, monospace;
+  color: #333;
 }
 
-.window-app {
-  font-family: "Courier New", Courier, monospace;
+.window-app .window-content {
+  background: #fdfdfd;
+  background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><text x="10" y="50" font-family="Courier New" font-size="12" fill="rgba(0,0,0,0.05)" transform="rotate(-45 10 50)">TOP SECRET</text></svg>');
 }
 
+/* Header */
 .sheet-header {
-  border-bottom: 2px solid #000;
-  margin-bottom: 10px;
-  padding-bottom: 5px;
+  border-bottom: 2px solid #333;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
 }
 
-/* Tab navigation */
-.sheet-tabs {
-  display: flex;
-  list-style: none;
-  border-bottom: 1px solid #aaa;
-  margin-bottom: 10px;
+.sheet-header img.profile-img {
+  flex: 0 0 100px;
+  height: 100px;
+  margin-right: 15px;
+  border: 1px solid #777;
+  padding: 2px;
+  background: #fff;
+}
+
+.sheet-header h1.charname {
+  flex: 1;
+  margin: 0;
   padding: 0;
 }
 
-.sheet-tabs .item {
-  padding: 5px 10px;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.sheet-tabs .item.active {
-  border: 1px solid #aaa;
-  border-bottom: 1px solid white;
-  margin-bottom: -1px;
+.sheet-header h1.charname input {
+  width: 100%;
+  height: 40px;
+  font-size: 24px;
+  border: none;
+  border-bottom: 1px solid #777;
+  background: transparent;
+  font-family: "Courier New", Courier, monospace;
   font-weight: bold;
 }
 
-/* Grid layout for attributes */
-.attributes-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 10px;
+/* Resources Grid */
+.resources {
+  margin-top: 10px;
 }
 
 .resource {
-    text-align: center;
+  text-align: center;
+  border: 1px solid #ccc;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 0 5px;
+}
+
+.resource-label {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 3px;
 }
 
 .resource input {
-    width: 50px;
-    text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  background: transparent;
+  border-bottom: 1px solid #000;
+}
+
+/* Tabs */
+.sheet-tabs {
+  border-bottom: 2px solid #333;
+  margin-bottom: 15px;
+}
+
+.sheet-tabs .item {
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #555;
+  border: 1px solid transparent;
+  border-radius: 5px 5px 0 0;
+}
+
+.sheet-tabs .item.active {
+  color: #000;
+  border: 1px solid #333;
+  border-bottom: 1px solid #fdfdfd;
+  background: #fdfdfd;
+  margin-bottom: -2px;
+  text-decoration: none;
+  text-shadow: none;
+}
+
+/* Lists */
+.items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.items-list .item-header {
+  background: #e0e0e0;
+  border: 1px solid #aaa;
+  font-weight: bold;
+  padding: 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.items-list .item {
+  align-items: center;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.items-list .item:last-child {
+  border-bottom: none;
+}
+
+.items-list .item-image {
+  flex: 0 0 24px;
+  margin-right: 5px;
+}
+
+.items-list .item-image img {
+  border: none;
+}
+
+.items-list .item-name {
+  flex: 2;
+  margin: 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.items-list .item-controls {
+  flex: 0 0 50px;
+  text-align: right;
+}
+
+.item-control {
+  margin-left: 5px;
+  color: #555;
+}
+
+.item-control:hover {
+  color: #000;
+  text-shadow: 0 0 2px #aaa;
+}
+
+/* Ladder Ratings */
+h3 {
+  border-bottom: 1px dashed #777;
+  padding-bottom: 3px;
+  margin-top: 15px;
+}
+
+/* Rollable items */
+.rollable {
+  cursor: pointer;
+}
+
+.rollable:hover {
+  color: darkred;
+  text-shadow: 0 0 2px #f00;
+}
+
+/* Grid Utilities */
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.grid-2col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3col {
+  grid-template-columns: repeat(3, 1fr);
 }
