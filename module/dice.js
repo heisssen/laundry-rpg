@@ -4,24 +4,12 @@
  * Mechanics:
  *  • Roll a pool of d6s.
  *  • Each die equal to or above the Difficulty Number (DN, default 4) is a success.
- *  • Focus points are allocated manually by the player after rolling.
+ *  • Focus is applied manually in chat by right-clicking individual dice.
  *  • Results are displayed in a styled chat card.
  */
 
 /**
  * Open a roll dialog then execute the roll.
- *
- * @param {object}  opts
- * @param {number}  opts.pool     Base dice pool (Attribute + Training).
- * @param {number}  opts.focus    Focus points available.
- * @param {string}  [opts.flavor] Chat message flavour text.
- * @param {number}  [opts.dn]     Difficulty Number (default 4).
- * @param {number}  [opts.complexity] Successes required (default 1).
- * @param {string}  [opts.damage] Damage formula to show (weapons only).
- * @param {number}  [opts.difficultyShift] Advantage/Disadvantage shift:
- *                                         -2 greater advantage, -1 advantage,
- *                                          0 normal, +1 disadvantage, +2 greater disadvantage.
- * @param {boolean} [opts.prompt] Show roll dialog first (default true).
  */
 export async function rollDice({
     pool = 1,
@@ -89,170 +77,181 @@ export async function rollDice({
     }).render(true);
 }
 
+export function bindDiceChatContextMenu(message, html) {
+    const state = _getDiceState(message);
+    if (!state) return;
+
+    html.find(".laundry-die").off("contextmenu.laundry-focus").on("contextmenu.laundry-focus", async (ev) => {
+        ev.preventDefault();
+        if (!message.isOwner) return;
+
+        const idx = Number(ev.currentTarget.dataset.dieIndex ?? -1);
+        if (idx < 0 || idx >= state.rawDice.length) return;
+
+        const spent = Number(state.spentByDie[idx] ?? 0);
+        const remaining = _focusRemaining(state);
+
+        const content = `
+        <div class="laundry-focus-context">
+            <p>Die ${idx + 1}: <strong>${state.rawDice[idx]} -> ${state.rawDice[idx] + spent}</strong></p>
+            <p>Focus remaining: <strong>${remaining}</strong></p>
+        </div>`;
+
+        new Dialog({
+            title: "Focus Options",
+            content,
+            buttons: {
+                apply: {
+                    icon: '<i class="fas fa-plus"></i>',
+                    label: "Apply Focus",
+                    callback: async () => {
+                        if (_focusRemaining(state) <= 0) {
+                            ui.notifications.warn("No Focus remaining.");
+                            return;
+                        }
+                        state.spentByDie[idx] = Number(state.spentByDie[idx] ?? 0) + 1;
+                        await _updateDiceMessage(message, state);
+                    }
+                },
+                remove: {
+                    icon: '<i class="fas fa-minus"></i>',
+                    label: "Remove Focus",
+                    callback: async () => {
+                        const current = Number(state.spentByDie[idx] ?? 0);
+                        if (current <= 0) return;
+                        state.spentByDie[idx] = current - 1;
+                        await _updateDiceMessage(message, state);
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "apply"
+        }).render(true);
+    });
+}
+
 // ─── Internal ─────────────────────────────────────────────────────────────────
 
 async function _executeRoll(pool, focus, dn, complexity, flavor, damage, difficultyShift = 0) {
     const shift = Math.max(-2, Math.min(2, difficultyShift || 0));
     const effectiveDn = Math.max(2, Math.min(6, (dn || 4) + shift));
 
-    // Build and evaluate the roll (v12+ API — no async option needed)
     const roll = new Roll(`${pool}d6`);
     await roll.evaluate();
 
-    const rawDice = roll.terms[0].results.map(d => d.result);
-    const focusAllocations = await _allocateFocusManually(rawDice, focus);
-    const results = rawDice.map((val, idx) => {
-        const spent = focusAllocations[idx] ?? 0;
+    const state = {
+        pool,
+        focus: Math.max(0, Number(focus) || 0),
+        dn,
+        complexity,
+        shift,
+        effectiveDn,
+        damage: damage ?? "",
+        rawDice: roll.terms[0].results.map(d => d.result),
+        spentByDie: []
+    };
+    state.spentByDie = state.rawDice.map(() => 0);
+
+    const content = _renderDiceContent(state);
+
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker(),
+        flavor,
+        content,
+        rolls: [roll],
+        flags: {
+            "laundry-rpg": {
+                diceState: state
+            }
+        },
+        sound: CONFIG.sounds.dice
+    });
+}
+
+function _getDiceState(message) {
+    return foundry.utils.deepClone(message.getFlag("laundry-rpg", "diceState"));
+}
+
+function _focusRemaining(state) {
+    const spent = (state.spentByDie ?? []).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    return Math.max(0, (Number(state.focus) || 0) - spent);
+}
+
+function _buildResults(state) {
+    const rawDice = state.rawDice ?? [];
+    const spentByDie = state.spentByDie ?? [];
+    const effectiveDn = Number(state.effectiveDn ?? state.dn ?? 4);
+    return rawDice.map((val, idx) => {
+        const spent = Number(spentByDie[idx] ?? 0);
         const modified = val + spent;
         return {
+            index: idx,
             original: val,
+            spent,
             modified,
             success: modified >= effectiveDn,
-            boosted: spent > 0,
-            spent
+            boosted: spent > 0
         };
     });
+}
 
+function _renderDiceContent(state) {
+    const results = _buildResults(state);
     const successes = results.filter(r => r.success).length;
-    const focusUsed = results.reduce((sum, r) => sum + (r.spent ?? 0), 0);
-    const isSuccess = successes >= complexity;
+    const focusUsed = results.reduce((sum, r) => sum + r.spent, 0);
+    const focusRemaining = _focusRemaining(state);
+    const complexity = Number(state.complexity ?? 1);
     const margin = successes - complexity;
+    const isSuccess = successes >= complexity;
 
-    let outcomeLabel = isSuccess ? "Success" : "Failure";
-    let benefitLabel = "";
-    if (isSuccess) {
-        if (margin >= 3) benefitLabel = "Major Benefit";
-        else if (margin >= 1) benefitLabel = "Minor Benefit";
-    }
+    const shift = Number(state.shift ?? 0);
     const shiftLabel = shift === 0
         ? "No Advantage"
         : (shift < 0
             ? (shift === -1 ? "Advantage" : "Greater Advantage")
             : (shift === 1 ? "Disadvantage" : "Greater Disadvantage"));
 
-    // ─── Chat card ────────────────────────────────────────────────────────────
+    let benefitLabel = "";
+    if (isSuccess) {
+        if (margin >= 3) benefitLabel = "Major Benefit";
+        else if (margin >= 1) benefitLabel = "Minor Benefit";
+    }
 
     const diceHtml = results.map(r => {
-        const cls = ["roll", "die", "d6", r.success ? "success" : "failure", r.boosted ? "boosted" : ""].join(" ").trim();
-        const display = r.boosted ? `${r.original}→${r.modified}` : r.modified;
-        return `<li class="${cls}" title="${r.boosted ? `Focus spent: +${r.spent}` : ""}">${display}</li>`;
+        const cls = ["roll", "die", "d6", "laundry-die", r.success ? "success" : "failure", r.boosted ? "boosted" : ""]
+            .join(" ")
+            .trim();
+        const display = r.boosted ? `${r.original}->${r.modified}` : r.modified;
+        const title = r.boosted ? `Focus spent: +${r.spent} (right-click for focus options)` : "Right-click for focus options";
+        return `<li class="${cls}" data-die-index="${r.index}" title="${title}">${display}</li>`;
     }).join("");
 
-    const damageSection = damage
-        ? `<div class="damage-section"><strong>Damage:</strong> ${damage}</div>`
+    const damageSection = state.damage
+        ? `<div class="damage-section"><strong>Damage:</strong> ${state.damage}</div>`
         : "";
 
-    const content = `
+    return `
     <div class="laundry-dice-roll">
-        <div class="dice-formula">${pool}d6 vs DN ${dn}:${complexity} (${shiftLabel} -> effective DN ${effectiveDn})</div>
+        <div class="dice-formula">${state.pool}d6 vs DN ${state.dn}:${state.complexity} (${shiftLabel} -> effective DN ${state.effectiveDn})</div>
         <ol class="dice-rolls">${diceHtml}</ol>
         <div class="dice-outcome ${isSuccess ? "outcome-success" : "outcome-failure"}">
-            <strong>${outcomeLabel}</strong>
+            <strong>${isSuccess ? "Success" : "Failure"}</strong>
             <span class="success-count">(Successes: ${successes}/${complexity})</span>
             ${benefitLabel ? `<span class="benefit-label">${benefitLabel}</span>` : ""}
-            ${focusUsed > 0 ? `<span class="focus-spent">(Focus spent: ${focusUsed})</span>` : ""}
+            <span class="focus-spent">(Focus used: ${focusUsed}/${state.focus}, remaining: ${focusRemaining})</span>
         </div>
         ${damageSection}
     </div>`;
-
-    // In Foundry v12+ pass rolls array; omit deprecated `type` field.
-    await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker(),
-        flavor,
-        content,
-        rolls: [roll],
-        sound: CONFIG.sounds.dice
-    });
 }
 
-async function _allocateFocusManually(rawDice, focus) {
-    const totalFocus = Math.max(0, Number(focus) || 0);
-    if (!totalFocus) return rawDice.map(() => 0);
-
-    const allocations = rawDice.map(() => 0);
-    const diceRows = rawDice.map((die, idx) => `
-        <div class="focus-die-row" data-idx="${idx}">
-            <button type="button" class="focus-die-button" data-idx="${idx}" title="Click to spend 1 Focus on this die">
-                <span class="focus-original">${die}</span>
-                <span class="focus-arrow">→</span>
-                <span class="focus-modified" data-idx="${idx}">${die}</span>
-            </button>
-            <button type="button" class="focus-remove" data-idx="${idx}" title="Remove 1 Focus from this die">-1</button>
-            <span class="focus-spent-label">+<span class="focus-spent" data-idx="${idx}">0</span></span>
-        </div>
-    `).join("");
-
-    const content = `
-    <form class="laundry-focus-dialog">
-        <p>You have <strong>${totalFocus}</strong> Focus to allocate (+1 per point).</p>
-        <p>Click a die to spend Focus on it. You can split points or stack them on one die.</p>
-        <p>Remaining Focus: <strong class="focus-remaining">${totalFocus}</strong></p>
-        <div class="focus-dice-grid">${diceRows}</div>
-    </form>`;
-
-    return new Promise(resolve => {
-        const dialog = new Dialog({
-            title: "Allocate Focus",
-            content,
-            buttons: {
-                apply: {
-                    icon: '<i class="fas fa-check"></i>',
-                    label: "Apply Focus",
-                    callback: () => resolve([...allocations])
-                },
-                skip: {
-                    icon: '<i class="fas fa-forward"></i>',
-                    label: "Skip Focus",
-                    callback: () => resolve(rawDice.map(() => 0))
-                }
-            },
-            default: "apply",
-            close: () => resolve(rawDice.map(() => 0))
-        });
-
-        dialog.render(true);
-
-        const attachHandlers = () => {
-            const html = dialog.element;
-            if (!html?.length) {
-                setTimeout(attachHandlers, 0);
-                return;
+async function _updateDiceMessage(message, state) {
+    const content = _renderDiceContent(state);
+    await message.update({
+        content,
+        flags: {
+            "laundry-rpg": {
+                diceState: state
             }
-
-            const updateUi = () => {
-                const spentTotal = allocations.reduce((a, b) => a + b, 0);
-                const remaining = Math.max(0, totalFocus - spentTotal);
-                html.find(".focus-remaining").text(remaining);
-                rawDice.forEach((die, idx) => {
-                    html.find(`.focus-spent[data-idx="${idx}"]`).text(allocations[idx]);
-                    html.find(`.focus-modified[data-idx="${idx}"]`).text(die + allocations[idx]);
-                });
-                return remaining;
-            };
-
-            const bind = () => {
-                html.find(".focus-die-button").on("click", (ev) => {
-                    ev.preventDefault();
-                    const idx = Number(ev.currentTarget.dataset.idx ?? -1);
-                    if (idx < 0) return;
-                    const remaining = updateUi();
-                    if (remaining <= 0) return;
-                    allocations[idx] += 1;
-                    updateUi();
-                });
-                html.find(".focus-remove").on("click", (ev) => {
-                    ev.preventDefault();
-                    const idx = Number(ev.currentTarget.dataset.idx ?? -1);
-                    if (idx < 0) return;
-                    allocations[idx] = Math.max(0, allocations[idx] - 1);
-                    updateUi();
-                });
-            };
-
-            updateUi();
-            bind();
-        };
-
-        attachHandlers();
+        }
     });
 }

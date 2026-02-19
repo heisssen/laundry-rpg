@@ -3,6 +3,7 @@ import { LaundryActorSheet } from "./actor/actor-sheet.js";
 import { LaundryItem } from "./item/item.js";
 import { LaundryItemSheet } from "./item/item-sheet.js";
 import { migrateWorld } from "./migration.js";
+import { bindDiceChatContextMenu } from "./dice.js";
 
 /**
  * Global system configuration — consumed by templates via `config.*`
@@ -104,6 +105,10 @@ Hooks.once("ready", async function () {
     } catch (err) {
         console.error("Laundry RPG | Migration failed", err);
     }
+});
+
+Hooks.on("renderChatMessage", (message, html) => {
+    bindDiceChatContextMenu(message, html);
 });
 
 async function preloadTemplates() {
