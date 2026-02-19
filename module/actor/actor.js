@@ -27,10 +27,17 @@ export class LaundryActor extends Actor {
     // ─── Characters ──────────────────────────────────────────────────────────
 
     _prepareCharacterData(sys) {
-        const body   = sys.attributes.body.value   ?? 1;
-        const mind   = sys.attributes.mind.value   ?? 1;
+        // Safeguard: Ensure derived keys exist (migrating old actors)
+        sys.derived = sys.derived || {};
+        sys.derived.toughness = sys.derived.toughness || { value: 0 };
+        sys.derived.injuries = sys.derived.injuries || { value: 0, max: 0 };
+        sys.derived.adrenaline = sys.derived.adrenaline || { value: 0, max: 0 };
+        sys.derived.bsrp = sys.derived.bsrp || { value: 0, max: 0 };
+
+        const body = sys.attributes.body.value ?? 1;
+        const mind = sys.attributes.mind.value ?? 1;
         const spirit = sys.attributes.spirit.value ?? 1;
-        const total  = body + mind + spirit;
+        const total = body + mind + spirit;
 
         // Toughness = Body + Mind + Spirit
         sys.derived.toughness.value = total;
@@ -86,8 +93,8 @@ export class LaundryActor extends Actor {
 
         // 1 · Attributes
         if (sys.attributes) {
-            updateData["system.attributes.body.value"]   = sys.attributes.body;
-            updateData["system.attributes.mind.value"]   = sys.attributes.mind;
+            updateData["system.attributes.body.value"] = sys.attributes.body;
+            updateData["system.attributes.mind.value"] = sys.attributes.mind;
             updateData["system.attributes.spirit.value"] = sys.attributes.spirit;
         }
 
@@ -99,7 +106,7 @@ export class LaundryActor extends Actor {
         // 2 · Core Skills (look up in compendium first, fall back to stub)
         if (sys.coreSkills) {
             const skillNames = sys.coreSkills.split(",").map(s => s.trim()).filter(Boolean);
-            const pack       = game.packs.get("laundry-rpg.skills");
+            const pack = game.packs.get("laundry-rpg.skills");
             const skillItems = [];
 
             if (pack) {
@@ -124,8 +131,8 @@ export class LaundryActor extends Actor {
 
         // 3 · Starting Equipment
         if (sys.equipment) {
-            const equipNames  = sys.equipment.split(",").map(e => e.trim()).filter(Boolean);
-            const equipItems  = equipNames.map(name => ({
+            const equipNames = sys.equipment.split(",").map(e => e.trim()).filter(Boolean);
+            const equipItems = equipNames.map(name => ({
                 name, type: "gear",
                 img: "icons/svg/item-bag.svg",
                 system: { quantity: 1, weight: 0 }
