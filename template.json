@@ -1,0 +1,120 @@
+{
+    "Actor": {
+        "types": [
+            "character",
+            "npc"
+        ],
+        "templates": {
+            "base": {
+                "attributes": {
+                    "body": {
+                        "value": 1
+                    },
+                    "mind": {
+                        "value": 1
+                    },
+                    "spirit": {
+                        "value": 1
+                    }
+                },
+                "derived": {
+                    "toughness": {
+                        "value": 0,
+                        "max": 0
+                    },
+                    "injuries": {
+                        "value": 0,
+                        "max": 0
+                    },
+                    "adrenaline": {
+                        "value": 0,
+                        "max": 0
+                    },
+                    "luck": {
+                        "value": 0,
+                        "max": 0
+                    }
+                },
+                "details": {
+                    "assignment": "",
+                    "department": "",
+                    "xp": {
+                        "value": 0,
+                        "unspent": 0
+                    }
+                }
+            }
+        },
+        "character": {
+            "templates": [
+                "base"
+            ],
+            "biography": ""
+        },
+        "npc": {
+            "templates": [
+                "base"
+            ],
+            "biography": ""
+        }
+    },
+    "Item": {
+        "types": [
+            "skill",
+            "talent",
+            "weapon",
+            "armour",
+            "gear",
+            "spell"
+        ],
+        "templates": {
+            "base": {
+                "description": ""
+            }
+        },
+        "skill": {
+            "templates": [
+                "base"
+            ],
+            "attribute": "mind",
+            "training": 0,
+            "focus": 0
+        },
+        "talent": {
+            "templates": [
+                "base"
+            ],
+            "requirements": ""
+        },
+        "weapon": {
+            "templates": [
+                "base"
+            ],
+            "damage": "1d6",
+            "range": "close",
+            "skill": "Ranged Combat",
+            "traits": ""
+        },
+        "armour": {
+            "templates": [
+                "base"
+            ],
+            "protection": 0,
+            "traits": ""
+        },
+        "gear": {
+            "templates": [
+                "base"
+            ],
+            "quantity": 1,
+            "weight": 0
+        },
+        "spell": {
+            "templates": [
+                "base"
+            ],
+            "level": 1,
+            "cost": ""
+        }
+    }
+}

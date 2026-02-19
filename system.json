@@ -1,0 +1,22 @@
+{
+  "id": "laundry-rpg",
+  "title": "The Laundry RPG",
+  "description": "A system for The Laundry Roleplaying Game (Cubicle 7) in Foundry VTT.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "11"
+  },
+  "author": "Antigravity",
+  "esmodules": [
+    "module/laundry-rpg.js"
+  ],
+  "styles": [
+    "styles/laundry-rpg.css"
+  ],
+  "packs": [],
+  "url": "",
+  "manifest": "",
+  "download": "",
+  "license": "LICENSE"
+}

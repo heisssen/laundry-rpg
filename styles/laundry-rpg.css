@@ -1,0 +1,54 @@
+/* Basic styling for The Laundry RPG system */
+
+.laundry-rpg {
+  font-family: "Courier New", Courier, monospace;
+}
+
+.window-app {
+  font-family: "Courier New", Courier, monospace;
+}
+
+.sheet-header {
+  border-bottom: 2px solid #000;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+}
+
+/* Tab navigation */
+.sheet-tabs {
+  display: flex;
+  list-style: none;
+  border-bottom: 1px solid #aaa;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.sheet-tabs .item {
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.sheet-tabs .item.active {
+  border: 1px solid #aaa;
+  border-bottom: 1px solid white;
+  margin-bottom: -1px;
+  font-weight: bold;
+}
+
+/* Grid layout for attributes */
+.attributes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.resource {
+    text-align: center;
+}
+
+.resource input {
+    width: 50px;
+    text-align: center;
+}

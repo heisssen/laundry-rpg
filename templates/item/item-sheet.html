@@ -1,0 +1,45 @@
+<form class="{{cssClass}}" autocomplete="off">
+    <header class="sheet-header">
+        <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}" />
+        <div class="header-fields">
+            <h1 class="charname"><input name="name" type="text" value="{{item.name}}" placeholder="Name" /></h1>
+        </div>
+    </header>
+
+    <nav class="sheet-tabs tabs" data-group="primary">
+        <a class="item" data-tab="description">Description</a>
+        <a class="item" data-tab="details">Details</a>
+    </nav>
+
+    <section class="sheet-body">
+        <div class="tab description" data-group="primary" data-tab="description">
+            {{editor system.description target="system.description" button=true owner=owner editable=editable}}
+        </div>
+
+        <div class="tab details" data-group="primary" data-tab="details">
+            {{#if (eq item.type "skill")}}
+            <div class="form-group">
+                <label>Related Attribute</label>
+                <select name="system.attribute">
+                    {{selectOptions config.attributes selected=system.attribute labelAttr="label"}}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Training Level</label>
+                <input type="number" name="system.training" value="{{system.training}}" min="0" max="5" />
+            </div>
+            <div class="form-group">
+                <label>Focus Level</label>
+                <input type="number" name="system.focus" value="{{system.focus}}" min="0" max="5" />
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "weapon")}}
+            <div class="form-group">
+                <label>Damage</label>
+                <input type="text" name="system.damage" value="{{system.damage}}" />
+            </div>
+            {{/if}}
+        </div>
+    </section>
+</form>
