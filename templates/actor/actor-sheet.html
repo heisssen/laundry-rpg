@@ -38,15 +38,27 @@
 
             {{!-- Core Attributes --}}
             <div class="attributes-grid">
-                {{#each system.attributes as |attr key|}}
-                <div class="attr-block rollable" data-roll-type="attribute" data-attribute="{{key}}"
-                     title="Click to roll {{key}}">
-                    <span class="attr-label">{{localize (concat "LAUNDRY." (capitalize key))}}</span>
-                    <input type="number" name="system.attributes.{{key}}.value"
-                           value="{{attr.value}}" data-dtype="Number" min="1" max="10"
+                <div class="attr-block rollable" data-roll-type="attribute" data-attribute="body"
+                     title="Click to roll body">
+                    <span class="attr-label">{{localize "LAUNDRY.Body"}}</span>
+                    <input type="number" name="system.attributes.body.value"
+                           value="{{system.attributes.body.value}}" data-dtype="Number" min="1" max="10"
                            onclick="event.stopPropagation()" />
                 </div>
-                {{/each}}
+                <div class="attr-block rollable" data-roll-type="attribute" data-attribute="mind"
+                     title="Click to roll mind">
+                    <span class="attr-label">{{localize "LAUNDRY.Mind"}}</span>
+                    <input type="number" name="system.attributes.mind.value"
+                           value="{{system.attributes.mind.value}}" data-dtype="Number" min="1" max="10"
+                           onclick="event.stopPropagation()" />
+                </div>
+                <div class="attr-block rollable" data-roll-type="attribute" data-attribute="spirit"
+                     title="Click to roll spirit">
+                    <span class="attr-label">{{localize "LAUNDRY.Spirit"}}</span>
+                    <input type="number" name="system.attributes.spirit.value"
+                           value="{{system.attributes.spirit.value}}" data-dtype="Number" min="1" max="10"
+                           onclick="event.stopPropagation()" />
+                </div>
             </div>
         </div>
     </header>

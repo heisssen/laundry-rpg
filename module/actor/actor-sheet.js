@@ -17,7 +17,10 @@ export class LaundryActorSheet extends ActorSheet {
     /** @override */
     getData() {
         const context = super.getData();
-        const actorData = context.actor.system;
+        const actorData = context.actor?.system ?? {};
+        const items = Array.isArray(context.items)
+            ? context.items
+            : this.actor.items.contents.map(i => i.toObject());
 
         context.system = actorData;
         context.flags  = context.actor.flags;
@@ -26,25 +29,27 @@ export class LaundryActorSheet extends ActorSheet {
         context.config = CONFIG.LAUNDRY;
 
         // Sort items by type for convenience
-        context.skills     = context.items.filter(i => i.type === "skill");
-        context.talents    = context.items.filter(i => i.type === "talent");
-        context.gear       = context.items.filter(i => ["gear", "weapon", "armour"].includes(i.type));
-        context.spells     = context.items.filter(i => i.type === "spell");
+        context.skills     = items.filter(i => i.type === "skill");
+        context.talents    = items.filter(i => i.type === "talent");
+        context.gear       = items.filter(i => ["gear", "weapon", "armour"].includes(i.type));
+        context.spells     = items.filter(i => i.type === "spell");
 
         // The Ladder combat ratings
+        const bodyValue = actorData.attributes?.body?.value ?? 1;
+
         context.ladder = {
             melee:    this._getLadderRating(
-                actorData.attributes.body.value,
-                this._getSkillTraining(context.items, "Close Combat")
+                bodyValue,
+                this._getSkillTraining(items, "Close Combat")
             ),
             accuracy: this._getLadderRating(
-                actorData.attributes.body.value,
-                this._getSkillTraining(context.items, "Ranged") ||
-                this._getSkillTraining(context.items, "Ranged Combat")
+                bodyValue,
+                this._getSkillTraining(items, "Ranged") ||
+                this._getSkillTraining(items, "Ranged Combat")
             ),
             defence:  this._getLadderRating(
-                actorData.attributes.body.value,
-                this._getSkillTraining(context.items, "Reflexes")
+                bodyValue,
+                this._getSkillTraining(items, "Reflexes")
             )
         };
 

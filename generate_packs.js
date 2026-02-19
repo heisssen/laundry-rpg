@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { SKILLS, TALENTS, ASSIGNMENTS } = require('./content-data.js'); // We'll need to read this node-style or just embed data
 
 // Since we are in a node environment in the agent, but the file is ES6...
 // I will rewrite this script to be self-contained for the run_command tool.
@@ -113,7 +112,7 @@ function generateSkills() {
         };
         lines.push(JSON.stringify(item));
     });
-    fs.writeFileSync('/mnt/Data/laundry/laundry-rpg/packs/skills.db', lines.join('\n'));
+    fs.writeFileSync(path.join(__dirname, 'packs', 'skills.db'), lines.join('\n'));
 }
 
 function generateTalents() {
@@ -133,7 +132,7 @@ function generateTalents() {
         };
         lines.push(JSON.stringify(item));
     });
-    fs.writeFileSync('/mnt/Data/laundry/laundry-rpg/packs/talents.db', lines.join('\n'));
+    fs.writeFileSync(path.join(__dirname, 'packs', 'talents.db'), lines.join('\n'));
 }
 
 function generateAssignments() {
@@ -150,7 +149,7 @@ function generateAssignments() {
         };
         lines.push(JSON.stringify(item));
     });
-    fs.writeFileSync('/mnt/Data/laundry/laundry-rpg/packs/assignments.db', lines.join('\n'));
+    fs.writeFileSync(path.join(__dirname, 'packs', 'assignments.db'), lines.join('\n'));
 }
 
 generateSkills();
