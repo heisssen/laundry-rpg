@@ -32,14 +32,13 @@ export class LaundryItem extends Item {
         const attrName  = this.system.attribute ?? "mind";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = this.system.training ?? 0;
-        const focus     = this.system.focus     ?? 0;
         const pool      = attrValue + training;
 
         return rollDice({
             pool,
-            focus,
             flavor: `${this.name} (${attrName.charAt(0).toUpperCase() + attrName.slice(1)} ${attrValue} + Training ${training})`,
-            prompt: !quick
+            actorId: actor.id,
+            focusItemId: this.id
         });
     }
 
@@ -58,15 +57,14 @@ export class LaundryItem extends Item {
         const attrName  = linkedSkill?.system.attribute ?? "body";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = linkedSkill?.system.training ?? 0;
-        const focus     = linkedSkill?.system.focus     ?? 0;
         const pool      = attrValue + training;
 
         return rollDice({
             pool,
-            focus,
             flavor: `Attack with ${this.name} (${linkedSkillName})`,
             damage: this.system.damage,
-            prompt: !quick
+            actorId: actor.id,
+            focusItemId: linkedSkill?.id
         });
     }
 
@@ -82,18 +80,17 @@ export class LaundryItem extends Item {
         const attrName  = magicSkill?.system.attribute ?? "mind";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = magicSkill?.system.training ?? 0;
-        const focus     = magicSkill?.system.focus     ?? 0;
         const pool      = attrValue + training;
         const dn        = this.system.dn ?? 4;
         const complexity = this.system.complexity ?? this.system.level ?? 1;
 
         return rollDice({
             pool,
-            focus,
             dn,
             complexity,
             flavor: `Cast ${this.name} (Magic — Level ${this.system.level ?? 1}, DN ${dn}:${complexity})`,
-            prompt: !quick
+            actorId: actor.id,
+            focusItemId: magicSkill?.id
         });
     }
 

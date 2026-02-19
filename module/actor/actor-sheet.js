@@ -1,4 +1,5 @@
 import { rollDice } from "../dice.js";
+import { LaundryCharacterBuilder } from "./character-builder.js";
 
 export class LaundryActorSheet extends ActorSheet {
 
@@ -7,9 +8,9 @@ export class LaundryActorSheet extends ActorSheet {
         return foundry.utils.mergeObject(super.defaultOptions, {
             classes: ["laundry-rpg", "sheet", "actor"],
             template: "systems/laundry-rpg/templates/actor/actor-sheet.html",
-            width: 640,
-            height: 680,
-            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }],
+            width: 720,
+            height: 720,
+            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "dossier" }],
             dragDrop: [{ dragSelector: ".item-list .item", dropSelector: null }]
         });
     }
@@ -60,28 +61,17 @@ export class LaundryActorSheet extends ActorSheet {
             };
         });
 
-        // The Ladder combat ratings
-        const bodyValue = actorData.attributes?.body?.value ?? 1;
-
+        // The Ladder combat ratings now come from Actor derived data.
         context.ladder = {
-            melee:    this._getLadderRating(
-                bodyValue,
-                this._getSkillTraining(items, "Close Combat")
-            ),
-            accuracy: this._getLadderRating(
-                bodyValue,
-                this._getSkillTraining(items, "Ranged") ||
-                this._getSkillTraining(items, "Ranged Combat")
-            ),
-            defence:  this._getLadderRating(
-                bodyValue,
-                this._getSkillTraining(items, "Reflexes")
-            )
+            melee: actorData.derived?.melee?.label ?? "Poor",
+            accuracy: actorData.derived?.accuracy?.label ?? "Poor",
+            defence: actorData.derived?.defence?.label ?? "Poor"
         };
 
         // NPC-only extras
         context.isNpc       = context.actor.type === "npc";
         context.isCharacter = context.actor.type === "character";
+        context.hasAssignment = !!actorData.details?.assignment;
 
         return context;
     }
@@ -116,6 +106,7 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".skill-attr").change(this._onSkillAttributeChange.bind(this));
         html.find(".inv-tab").click(this._onInventoryTab.bind(this));
         html.find(".inv-search").on("input", this._onInventorySearch.bind(this));
+        html.find(".init-agent").click(this._onInitAgent.bind(this));
 
         // Item editing
         html.find(".item-edit").click(ev => {
@@ -170,13 +161,12 @@ export class LaundryActorSheet extends ActorSheet {
         ev.preventDefault();
         const el      = ev.currentTarget;
         const dataset = el.dataset;
-        const quick = !!ev.shiftKey;
 
         // Skill / item roll
         if (dataset.rollType === "item") {
             const li   = el.closest(".item");
             const item = this.actor.items.get(li?.dataset.itemId);
-            if (item) return item.roll({ quick });
+            if (item) return item.roll();
             return;
         }
 
@@ -188,15 +178,13 @@ export class LaundryActorSheet extends ActorSheet {
             if (!skillItem && this.actor.isOwner) {
                 skillItem = await this._getOrCreateSkillItem(skillName, attribute);
             }
-            if (skillItem) return skillItem.roll({ quick });
+            if (skillItem) return skillItem.roll();
 
             const attrVal = this.actor.system.attributes?.[attribute]?.value ?? 1;
             return rollDice({
                 pool: attrVal,
-                focus: 0,
                 complexity: 1,
-                flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`,
-                prompt: !quick
+                flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`
             });
         }
 
@@ -206,12 +194,10 @@ export class LaundryActorSheet extends ActorSheet {
             const attrVal  = this.actor.system.attributes[attrName]?.value ?? 1;
             return rollDice({
                 pool:   attrVal,
-                focus:  0,
                 complexity: 1,
                 flavor: game.i18n.format("LAUNDRY.RollingAttribute", {
                     attribute: attrName.charAt(0).toUpperCase() + attrName.slice(1)
-                }),
-                prompt: !quick
+                })
             });
         }
     }
@@ -290,6 +276,13 @@ export class LaundryActorSheet extends ActorSheet {
             }
         }]);
         return created?.[0] ?? this.actor.items.find(i => i.type === "skill" && i.name === skillName);
+    }
+
+    _onInitAgent(ev) {
+        ev.preventDefault();
+        if (!this.actor.isOwner) return;
+        const builder = new LaundryCharacterBuilder(this.actor);
+        builder.render(true);
     }
 
     // ─── Drag & Drop: Assignment ───────────────────────────────────────────────

@@ -1,9 +1,10 @@
 import { LaundryActor } from "./actor/actor.js";
 import { LaundryActorSheet } from "./actor/actor-sheet.js";
+import { LaundryCharacterBuilder } from "./actor/character-builder.js";
 import { LaundryItem } from "./item/item.js";
 import { LaundryItemSheet } from "./item/item-sheet.js";
+import { bindDiceChatControls } from "./dice.js";
 import { migrateWorld } from "./migration.js";
-import { bindDiceChatContextMenu } from "./dice.js";
 
 /**
  * Global system configuration — consumed by templates via `config.*`
@@ -68,7 +69,7 @@ const LAUNDRY = {
 Hooks.once("init", async function () {
     console.log("Laundry RPG | Initialising The Laundry RPG System");
 
-    game.laundry = { LaundryActor, LaundryItem, config: LAUNDRY };
+    game.laundry = { LaundryActor, LaundryItem, LaundryCharacterBuilder, config: LAUNDRY };
     CONFIG.LAUNDRY = LAUNDRY;
 
     CONFIG.Actor.documentClass = LaundryActor;
@@ -108,12 +109,13 @@ Hooks.once("ready", async function () {
 });
 
 Hooks.on("renderChatMessage", (message, html) => {
-    bindDiceChatContextMenu(message, html);
+    bindDiceChatControls(message, html);
 });
 
 async function preloadTemplates() {
     return loadTemplates([
         "systems/laundry-rpg/templates/actor/actor-sheet.html",
+        "systems/laundry-rpg/templates/actor/character-builder.html",
         "systems/laundry-rpg/templates/item/item-sheet.html"
     ]);
 }

@@ -14,7 +14,13 @@
                 "derived": {
                     "toughness": { "value": 0 },
                     "injuries": { "value": 0, "max": 0 },
-                    "adrenaline": { "value": 0, "max": 0 }
+                    "adrenaline": { "value": 0, "max": 0 },
+                    "melee": { "value": 0, "label": "" },
+                    "accuracy": { "value": 0, "label": "" },
+                    "defence": { "value": 0, "label": "" },
+                    "armour": { "value": 0 },
+                    "initiative": { "value": 0 },
+                    "naturalAwareness": { "value": 0 }
                 },
                 "details": {
                     "assignment": "",

@@ -32,11 +32,21 @@ export class LaundryActor extends Actor {
         sys.derived.toughness = sys.derived.toughness || { value: 0 };
         sys.derived.injuries = sys.derived.injuries || { value: 0, max: 0 };
         sys.derived.adrenaline = sys.derived.adrenaline || { value: 0, max: 0 };
+        sys.derived.melee = sys.derived.melee || { value: 0, label: "" };
+        sys.derived.accuracy = sys.derived.accuracy || { value: 0, label: "" };
+        sys.derived.defence = sys.derived.defence || { value: 0, label: "" };
+        sys.derived.armour = sys.derived.armour || { value: 0 };
+        sys.derived.initiative = sys.derived.initiative || { value: 0 };
+        sys.derived.naturalAwareness = sys.derived.naturalAwareness || { value: 0 };
 
         const body = sys.attributes.body.value ?? 1;
         const mind = sys.attributes.mind.value ?? 1;
         const spirit = sys.attributes.spirit.value ?? 1;
         const total = body + mind + spirit;
+        const closeCombatTraining = this._getSkillTraining("Close Combat");
+        const rangedTraining = this._getSkillTraining("Ranged");
+        const reflexesTraining = this._getSkillTraining("Reflexes");
+        const awarenessTraining = this._getSkillTraining("Awareness");
 
         // Toughness = Body + Mind + Spirit
         sys.derived.toughness.value = total;
@@ -55,6 +65,27 @@ export class LaundryActor extends Actor {
             sys.derived.adrenaline.value ?? 0,
             sys.derived.adrenaline.max
         );
+
+        // Core derived combat and awareness values
+        const meleeValue = body + closeCombatTraining;
+        const accuracyValue = mind + rangedTraining;
+        const defenceValue = body + reflexesTraining;
+        const initiativeValue = mind + awarenessTraining + reflexesTraining;
+        const naturalAwarenessValue = Math.ceil((mind + awarenessTraining) / 2);
+        const armourValue = this.items
+            .filter(i => i.type === "armour" && i.system?.equipped === true)
+            .reduce((sum, i) => sum + (Number(i.system?.protection) || 0), 0);
+
+        sys.derived.melee.value = meleeValue;
+        sys.derived.accuracy.value = accuracyValue;
+        sys.derived.defence.value = defenceValue;
+        sys.derived.initiative.value = initiativeValue;
+        sys.derived.naturalAwareness.value = naturalAwarenessValue;
+        sys.derived.armour.value = armourValue;
+
+        sys.derived.melee.label = this._getLadderLabel(meleeValue);
+        sys.derived.accuracy.label = this._getLadderLabel(accuracyValue);
+        sys.derived.defence.label = this._getLadderLabel(defenceValue);
 
     }
 
@@ -122,7 +153,33 @@ export class LaundryActor extends Actor {
             }
         }
 
-        // 3 · Starting Equipment
+        // 3 · Core Talent(s)
+        if (sys.coreTalent) {
+            const talentNames = String(sys.coreTalent).split(",").map(t => t.trim()).filter(Boolean);
+            const pack = game.packs.get("laundry-rpg.talents");
+            const talentItems = [];
+
+            if (pack) {
+                const packContent = await pack.getDocuments();
+                for (const name of talentNames) {
+                    const found = packContent.find(i => i.name === name);
+                    talentItems.push(found
+                        ? found.toObject()
+                        : _stubTalent(name));
+                }
+            } else {
+                talentNames.forEach(name => talentItems.push(_stubTalent(name)));
+            }
+
+            if (talentItems.length) {
+                await this.createEmbeddedDocuments("Item", talentItems);
+                ui.notifications.info(
+                    `Laundry RPG | Added ${talentItems.length} core talent(s) from Assignment: ${assignment.name}`
+                );
+            }
+        }
+
+        // 4 · Starting Equipment
         if (sys.equipment) {
             const equipNames = sys.equipment.split(",").map(e => e.trim()).filter(Boolean);
             const equipItems = equipNames.map(name => ({
@@ -139,6 +196,17 @@ export class LaundryActor extends Actor {
         const data = super.getRollData();
         return data;
     }
+
+    _getSkillTraining(skillName) {
+        const skill = this.items.find(i => i.type === "skill" && i.name === skillName);
+        return Number(skill?.system?.training ?? 0);
+    }
+
+    _getLadderLabel(value) {
+        const ladder = CONFIG.LAUNDRY?.ladder ?? [];
+        const hit = ladder.find(step => Number(value) >= Number(step.min));
+        return hit?.label ?? "Poor";
+    }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -148,5 +216,14 @@ function _stubSkill(name) {
         name, type: "skill",
         img: "icons/svg/book.svg",
         system: { description: "Skill added from Assignment.", attribute: "mind", training: 1, focus: 0 }
+    };
+}
+
+function _stubTalent(name) {
+    return {
+        name,
+        type: "talent",
+        img: "icons/svg/aura.svg",
+        system: { requirements: "", description: "Core Talent added from Assignment." }
     };
 }

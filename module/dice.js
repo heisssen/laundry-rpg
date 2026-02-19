@@ -4,166 +4,75 @@
  * Mechanics:
  *  • Roll a pool of d6s.
  *  • Each die equal to or above the Difficulty Number (DN, default 4) is a success.
- *  • Focus is applied manually in chat by right-clicking individual dice.
- *  • Results are displayed in a styled chat card.
+ *  • Focus is spent directly in the chat card (no focus pop-ups).
  */
 
-/**
- * Open a roll dialog then execute the roll.
- */
 export async function rollDice({
     pool = 1,
-    focus = 0,
     flavor = "Dice Roll",
     dn = 4,
     complexity = 1,
     damage,
     difficultyShift = 0,
-    prompt = true
+    actorId,
+    focusItemId
 } = {}) {
-    if (!prompt) {
-        return _executeRoll(pool, focus, dn, complexity, flavor, damage, difficultyShift);
-    }
-
-    const content = `
-    <form class="laundry-roll-dialog">
-        <div class="form-group">
-            <label>Dice Pool</label>
-            <input type="number" name="pool" value="${pool}" min="1" max="20" />
-        </div>
-        <div class="form-group">
-            <label>Focus</label>
-            <input type="number" name="focus" value="${focus}" min="0" max="3" />
-        </div>
-        <div class="form-group">
-            <label>Difficulty Number (DN)</label>
-            <input type="number" name="dn" value="${dn}" min="2" max="6" />
-        </div>
-        <div class="form-group">
-            <label>Complexity (Successes Needed)</label>
-            <input type="number" name="complexity" value="${complexity}" min="1" max="10" />
-        </div>
-        <div class="form-group">
-            <label>Advantage / Disadvantage</label>
-            <select name="difficultyShift">
-                <option value="0" ${difficultyShift === 0 ? "selected" : ""}>None</option>
-                <option value="-1" ${difficultyShift === -1 ? "selected" : ""}>Advantage (-1 DN)</option>
-                <option value="-2" ${difficultyShift === -2 ? "selected" : ""}>Greater Advantage (-2 DN)</option>
-                <option value="1" ${difficultyShift === 1 ? "selected" : ""}>Disadvantage (+1 DN)</option>
-                <option value="2" ${difficultyShift === 2 ? "selected" : ""}>Greater Disadvantage (+2 DN)</option>
-            </select>
-        </div>
-    </form>`;
-
-    new Dialog({
-        title: "Roll Dice",
-        content,
-        buttons: {
-            roll: {
-                icon: '<i class="fas fa-dice"></i>',
-                label: "Roll",
-                callback: async (html) => {
-                    const newPool  = parseInt(html.find('[name="pool"]').val())  || 1;
-                    const newFocus = parseInt(html.find('[name="focus"]').val()) || 0;
-                    const newDN    = parseInt(html.find('[name="dn"]').val())    || 4;
-                    const newComplexity = parseInt(html.find('[name="complexity"]').val()) || 1;
-                    const newDifficultyShift = parseInt(html.find('[name="difficultyShift"]').val()) || 0;
-                    await _executeRoll(newPool, newFocus, newDN, newComplexity, flavor, damage, newDifficultyShift);
-                }
-            },
-            cancel: { label: "Cancel" }
-        },
-        default: "roll"
-    }).render(true);
+    return _executeRoll(pool, dn, complexity, flavor, damage, difficultyShift, actorId, focusItemId);
 }
 
-export function bindDiceChatContextMenu(message, html) {
+export function bindDiceChatControls(message, html) {
     const state = _getDiceState(message);
     if (!state) return;
 
-    html.find(".laundry-die").off("contextmenu.laundry-focus").on("contextmenu.laundry-focus", async (ev) => {
+    html.find(".spend-focus").off("click.laundry-focus").on("click.laundry-focus", async (ev) => {
         ev.preventDefault();
         if (!message.isOwner) return;
-
-        const idx = Number(ev.currentTarget.dataset.dieIndex ?? -1);
-        if (idx < 0 || idx >= state.rawDice.length) return;
-
-        const spent = Number(state.spentByDie[idx] ?? 0);
-        const remaining = _focusRemaining(state);
-
-        const content = `
-        <div class="laundry-focus-context">
-            <p>Die ${idx + 1}: <strong>${state.rawDice[idx]} -> ${state.rawDice[idx] + spent}</strong></p>
-            <p>Focus remaining: <strong>${remaining}</strong></p>
-        </div>`;
-
-        new Dialog({
-            title: "Focus Options",
-            content,
-            buttons: {
-                apply: {
-                    icon: '<i class="fas fa-plus"></i>',
-                    label: "Apply Focus",
-                    callback: async () => {
-                        if (_focusRemaining(state) <= 0) {
-                            ui.notifications.warn("No Focus remaining.");
-                            return;
-                        }
-                        state.spentByDie[idx] = Number(state.spentByDie[idx] ?? 0) + 1;
-                        await _updateDiceMessage(message, state);
-                    }
-                },
-                remove: {
-                    icon: '<i class="fas fa-minus"></i>',
-                    label: "Remove Focus",
-                    callback: async () => {
-                        const current = Number(state.spentByDie[idx] ?? 0);
-                        if (current <= 0) return;
-                        state.spentByDie[idx] = current - 1;
-                        await _updateDiceMessage(message, state);
-                    }
-                },
-                cancel: { label: "Cancel" }
-            },
-            default: "apply"
-        }).render(true);
+        const itemId = ev.currentTarget.dataset.itemId;
+        if (itemId) state.focusItemId = itemId;
+        await _spendFocus(message, state);
     });
 }
 
 // ─── Internal ─────────────────────────────────────────────────────────────────
 
-async function _executeRoll(pool, focus, dn, complexity, flavor, damage, difficultyShift = 0) {
+async function _executeRoll(pool, dn, complexity, flavor, damage, difficultyShift = 0, actorId, focusItemId) {
     const shift = Math.max(-2, Math.min(2, difficultyShift || 0));
     const effectiveDn = Math.max(2, Math.min(6, (dn || 4) + shift));
 
     const roll = new Roll(`${pool}d6`);
     await roll.evaluate();
 
+    let focusAvailable = 0;
+    if (actorId && focusItemId) {
+        const actor = game.actors?.get(actorId);
+        const focusItem = actor?.items?.get(focusItemId);
+        focusAvailable = Number(focusItem?.system?.focus ?? 0);
+    }
+
+    const rawDice = roll.terms[0].results.map(d => d.result);
     const state = {
         pool,
-        focus: Math.max(0, Number(focus) || 0),
         dn,
         complexity,
         shift,
         effectiveDn,
         damage: damage ?? "",
-        rawDice: roll.terms[0].results.map(d => d.result),
-        spentByDie: []
+        rawDice,
+        extraDice: [],
+        focusSpent: 0,
+        focusAvailable,
+        focusRemaining: focusAvailable,
+        actorId: actorId ?? null,
+        focusItemId: focusItemId ?? null
     };
-    state.spentByDie = state.rawDice.map(() => 0);
 
-    const content = _renderDiceContent(state);
-
+    const speaker = actorId ? ChatMessage.getSpeaker({ actor: game.actors?.get(actorId) }) : ChatMessage.getSpeaker();
     await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker(),
+        speaker,
         flavor,
-        content,
+        content: _renderDiceContent(state),
         rolls: [roll],
-        flags: {
-            "laundry-rpg": {
-                diceState: state
-            }
-        },
+        flags: { "laundry-rpg": { diceState: state } },
         sound: CONFIG.sounds.dice
     });
 }
@@ -172,34 +81,28 @@ function _getDiceState(message) {
     return foundry.utils.deepClone(message.getFlag("laundry-rpg", "diceState"));
 }
 
-function _focusRemaining(state) {
-    const spent = (state.spentByDie ?? []).reduce((sum, v) => sum + (Number(v) || 0), 0);
-    return Math.max(0, (Number(state.focus) || 0) - spent);
-}
-
 function _buildResults(state) {
     const rawDice = state.rawDice ?? [];
-    const spentByDie = state.spentByDie ?? [];
+    const extraDice = state.extraDice ?? [];
     const effectiveDn = Number(state.effectiveDn ?? state.dn ?? 4);
-    return rawDice.map((val, idx) => {
-        const spent = Number(spentByDie[idx] ?? 0);
-        const modified = val + spent;
-        return {
-            index: idx,
-            original: val,
-            spent,
-            modified,
-            success: modified >= effectiveDn,
-            boosted: spent > 0
-        };
-    });
+    const base = rawDice.map((val, idx) => ({
+        index: idx,
+        value: val,
+        success: val >= effectiveDn,
+        extra: false
+    }));
+    const extras = extraDice.map((val, idx) => ({
+        index: rawDice.length + idx,
+        value: val,
+        success: val >= effectiveDn,
+        extra: true
+    }));
+    return base.concat(extras);
 }
 
 function _renderDiceContent(state) {
     const results = _buildResults(state);
     const successes = results.filter(r => r.success).length;
-    const focusUsed = results.reduce((sum, r) => sum + r.spent, 0);
-    const focusRemaining = _focusRemaining(state);
     const complexity = Number(state.complexity ?? 1);
     const margin = successes - complexity;
     const isSuccess = successes >= complexity;
@@ -218,40 +121,83 @@ function _renderDiceContent(state) {
     }
 
     const diceHtml = results.map(r => {
-        const cls = ["roll", "die", "d6", "laundry-die", r.success ? "success" : "failure", r.boosted ? "boosted" : ""]
-            .join(" ")
-            .trim();
-        const display = r.boosted ? `${r.original}->${r.modified}` : r.modified;
-        const title = r.boosted ? `Focus spent: +${r.spent} (right-click for focus options)` : "Right-click for focus options";
-        return `<li class="${cls}" data-die-index="${r.index}" title="${title}">${display}</li>`;
+        const cls = [
+            "roll", "die", "d6", "laundry-die",
+            r.success ? "success" : "failure",
+            r.extra ? "focus-die" : ""
+        ].join(" ").trim();
+        return `<li class="${cls}" data-die-index="${r.index}">${r.value}</li>`;
     }).join("");
 
     const damageSection = state.damage
         ? `<div class="damage-section"><strong>Damage:</strong> ${state.damage}</div>`
         : "";
 
+    const focusRemaining = Number.isFinite(state.focusRemaining)
+        ? Number(state.focusRemaining)
+        : Number(state.focusAvailable ?? 0);
+    const focusDisabled = !state.focusItemId || focusRemaining <= 0;
+    const focusControls = `
+        <div class="laundry-focus-controls">
+            <button type="button" class="spend-focus" data-item-id="${state.focusItemId ?? ""}" ${focusDisabled ? "disabled" : ""}>Spend Focus</button>
+            <span class="laundry-focus-meta">Remaining: ${Math.max(0, focusRemaining)} | Spent: ${state.focusSpent ?? 0}</span>
+        </div>`;
+
+    const extraCount = Array.isArray(state.extraDice) ? state.extraDice.length : 0;
+    const poolLabel = extraCount > 0 ? `${state.pool}+${extraCount}` : `${state.pool}`;
+
     return `
     <div class="laundry-dice-roll">
-        <div class="dice-formula">${state.pool}d6 vs DN ${state.dn}:${state.complexity} (${shiftLabel} -> effective DN ${state.effectiveDn})</div>
+        <div class="dice-formula">${poolLabel}d6 vs DN ${state.dn}:${state.complexity} (${shiftLabel} -> effective DN ${state.effectiveDn})</div>
         <ol class="dice-rolls">${diceHtml}</ol>
+        ${focusControls}
         <div class="dice-outcome ${isSuccess ? "outcome-success" : "outcome-failure"}">
             <strong>${isSuccess ? "Success" : "Failure"}</strong>
             <span class="success-count">(Successes: ${successes}/${complexity})</span>
             ${benefitLabel ? `<span class="benefit-label">${benefitLabel}</span>` : ""}
-            <span class="focus-spent">(Focus used: ${focusUsed}/${state.focus}, remaining: ${focusRemaining})</span>
+            <span class="focus-spent">(Focus used: ${state.focusSpent ?? 0})</span>
         </div>
         ${damageSection}
     </div>`;
 }
 
+async function _spendFocus(message, state) {
+    if (!state.actorId || !state.focusItemId) {
+        ui.notifications.warn("This roll is not linked to a Focus-capable skill.");
+        return;
+    }
+
+    const actor = game.actors?.get(state.actorId);
+    const focusItem = actor?.items?.get(state.focusItemId);
+    if (!focusItem) {
+        ui.notifications.warn("Linked Focus item not found on actor.");
+        return;
+    }
+
+    const current = Number(focusItem.system?.focus ?? 0);
+    if (current <= 0) {
+        ui.notifications.warn("Character has no Focus left on this skill.");
+        return;
+    }
+
+    await focusItem.update({ "system.focus": current - 1 });
+
+    const extraRoll = new Roll("1d6");
+    await extraRoll.evaluate();
+    const extraResult = extraRoll.terms[0].results[0]?.result ?? 1;
+
+    state.extraDice = Array.isArray(state.extraDice) ? state.extraDice : [];
+    state.extraDice.push(extraResult);
+    state.focusSpent = Number(state.focusSpent ?? 0) + 1;
+    state.focusAvailable = Number(state.focusAvailable ?? current);
+    state.focusRemaining = Math.max(0, current - 1);
+
+    await _updateDiceMessage(message, state);
+}
+
 async function _updateDiceMessage(message, state) {
-    const content = _renderDiceContent(state);
     await message.update({
-        content,
-        flags: {
-            "laundry-rpg": {
-                diceState: state
-            }
-        }
+        content: _renderDiceContent(state),
+        flags: { "laundry-rpg": { diceState: state } }
     });
 }

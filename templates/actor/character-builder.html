@@ -1,0 +1,49 @@
+<form class="character-builder-form">
+    <header class="builder-header">
+        <h2>Initialize {{actorName}}</h2>
+        <p>Select an Assignment to generate core attributes, skills, talents, and requisitioned kit.</p>
+    </header>
+
+    {{#if hasAssignments}}
+    <div class="builder-field">
+        <label for="assignment-select">Assignment</label>
+        <select name="assignment" id="assignment-select" required>
+            <option value="">Select Assignment</option>
+            {{#each assignments as |assignment|}}
+            <option value="{{assignment.id}}"
+                data-description="{{assignment.description}}"
+                data-coreskills="{{assignment.coreSkills}}"
+                data-coretalent="{{assignment.coreTalent}}"
+                data-talents="{{assignment.talents}}"
+                data-equipment="{{assignment.equipment}}"
+                data-body="{{assignment.attributes.body}}"
+                data-mind="{{assignment.attributes.mind}}"
+                data-spirit="{{assignment.attributes.spirit}}">
+                {{assignment.name}} (B{{assignment.attributes.body}} / M{{assignment.attributes.mind}} / S{{assignment.attributes.spirit}})
+            </option>
+            {{/each}}
+        </select>
+    </div>
+
+    <div class="builder-preview">
+        <h3>Assignment Preview</h3>
+        <p class="preview-description">Select an assignment to see details.</p>
+        <div class="preview-attributes">
+            <span>Body: <strong class="preview-body">-</strong></span>
+            <span>Mind: <strong class="preview-mind">-</strong></span>
+            <span>Spirit: <strong class="preview-spirit">-</strong></span>
+        </div>
+        <div class="preview-row"><span>Core Skills:</span> <span class="preview-coreskills">-</span></div>
+        <div class="preview-row"><span>Core Talent:</span> <span class="preview-coretalent">-</span></div>
+        <div class="preview-row"><span>Talents:</span> <span class="preview-talents">-</span></div>
+        <div class="preview-row"><span>Equipment:</span> <span class="preview-equipment">-</span></div>
+    </div>
+
+    <div class="builder-actions">
+        <button type="submit" class="builder-confirm">Initialize Agent</button>
+        <button type="button" class="builder-cancel" data-action="close">Cancel</button>
+    </div>
+    {{else}}
+    <p class="builder-empty">No assignments found in the `laundry-rpg.assignments` compendium.</p>
+    {{/if}}
+</form>
