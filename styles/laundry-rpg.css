@@ -706,10 +706,15 @@
     font-size: 12px;
     font-weight: bold;
     background: #fff;
+    cursor: pointer;
 }
 
-.laundry-dice-roll .roll.die.focus-die {
+.laundry-dice-roll .roll.die.focus-boosted {
     border-style: dashed;
+}
+
+.laundry-dice-roll .roll.die.focus-selected {
+    box-shadow: inset 0 0 0 2px var(--laundry-accent);
 }
 
 .laundry-dice-roll .roll.die.success {
@@ -747,6 +752,7 @@
 .laundry-dice-roll .laundry-focus-controls {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     margin: 6px 0;
 }

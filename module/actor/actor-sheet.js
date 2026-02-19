@@ -281,6 +281,15 @@ export class LaundryActorSheet extends ActorSheet {
     _onInitAgent(ev) {
         ev.preventDefault();
         if (!this.actor.isOwner) return;
+        const existing = Object.values(ui.windows).find(app =>
+            app instanceof LaundryCharacterBuilder
+            && app.actor?.id === this.actor.id
+            && app.rendered
+        );
+        if (existing) {
+            existing.bringToTop();
+            return;
+        }
         const builder = new LaundryCharacterBuilder(this.actor);
         builder.render(true);
     }

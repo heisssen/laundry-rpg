@@ -70,6 +70,16 @@ export class LaundryCharacterBuilder extends Application {
             return;
         }
 
+        const hasExistingAssignment = Boolean(this.actor?.system?.details?.assignment);
+        const hasItems = (this.actor?.items?.size ?? 0) > 0;
+        if (hasExistingAssignment || hasItems) {
+            const confirmed = await Dialog.confirm({
+                title: "Re-initialize Agent?",
+                content: "<p>This agent already has assignment or item data. Re-initializing will add any missing assignment entries and may alter attributes. Continue?</p>"
+            });
+            if (!confirmed) return;
+        }
+
         await applyAssignmentToActor(this.actor, assignment);
         this.close();
     }
@@ -138,9 +148,17 @@ async function applyAssignmentToActor(actor, assignment) {
         _parseList(sys.equipment)
     );
 
-    const toCreate = []
+    const pending = []
         .concat(skills, coreTalents, talents, equipment)
         .filter(item => item && !existing.has(`${item.type}:${item.name.toLowerCase()}`));
+
+    const dedupe = new Set();
+    const toCreate = pending.filter(item => {
+        const key = `${item.type}:${item.name.toLowerCase()}`;
+        if (dedupe.has(key)) return false;
+        dedupe.add(key);
+        return true;
+    });
 
     if (toCreate.length) {
         await actor.createEmbeddedDocuments("Item", toCreate);

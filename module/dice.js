@@ -4,7 +4,7 @@
  * Mechanics:
  *  • Roll a pool of d6s.
  *  • Each die equal to or above the Difficulty Number (DN, default 4) is a success.
- *  • Focus is spent directly in the chat card (no focus pop-ups).
+ *  • Focus is applied directly in the chat card to rolled dice (+1 per point).
  */
 
 export async function rollDice({
@@ -24,12 +24,44 @@ export function bindDiceChatControls(message, html) {
     const state = _getDiceState(message);
     if (!state) return;
 
-    html.find(".spend-focus").off("click.laundry-focus").on("click.laundry-focus", async (ev) => {
+    html.find(".laundry-die").off("click.laundry-focus-die").on("click.laundry-focus-die", async (ev) => {
+        ev.preventDefault();
+        if (!message.isOwner) return;
+        const dieIndex = Number(ev.currentTarget.dataset.dieIndex);
+        if (!Number.isInteger(dieIndex)) return;
+        state.selectedDieIndex = dieIndex;
+        await _updateDiceMessage(message, state);
+    });
+    html.find(".laundry-die").off("dblclick.laundry-focus-die").on("dblclick.laundry-focus-die", async (ev) => {
+        ev.preventDefault();
+        if (!message.isOwner) return;
+        const dieIndex = Number(ev.currentTarget.dataset.dieIndex);
+        if (!Number.isInteger(dieIndex)) return;
+        state.selectedDieIndex = dieIndex;
+        await _spendFocus(message, state);
+    });
+
+    html.find(".apply-focus").off("click.laundry-focus").on("click.laundry-focus", async (ev) => {
         ev.preventDefault();
         if (!message.isOwner) return;
         const itemId = ev.currentTarget.dataset.itemId;
         if (itemId) state.focusItemId = itemId;
         await _spendFocus(message, state);
+    });
+    html.find(".auto-focus").off("click.laundry-focus-auto").on("click.laundry-focus-auto", async (ev) => {
+        ev.preventDefault();
+        if (!message.isOwner) return;
+        const itemId = ev.currentTarget.dataset.itemId;
+        if (itemId) state.focusItemId = itemId;
+        state.selectedDieIndex = _findAutoFocusDie(state);
+        await _spendFocus(message, state);
+    });
+    html.find(".undo-focus").off("click.laundry-focus-undo").on("click.laundry-focus-undo", async (ev) => {
+        ev.preventDefault();
+        if (!message.isOwner) return;
+        const itemId = ev.currentTarget.dataset.itemId;
+        if (itemId) state.focusItemId = itemId;
+        await _undoFocus(message, state);
     });
 }
 
@@ -58,7 +90,9 @@ async function _executeRoll(pool, dn, complexity, flavor, damage, difficultyShif
         effectiveDn,
         damage: damage ?? "",
         rawDice,
-        extraDice: [],
+        focusAllocations: [],
+        focusHistory: [],
+        selectedDieIndex: null,
         focusSpent: 0,
         focusAvailable,
         focusRemaining: focusAvailable,
@@ -83,21 +117,21 @@ function _getDiceState(message) {
 
 function _buildResults(state) {
     const rawDice = state.rawDice ?? [];
-    const extraDice = state.extraDice ?? [];
+    const allocations = Array.isArray(state.focusAllocations) ? state.focusAllocations : [];
     const effectiveDn = Number(state.effectiveDn ?? state.dn ?? 4);
-    const base = rawDice.map((val, idx) => ({
-        index: idx,
-        value: val,
-        success: val >= effectiveDn,
-        extra: false
-    }));
-    const extras = extraDice.map((val, idx) => ({
-        index: rawDice.length + idx,
-        value: val,
-        success: val >= effectiveDn,
-        extra: true
-    }));
-    return base.concat(extras);
+    return rawDice.map((val, idx) => {
+        const bonus = Number(allocations[idx] ?? 0);
+        const adjusted = Math.max(1, Math.min(6, Number(val ?? 1) + bonus));
+        const selected = Number(state.selectedDieIndex) === idx;
+        return {
+            index: idx,
+            value: adjusted,
+            rawValue: val,
+            bonus,
+            success: adjusted >= effectiveDn,
+            selected
+        };
+    });
 }
 
 function _renderDiceContent(state) {
@@ -124,9 +158,11 @@ function _renderDiceContent(state) {
         const cls = [
             "roll", "die", "d6", "laundry-die",
             r.success ? "success" : "failure",
-            r.extra ? "focus-die" : ""
+            r.bonus > 0 ? "focus-boosted" : "",
+            r.selected ? "focus-selected" : ""
         ].join(" ").trim();
-        return `<li class="${cls}" data-die-index="${r.index}">${r.value}</li>`;
+        const valueText = r.bonus > 0 ? `${r.rawValue}+${r.bonus}=${r.value}` : `${r.value}`;
+        return `<li class="${cls}" data-die-index="${r.index}" title="Select die for Focus">${valueText}</li>`;
     }).join("");
 
     const damageSection = state.damage
@@ -136,19 +172,27 @@ function _renderDiceContent(state) {
     const focusRemaining = Number.isFinite(state.focusRemaining)
         ? Number(state.focusRemaining)
         : Number(state.focusAvailable ?? 0);
-    const focusDisabled = !state.focusItemId || focusRemaining <= 0;
+    const selectedDieIndex = Number(state.selectedDieIndex);
+    const hasSelectedDie = Number.isInteger(selectedDieIndex) && selectedDieIndex >= 0;
+    const applyDisabled = !state.focusItemId || focusRemaining <= 0 || !hasSelectedDie;
+    const autoCandidate = _findAutoFocusDie(state);
+    const autoDisabled = !state.focusItemId || focusRemaining <= 0 || !Number.isInteger(autoCandidate);
+    const hasHistory = Array.isArray(state.focusHistory) && state.focusHistory.length > 0;
+    const undoDisabled = !state.focusItemId || !hasHistory;
+    const selectedDieLabel = Number.isInteger(state.selectedDieIndex)
+        ? `Selected die: #${Number(state.selectedDieIndex) + 1}`
+        : "Selected die: none";
     const focusControls = `
         <div class="laundry-focus-controls">
-            <button type="button" class="spend-focus" data-item-id="${state.focusItemId ?? ""}" ${focusDisabled ? "disabled" : ""}>Spend Focus</button>
-            <span class="laundry-focus-meta">Remaining: ${Math.max(0, focusRemaining)} | Spent: ${state.focusSpent ?? 0}</span>
+            <button type="button" class="apply-focus spend-focus" data-item-id="${state.focusItemId ?? ""}" ${applyDisabled ? "disabled" : ""}>Apply Focus</button>
+            <button type="button" class="auto-focus spend-focus" data-item-id="${state.focusItemId ?? ""}" ${autoDisabled ? "disabled" : ""}>Auto Focus</button>
+            <button type="button" class="undo-focus spend-focus" data-item-id="${state.focusItemId ?? ""}" ${undoDisabled ? "disabled" : ""}>Undo</button>
+            <span class="laundry-focus-meta">${selectedDieLabel} | Remaining: ${Math.max(0, focusRemaining)} | Spent: ${state.focusSpent ?? 0}</span>
         </div>`;
-
-    const extraCount = Array.isArray(state.extraDice) ? state.extraDice.length : 0;
-    const poolLabel = extraCount > 0 ? `${state.pool}+${extraCount}` : `${state.pool}`;
 
     return `
     <div class="laundry-dice-roll">
-        <div class="dice-formula">${poolLabel}d6 vs DN ${state.dn}:${state.complexity} (${shiftLabel} -> effective DN ${state.effectiveDn})</div>
+        <div class="dice-formula">${state.pool}d6 vs DN ${state.dn}:${state.complexity} (${shiftLabel} -> effective DN ${state.effectiveDn})</div>
         <ol class="dice-rolls">${diceHtml}</ol>
         ${focusControls}
         <div class="dice-outcome ${isSuccess ? "outcome-success" : "outcome-failure"}">
@@ -180,19 +224,77 @@ async function _spendFocus(message, state) {
         return;
     }
 
+    const dieIndex = Number(state.selectedDieIndex);
+    const rawDice = Array.isArray(state.rawDice) ? state.rawDice : [];
+    if (!Number.isInteger(dieIndex) || dieIndex < 0 || dieIndex >= rawDice.length) {
+        ui.notifications.warn("Select a die result before applying Focus.");
+        return;
+    }
+
+    state.focusAllocations = Array.isArray(state.focusAllocations) ? state.focusAllocations : [];
+    state.focusHistory = Array.isArray(state.focusHistory) ? state.focusHistory : [];
+    const currentBonus = Number(state.focusAllocations[dieIndex] ?? 0);
+    const rawValue = Number(rawDice[dieIndex] ?? 1);
+    if (rawValue + currentBonus >= 6) {
+        ui.notifications.warn("That die is already at the maximum result.");
+        return;
+    }
+
     await focusItem.update({ "system.focus": current - 1 });
 
-    const extraRoll = new Roll("1d6");
-    await extraRoll.evaluate();
-    const extraResult = extraRoll.terms[0].results[0]?.result ?? 1;
-
-    state.extraDice = Array.isArray(state.extraDice) ? state.extraDice : [];
-    state.extraDice.push(extraResult);
+    state.focusAllocations[dieIndex] = currentBonus + 1;
+    state.focusHistory.push({ dieIndex, previousBonus: currentBonus });
     state.focusSpent = Number(state.focusSpent ?? 0) + 1;
     state.focusAvailable = Number(state.focusAvailable ?? current);
     state.focusRemaining = Math.max(0, current - 1);
 
     await _updateDiceMessage(message, state);
+}
+
+async function _undoFocus(message, state) {
+    if (!state.actorId || !state.focusItemId) {
+        ui.notifications.warn("This roll is not linked to a Focus-capable skill.");
+        return;
+    }
+    state.focusHistory = Array.isArray(state.focusHistory) ? state.focusHistory : [];
+    const last = state.focusHistory.pop();
+    if (!last) return;
+
+    const actor = game.actors?.get(state.actorId);
+    const focusItem = actor?.items?.get(state.focusItemId);
+    if (!focusItem) {
+        ui.notifications.warn("Linked Focus item not found on actor.");
+        return;
+    }
+
+    state.focusAllocations = Array.isArray(state.focusAllocations) ? state.focusAllocations : [];
+    state.focusAllocations[last.dieIndex] = Number(last.previousBonus ?? 0);
+    if (state.focusAllocations[last.dieIndex] <= 0) state.focusAllocations[last.dieIndex] = 0;
+
+    const current = Number(focusItem.system?.focus ?? 0);
+    await focusItem.update({ "system.focus": current + 1 });
+
+    state.focusSpent = Math.max(0, Number(state.focusSpent ?? 0) - 1);
+    state.focusAvailable = Math.max(Number(state.focusAvailable ?? 0), current + 1);
+    state.focusRemaining = Math.max(0, Number(state.focusRemaining ?? current) + 1);
+
+    await _updateDiceMessage(message, state);
+}
+
+function _findAutoFocusDie(state) {
+    const results = _buildResults(state);
+    if (!results.length) return null;
+
+    const effectiveDn = Number(state.effectiveDn ?? state.dn ?? 4);
+    const fixableFailures = results
+        .filter(r => r.value < effectiveDn && r.value < 6)
+        .sort((a, b) => b.value - a.value);
+    if (fixableFailures.length) return fixableFailures[0].index;
+
+    const anyUpgradable = results
+        .filter(r => r.value < 6)
+        .sort((a, b) => b.value - a.value);
+    return anyUpgradable.length ? anyUpgradable[0].index : null;
 }
 
 async function _updateDiceMessage(message, state) {
