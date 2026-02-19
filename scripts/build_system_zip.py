@@ -5,11 +5,12 @@ import zipfile
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 OUT = os.path.join(ROOT, "system.zip")
 
-# Set to "" for root-level system.json, or "laundry-rpg" for one-folder-deep.
-PREFIX = "laundry-rpg"
+# Keep archive paths root-level for direct Foundry package install.
+PREFIX = ""
 
 INCLUDE = [
     "system.json",
+    "manifest.json",
     "template.json",
     "module",
     "templates",
