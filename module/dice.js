@@ -18,11 +18,23 @@
  * @param {number}  [opts.dn]     Difficulty Number (default 4).
  * @param {number}  [opts.complexity] Successes required (default 1).
  * @param {string}  [opts.damage] Damage formula to show (weapons only).
+ * @param {number}  [opts.difficultyShift] Advantage/Disadvantage shift:
+ *                                         -2 greater advantage, -1 advantage,
+ *                                          0 normal, +1 disadvantage, +2 greater disadvantage.
  * @param {boolean} [opts.prompt] Show roll dialog first (default true).
  */
-export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn = 4, complexity = 1, damage, prompt = true } = {}) {
+export async function rollDice({
+    pool = 1,
+    focus = 0,
+    flavor = "Dice Roll",
+    dn = 4,
+    complexity = 1,
+    damage,
+    difficultyShift = 0,
+    prompt = true
+} = {}) {
     if (!prompt) {
-        return _executeRoll(pool, focus, dn, complexity, flavor, damage);
+        return _executeRoll(pool, focus, dn, complexity, flavor, damage, difficultyShift);
     }
 
     const content = `
@@ -43,6 +55,16 @@ export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn =
             <label>Complexity (Successes Needed)</label>
             <input type="number" name="complexity" value="${complexity}" min="1" max="10" />
         </div>
+        <div class="form-group">
+            <label>Advantage / Disadvantage</label>
+            <select name="difficultyShift">
+                <option value="0" ${difficultyShift === 0 ? "selected" : ""}>None</option>
+                <option value="-1" ${difficultyShift === -1 ? "selected" : ""}>Advantage (-1 DN)</option>
+                <option value="-2" ${difficultyShift === -2 ? "selected" : ""}>Greater Advantage (-2 DN)</option>
+                <option value="1" ${difficultyShift === 1 ? "selected" : ""}>Disadvantage (+1 DN)</option>
+                <option value="2" ${difficultyShift === 2 ? "selected" : ""}>Greater Disadvantage (+2 DN)</option>
+            </select>
+        </div>
     </form>`;
 
     new Dialog({
@@ -57,7 +79,8 @@ export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn =
                     const newFocus = parseInt(html.find('[name="focus"]').val()) || 0;
                     const newDN    = parseInt(html.find('[name="dn"]').val())    || 4;
                     const newComplexity = parseInt(html.find('[name="complexity"]').val()) || 1;
-                    await _executeRoll(newPool, newFocus, newDN, newComplexity, flavor, damage);
+                    const newDifficultyShift = parseInt(html.find('[name="difficultyShift"]').val()) || 0;
+                    await _executeRoll(newPool, newFocus, newDN, newComplexity, flavor, damage, newDifficultyShift);
                 }
             },
             cancel: { label: "Cancel" }
@@ -68,7 +91,10 @@ export async function rollDice({ pool = 1, focus = 0, flavor = "Dice Roll", dn =
 
 // ─── Internal ─────────────────────────────────────────────────────────────────
 
-async function _executeRoll(pool, focus, dn, complexity, flavor, damage) {
+async function _executeRoll(pool, focus, dn, complexity, flavor, damage, difficultyShift = 0) {
+    const shift = Math.max(-2, Math.min(2, difficultyShift || 0));
+    const effectiveDn = Math.max(2, Math.min(6, (dn || 4) + shift));
+
     // Build and evaluate the roll (v12+ API — no async option needed)
     const roll = new Roll(`${pool}d6`);
     await roll.evaluate();
@@ -80,12 +106,12 @@ async function _executeRoll(pool, focus, dn, complexity, flavor, damage) {
     const results = rawDice.map(val => ({
         original: val,
         modified: val,
-        success: val >= dn,
+        success: val >= effectiveDn,
         boosted: false
     }));
 
     const candidates = results
-        .map((r, idx) => ({ idx, needed: dn - r.original }))
+        .map((r, idx) => ({ idx, needed: effectiveDn - r.original }))
         .filter(c => c.needed > 0)
         .sort((a, b) => a.needed - b.needed);
 
@@ -109,6 +135,11 @@ async function _executeRoll(pool, focus, dn, complexity, flavor, damage) {
         if (margin >= 3) benefitLabel = "Major Benefit";
         else if (margin >= 1) benefitLabel = "Minor Benefit";
     }
+    const shiftLabel = shift === 0
+        ? "No Advantage"
+        : (shift < 0
+            ? (shift === -1 ? "Advantage" : "Greater Advantage")
+            : (shift === 1 ? "Disadvantage" : "Greater Disadvantage"));
 
     // ─── Chat card ────────────────────────────────────────────────────────────
 
@@ -124,7 +155,7 @@ async function _executeRoll(pool, focus, dn, complexity, flavor, damage) {
 
     const content = `
     <div class="laundry-dice-roll">
-        <div class="dice-formula">${pool}d6 vs DN ${dn}:${complexity}</div>
+        <div class="dice-formula">${pool}d6 vs DN ${dn}:${complexity} (${shiftLabel} -> effective DN ${effectiveDn})</div>
         <ol class="dice-rolls">${diceHtml}</ol>
         <div class="dice-outcome ${isSuccess ? "outcome-success" : "outcome-failure"}">
             <strong>${outcomeLabel}</strong>
