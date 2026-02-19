@@ -34,6 +34,27 @@ export class LaundryActorSheet extends ActorSheet {
         context.gear       = items.filter(i => ["gear", "weapon", "armour"].includes(i.type));
         context.spells     = items.filter(i => i.type === "spell");
 
+        const skillItemsByName = new Map(context.skills.map(s => [s.name, s]));
+        const skillDefs = CONFIG.LAUNDRY.skills ?? [];
+        context.skillRows = skillDefs.map(def => {
+            const item = skillItemsByName.get(def.name);
+            const attribute = item?.system?.attribute ?? def.attribute ?? "mind";
+            const attrValue = actorData.attributes?.[attribute]?.value ?? 1;
+            const training = item?.system?.training ?? 0;
+            const focus = item?.system?.focus ?? 0;
+            return {
+                name: def.name,
+                itemId: item?._id ?? null,
+                attribute,
+                attributeLabel: CONFIG.LAUNDRY.attributes?.[attribute]?.label ?? attribute,
+                attrValue,
+                training,
+                focus,
+                level: attrValue + training,
+                trained: training > 0
+            };
+        });
+
         // The Ladder combat ratings
         const bodyValue = actorData.attributes?.body?.value ?? 1;
 
@@ -86,6 +107,7 @@ export class LaundryActorSheet extends ActorSheet {
 
         // Item creation
         html.find(".item-create").click(this._onItemCreate.bind(this));
+        html.find(".skill-adjust").click(this._onSkillAdjust.bind(this));
 
         // Item editing
         html.find(".item-edit").click(ev => {
@@ -136,7 +158,7 @@ export class LaundryActorSheet extends ActorSheet {
 
     // ─── Rolling ──────────────────────────────────────────────────────────────
 
-    _onRoll(ev) {
+    async _onRoll(ev) {
         ev.preventDefault();
         const el      = ev.currentTarget;
         const dataset = el.dataset;
@@ -147,6 +169,25 @@ export class LaundryActorSheet extends ActorSheet {
             const item = this.actor.items.get(li?.dataset.itemId);
             if (item) return item.roll();
             return;
+        }
+
+        if (dataset.rollType === "skill") {
+            const skillName = dataset.skillName;
+            const attribute = dataset.attribute ?? "mind";
+            let skillItem = this.actor.items.find(i => i.type === "skill" && i.name === skillName);
+
+            if (!skillItem && this.actor.isOwner) {
+                skillItem = await this._getOrCreateSkillItem(skillName, attribute);
+            }
+            if (skillItem) return skillItem.roll();
+
+            const attrVal = this.actor.system.attributes?.[attribute]?.value ?? 1;
+            return rollDice({
+                pool: attrVal,
+                focus: 0,
+                complexity: 1,
+                flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`
+            });
         }
 
         // Attribute roll (data-roll-type="attribute" data-attribute="body")
@@ -160,6 +201,42 @@ export class LaundryActorSheet extends ActorSheet {
                 flavor: `Rolling ${attrName.charAt(0).toUpperCase() + attrName.slice(1)}`
             });
         }
+    }
+
+    async _onSkillAdjust(ev) {
+        ev.preventDefault();
+        const btn = ev.currentTarget;
+        const skillName = btn.dataset.skillName;
+        const attribute = btn.dataset.attribute ?? "mind";
+        const stat = btn.dataset.stat;
+        const delta = Number(btn.dataset.delta ?? 0);
+        if (!skillName || !stat || !["training", "focus"].includes(stat) || !delta) return;
+
+        const skill = await this._getOrCreateSkillItem(skillName, attribute);
+        const current = Number(skill.system?.[stat] ?? 0);
+        const next = Math.max(0, Math.min(6, current + delta));
+        if (next === current) return;
+
+        await skill.update({ [`system.${stat}`]: next });
+        this.render(false);
+    }
+
+    async _getOrCreateSkillItem(skillName, attribute) {
+        const existing = this.actor.items.find(i => i.type === "skill" && i.name === skillName);
+        if (existing) return existing;
+
+        const created = await this.actor.createEmbeddedDocuments("Item", [{
+            name: skillName,
+            type: "skill",
+            img: "icons/svg/book.svg",
+            system: {
+                attribute,
+                training: 0,
+                focus: 0,
+                description: ""
+            }
+        }]);
+        return created?.[0] ?? this.actor.items.find(i => i.type === "skill" && i.name === skillName);
     }
 
     // ─── Drag & Drop: Assignment ───────────────────────────────────────────────

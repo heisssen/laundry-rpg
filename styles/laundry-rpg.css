@@ -382,6 +382,65 @@
     margin-left: 4px;
 }
 
+.laundry-rpg .skill-row .item-formula {
+    min-width: 90px;
+}
+
+.laundry-rpg .skill-adjust-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.laundry-rpg .skill-adjust {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--laundry-border);
+    background: rgba(255,255,255,0.8);
+    color: var(--laundry-text);
+    font-weight: bold;
+    line-height: 14px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.laundry-rpg .skill-adjust:hover {
+    border-color: var(--laundry-accent);
+    color: var(--laundry-accent);
+}
+
+.laundry-rpg .skill-value {
+    display: inline-block;
+    min-width: 12px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--laundry-text);
+}
+
+.laundry-rpg .skill-sep {
+    color: var(--laundry-muted);
+    margin: 0 2px;
+}
+
+.laundry-rpg .skill-level {
+    display: inline-block;
+    min-width: 22px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--laundry-accent);
+}
+
+.laundry-rpg .skill-trained-pill {
+    font-size: 9px;
+    font-weight: bold;
+    color: #fff;
+    background: var(--laundry-success);
+    border-radius: 2px;
+    padding: 0 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
 .laundry-rpg .gear-tag {
     background: var(--laundry-accent-2);
     color: #fff;
