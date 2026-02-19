@@ -4,8 +4,8 @@
   "description": "A system for The Laundry Roleplaying Game (Cubicle 7) in Foundry VTT.",
   "version": "1.0.0",
   "compatibility": {
-    "minimum": "10",
-    "verified": "11"
+    "minimum": "12",
+    "verified": "13"
   },
   "author": "Antigravity",
   "esmodules": [
@@ -21,7 +21,29 @@
       "path": "lang/en.json"
     }
   ],
-  "packs": [],
+  "packs": [
+    {
+      "name": "skills",
+      "label": "Skills",
+      "path": "packs/skills.db",
+      "type": "Item",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "talents",
+      "label": "Talents",
+      "path": "packs/talents.db",
+      "type": "Item",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "assignments",
+      "label": "Assignments",
+      "path": "packs/assignments.db",
+      "type": "Item",
+      "system": "laundry-rpg"
+    }
+  ],
   "url": "https://github.com/heisssen/laundry-rpg",
   "manifest": "https://github.com/heisssen/laundry-rpg/releases/latest/download/system.json",
   "download": "https://github.com/heisssen/laundry-rpg/releases/latest/download/laundry-rpg-master.zip",

@@ -1,0 +1,6 @@
+{"_id":"tal1a2b3c4","name":"Computational Demonologist","type":"talent","img":"icons/svg/aura.svg","system":{"requirements":"","description":"Can cast spells using computational devices."},"effects":[],"flags":{}}
+{"_id":"tal5d6e7f8","name":"Glancing Blow","type":"talent","img":"icons/svg/aura.svg","system":{"requirements":"","description":"Reduce damage from a hit."},"effects":[],"flags":{}}
+{"_id":"tal9g0h1i2","name":"Lucky","type":"talent","img":"icons/svg/aura.svg","system":{"requirements":"","description":"Reroll a failed test once per session."},"effects":[],"flags":{}}
+{"_id":"tal3j4k5l6","name":"Strong Stomach","type":"talent","img":"icons/svg/aura.svg","system":{"requirements":"","description":"Resistant to nausea and disgust."},"effects":[],"flags":{}}
+{"_id":"tal7m8n9o0","name":"License to Kill","type":"talent","img":"icons/svg/aura.svg","system":{"requirements":"","description":"Authorized to use lethal force."},"effects":[],"flags":{}}
+{"_id":"tal1p2q3r4","name":"Occultist","type":"talent","img":"icons/svg/aura.svg","system":{"requirements":"","description":"Gains access to Occult skill and rituals."},"effects":[],"flags":{}}
