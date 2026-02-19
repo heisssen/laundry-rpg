@@ -4,7 +4,7 @@
  * Mechanics:
  *  • Roll a pool of d6s.
  *  • Each die equal to or above the Difficulty Number (DN, default 4) is a success.
- *  • Focus points may each raise one die's result by +1 (optimally applied).
+ *  • Focus points are allocated manually by the player after rolling.
  *  • Results are displayed in a styled chat card.
  */
 
@@ -100,32 +100,21 @@ async function _executeRoll(pool, focus, dn, complexity, flavor, damage, difficu
     await roll.evaluate();
 
     const rawDice = roll.terms[0].results.map(d => d.result);
-
-    // Apply Focus optimally: spend the minimum Focus needed to turn the closest misses into successes.
-    let focusLeft = focus;
-    const results = rawDice.map(val => ({
-        original: val,
-        modified: val,
-        success: val >= effectiveDn,
-        boosted: false
-    }));
-
-    const candidates = results
-        .map((r, idx) => ({ idx, needed: effectiveDn - r.original }))
-        .filter(c => c.needed > 0)
-        .sort((a, b) => a.needed - b.needed);
-
-    for (const c of candidates) {
-        if (focusLeft < c.needed) continue;
-        focusLeft -= c.needed;
-        const r = results[c.idx];
-        r.modified = r.original + c.needed;
-        r.success = true;
-        r.boosted = true;
-    }
+    const focusAllocations = await _allocateFocusManually(rawDice, focus);
+    const results = rawDice.map((val, idx) => {
+        const spent = focusAllocations[idx] ?? 0;
+        const modified = val + spent;
+        return {
+            original: val,
+            modified,
+            success: modified >= effectiveDn,
+            boosted: spent > 0,
+            spent
+        };
+    });
 
     const successes = results.filter(r => r.success).length;
-    const focusUsed = focus - focusLeft;
+    const focusUsed = results.reduce((sum, r) => sum + (r.spent ?? 0), 0);
     const isSuccess = successes >= complexity;
     const margin = successes - complexity;
 
@@ -146,7 +135,7 @@ async function _executeRoll(pool, focus, dn, complexity, flavor, damage, difficu
     const diceHtml = results.map(r => {
         const cls = ["roll", "die", "d6", r.success ? "success" : "failure", r.boosted ? "boosted" : ""].join(" ").trim();
         const display = r.boosted ? `${r.original}→${r.modified}` : r.modified;
-        return `<li class="${cls}" title="${r.boosted ? `Focus spent: +${r.modified - r.original}` : ""}">${display}</li>`;
+        return `<li class="${cls}" title="${r.boosted ? `Focus spent: +${r.spent}` : ""}">${display}</li>`;
     }).join("");
 
     const damageSection = damage
@@ -173,5 +162,58 @@ async function _executeRoll(pool, focus, dn, complexity, flavor, damage, difficu
         content,
         rolls: [roll],
         sound: CONFIG.sounds.dice
+    });
+}
+
+async function _allocateFocusManually(rawDice, focus) {
+    const totalFocus = Math.max(0, Number(focus) || 0);
+    if (!totalFocus) return rawDice.map(() => 0);
+
+    const rows = rawDice.map((die, idx) => `
+        <div class="form-group">
+            <label>Die ${idx + 1} (rolled ${die})</label>
+            <input type="number" class="focus-spend" data-idx="${idx}" value="0" min="0" max="${totalFocus}" />
+        </div>
+    `).join("");
+
+    const content = `
+    <form class="laundry-focus-dialog">
+        <p>You have <strong>${totalFocus}</strong> Focus to allocate (+1 per point).</p>
+        <p>You may split points across dice or stack multiple points on one die.</p>
+        ${rows}
+    </form>`;
+
+    return new Promise(resolve => {
+        new Dialog({
+            title: "Allocate Focus",
+            content,
+            buttons: {
+                apply: {
+                    icon: '<i class="fas fa-check"></i>',
+                    label: "Apply Focus",
+                    callback: (html) => {
+                        const allocations = rawDice.map(() => 0);
+                        let remaining = totalFocus;
+                        html.find(".focus-spend").each((_, input) => {
+                            if (remaining <= 0) return;
+                            const idx = Number(input.dataset.idx ?? -1);
+                            if (idx < 0 || idx >= allocations.length) return;
+                            const requested = Math.max(0, parseInt(input.value, 10) || 0);
+                            const spend = Math.min(requested, remaining);
+                            allocations[idx] = spend;
+                            remaining -= spend;
+                        });
+                        resolve(allocations);
+                    }
+                },
+                skip: {
+                    icon: '<i class="fas fa-forward"></i>',
+                    label: "Skip Focus",
+                    callback: () => resolve(rawDice.map(() => 0))
+                }
+            },
+            default: "apply",
+            close: () => resolve(rawDice.map(() => 0))
+        }).render(true);
     });
 }
