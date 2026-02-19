@@ -43,6 +43,12 @@ export class LaundryCharacterBuilder extends Application {
     activateListeners(html) {
         super.activateListeners(html);
         html.find("form").on("submit", this._onSubmit.bind(this));
+        html.find(".builder-confirm").on("click", (ev) => this._onSubmit(ev));
+        html.find("form").on("keydown", (ev) => {
+            if (ev.key !== "Enter") return;
+            ev.preventDefault();
+            this._onSubmit(ev);
+        });
         html.find(".builder-cancel").on("click", () => this.close());
         html.find("#assignment-select").on("change", (ev) => this._updatePreview(ev.currentTarget));
         const select = html.find("#assignment-select")[0];
@@ -51,7 +57,11 @@ export class LaundryCharacterBuilder extends Application {
 
     async _onSubmit(ev) {
         ev.preventDefault();
-        const form = ev.currentTarget;
+        ev.stopPropagation();
+        const form = ev.currentTarget?.tagName === "FORM"
+            ? ev.currentTarget
+            : ev.currentTarget?.closest?.("form");
+        if (!form) return;
         const assignmentId = form.querySelector('[name="assignment"]')?.value;
         if (!assignmentId) {
             ui.notifications.warn("Select an Assignment to initialize this agent.");
