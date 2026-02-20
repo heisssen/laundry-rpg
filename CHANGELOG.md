@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.11.1 - 2026-02-20
+
+### Changed
+- Published a new release cut to refresh distribution archives and manifest metadata at `v1.11.1`.
+
 ## 1.11.0 - 2026-02-20
 
 ### Added
