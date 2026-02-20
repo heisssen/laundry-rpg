@@ -102,7 +102,9 @@ export class LaundryAttackDialog extends Application {
         super.activateListeners(html);
 
         const root = html[0];
-        const form = root.querySelector("form");
+        const form = root?.tagName === "FORM"
+            ? root
+            : root?.querySelector("form");
         const cancelBtn = root.querySelector('[data-action="cancel"]');
 
         form?.addEventListener("submit", (event) => this._onSubmit(event));
