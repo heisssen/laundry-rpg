@@ -11,15 +11,49 @@
 const TEAM_LUCK_SETTING = "teamLuck";
 const TEAM_LUCK_MAX_SETTING = "teamLuckMax";
 
+export function getWeaponAttackContext({ actor, weapon, linkedSkillName = "" } = {}) {
+    const target = _getPrimaryTargetSnapshot();
+    const targetActor = _resolveTargetActor(target);
+    const isMelee = _isMeleeWeapon({ weapon, linkedSkillName });
+    const attackerRating = Math.max(
+        0,
+        Math.trunc(Number(
+            isMelee
+                ? actor?.system?.derived?.melee?.value
+                : actor?.system?.derived?.accuracy?.value
+        ) || 0)
+    );
+    const hasTarget = Boolean(targetActor);
+    const defenceRating = hasTarget
+        ? Math.max(0, Math.trunc(Number(targetActor?.system?.derived?.defence?.value) || 0))
+        : 0;
+    const ladderDelta = hasTarget ? (attackerRating - defenceRating) : 0;
+
+    return {
+        target,
+        isMelee,
+        hasTarget,
+        attackerRating,
+        defenceRating,
+        ladderDelta,
+        dn: hasTarget ? _mapAttackDnFromDelta(ladderDelta) : 4
+    };
+}
+
 export async function rollDice({
     pool = 1,
     flavor = "Dice Roll",
     dn = 4,
     complexity = 1,
     damage,
+    damageBonus = 0,
+    isWeaponAttack = false,
     difficultyShift = 0,
     actorId,
     focusItemId,
+    allowPostRollFocus = true,
+    targetSnapshot = null,
+    attackMeta = null,
     prompt = true,
     testType = "common"
 } = {}) {
@@ -65,9 +99,14 @@ export async function rollDice({
         complexity: isLuckTest ? 1 : Math.max(1, Number(configured.complexity) || 1),
         flavor,
         damage,
+        damageBonus: Math.max(0, Math.trunc(Number(damageBonus) || 0)),
+        isWeaponAttack,
         shift: isLuckTest ? 0 : _clampShift(configured.shift),
         actorId,
         focusItemId,
+        allowPostRollFocus,
+        targetSnapshot,
+        attackMeta,
         isLuckTest,
         preRollLuckUsed
     });
@@ -76,10 +115,11 @@ export async function rollDice({
 export function bindDiceChatControls(message, html) {
     const state = _getDiceState(message);
     if (!state) return;
+    const focusEnabled = state.allowFocusControls !== false;
 
     html.find(".laundry-die").off("click.laundry-focus-die").on("click.laundry-focus-die", async (ev) => {
         ev.preventDefault();
-        if (!message.isOwner || state.isLuckTest) return;
+        if (!message.isOwner || state.isLuckTest || !focusEnabled) return;
         const dieIndex = Number(ev.currentTarget.dataset.dieIndex);
         if (!Number.isInteger(dieIndex)) return;
         state.selectedDieIndex = dieIndex;
@@ -88,7 +128,7 @@ export function bindDiceChatControls(message, html) {
 
     html.find(".laundry-die").off("dblclick.laundry-focus-die").on("dblclick.laundry-focus-die", async (ev) => {
         ev.preventDefault();
-        if (!message.isOwner || state.isLuckTest) return;
+        if (!message.isOwner || state.isLuckTest || !focusEnabled) return;
         const dieIndex = Number(ev.currentTarget.dataset.dieIndex);
         if (!Number.isInteger(dieIndex)) return;
         state.selectedDieIndex = dieIndex;
@@ -97,7 +137,7 @@ export function bindDiceChatControls(message, html) {
 
     html.find(".apply-focus").off("click.laundry-focus").on("click.laundry-focus", async (ev) => {
         ev.preventDefault();
-        if (!message.isOwner || state.isLuckTest) return;
+        if (!message.isOwner || state.isLuckTest || !focusEnabled) return;
         const itemId = ev.currentTarget.dataset.itemId;
         if (itemId) state.focusItemId = itemId;
         await _spendFocus(message, state);
@@ -105,7 +145,7 @@ export function bindDiceChatControls(message, html) {
 
     html.find(".auto-focus").off("click.laundry-focus-auto").on("click.laundry-focus-auto", async (ev) => {
         ev.preventDefault();
-        if (!message.isOwner || state.isLuckTest) return;
+        if (!message.isOwner || state.isLuckTest || !focusEnabled) return;
         const itemId = ev.currentTarget.dataset.itemId;
         if (itemId) state.focusItemId = itemId;
         state.selectedDieIndex = _findAutoFocusDie(state);
@@ -114,7 +154,7 @@ export function bindDiceChatControls(message, html) {
 
     html.find(".undo-focus").off("click.laundry-focus-undo").on("click.laundry-focus-undo", async (ev) => {
         ev.preventDefault();
-        if (!message.isOwner || state.isLuckTest) return;
+        if (!message.isOwner || state.isLuckTest || !focusEnabled) return;
         const itemId = ev.currentTarget.dataset.itemId;
         if (itemId) state.focusItemId = itemId;
         await _undoFocus(message, state);
@@ -125,6 +165,15 @@ export function bindDiceChatControls(message, html) {
         if (!message.isOwner) return;
         await _rerollFailuresWithLuck(message, state);
     });
+
+    html.find(".apply-damage").off("click.laundry-apply-damage").on("click.laundry-apply-damage", async (ev) => {
+        ev.preventDefault();
+        await _applyDamage(message);
+    });
+
+    if (!_canCurrentUserApplyDamage(state)) {
+        html.find(".apply-damage").remove();
+    }
 }
 
 async function _executeRoll({
@@ -133,9 +182,14 @@ async function _executeRoll({
     complexity,
     flavor,
     damage,
+    damageBonus,
+    isWeaponAttack,
     shift,
     actorId,
     focusItemId,
+    allowPostRollFocus,
+    targetSnapshot,
+    attackMeta,
     isLuckTest,
     preRollLuckUsed
 }) {
@@ -152,12 +206,20 @@ async function _executeRoll({
         rawDice = roll.terms[0].results.map(d => d.result);
     }
 
+    const actor = actorId ? game.actors?.get(actorId) : null;
     let focusAvailable = 0;
     if (!isLuckTest && actorId && focusItemId) {
-        const actor = game.actors?.get(actorId);
         const focusItem = actor?.items?.get(focusItemId);
         focusAvailable = Number(focusItem?.system?.focus ?? 0);
     }
+
+    const target = targetSnapshot || _getPrimaryTargetSnapshot();
+    const damageData = await _evaluateDamage({
+        damage,
+        isWeaponAttack,
+        actor,
+        damageBonus
+    });
 
     const state = {
         pool,
@@ -165,7 +227,16 @@ async function _executeRoll({
         complexity,
         shift,
         effectiveDn,
-        damage: damage ?? "",
+        damage: damageData.formula,
+        damageBaseTotal: damageData.baseTotal,
+        damageBonus: damageData.bonus,
+        damageTotal: damageData.total,
+        damageRollResult: damageData.result,
+        isWeaponAttack: Boolean(isWeaponAttack),
+        targetName: target?.name ?? "",
+        targetActorId: target?.actorId ?? null,
+        targetTokenId: target?.tokenId ?? null,
+        targetCount: target?.count ?? 0,
         rawDice,
         focusAllocations: [],
         focusHistory: [],
@@ -173,8 +244,10 @@ async function _executeRoll({
         focusSpent: 0,
         focusAvailable,
         focusRemaining: focusAvailable,
+        allowFocusControls: !isLuckTest && allowPostRollFocus !== false,
         actorId: actorId ?? null,
         focusItemId: !isLuckTest ? (focusItemId ?? null) : null,
+        attackMeta: attackMeta ?? null,
         isLuckTest,
         preRollLuckUsed,
         teamLuck: await _getTeamLuck(),
@@ -192,7 +265,8 @@ async function _executeRoll({
         flags: { "laundry-rpg": { diceState: state } },
         sound: CONFIG.sounds.dice
     };
-    if (roll) payload.rolls = [roll];
+    const payloadRolls = [roll, damageData.roll].filter(Boolean);
+    if (payloadRolls.length) payload.rolls = payloadRolls;
 
     await ChatMessage.create(payload);
 }
@@ -206,15 +280,18 @@ function _buildResults(state) {
     const allocations = Array.isArray(state.focusAllocations) ? state.focusAllocations : [];
     const effectiveDn = Number(state.effectiveDn ?? state.dn ?? 4);
     return rawDice.map((val, idx) => {
+        const rawValue = _clampDie(val);
         const bonus = Number(allocations[idx] ?? 0);
-        const adjusted = Math.max(1, Math.min(6, Number(val ?? 1) + bonus));
+        const adjusted = _clampDie(rawValue + bonus);
         const selected = Number(state.selectedDieIndex) === idx;
         return {
             index: idx,
             value: adjusted,
-            rawValue: val,
+            rawValue,
             bonus,
             success: adjusted >= effectiveDn,
+            critical: rawValue === 6,
+            complication: rawValue === 1,
             selected
         };
     });
@@ -222,10 +299,9 @@ function _buildResults(state) {
 
 function _renderDiceContent(state) {
     const results = _buildResults(state);
-    const successes = results.filter(r => r.success).length;
-    const complexity = Number(state.complexity ?? 1);
-    const margin = successes - complexity;
-    const isSuccess = successes >= complexity;
+    const outcome = _buildOutcome(state, results);
+    const criticals = results.filter(r => r.critical).length;
+    const complications = results.filter(r => r.complication).length;
 
     const shift = Number(state.shift ?? 0);
     const shiftLabel = state.isLuckTest
@@ -236,31 +312,35 @@ function _renderDiceContent(state) {
                 ? (shift === -1 ? "Advantage" : "Greater Advantage")
                 : (shift === 1 ? "Disadvantage" : "Greater Disadvantage")));
 
-    let benefitLabel = "";
-    if (isSuccess) {
-        if (margin >= 3) benefitLabel = "Major Benefit";
-        else if (margin >= 1) benefitLabel = "Minor Benefit";
-    }
-
     const diceHtml = results.map(r => {
         const cls = [
             "roll", "die", "d6", "laundry-die",
             r.success ? "success" : "failure",
+            r.critical ? "die-critical" : "",
+            r.complication ? "die-complication" : "",
             r.bonus > 0 ? "focus-boosted" : "",
             r.selected ? "focus-selected" : ""
         ].join(" ").trim();
         const valueText = `${r.value}`;
-        return `<li class="${cls}" data-die-index="${r.index}" title="Select die for Focus">${valueText}</li>`;
+        const marker = r.critical
+            ? `<span class="die-marker marker-critical" title="${_escapeHtml(game.i18n.localize("LAUNDRY.NaturalSix"))}">*</span>`
+            : (r.complication
+                ? `<span class="die-marker marker-complication" title="${_escapeHtml(game.i18n.localize("LAUNDRY.NaturalOne"))}">!</span>`
+                : "");
+        const title = state.allowFocusControls === false
+            ? ""
+            : _escapeHtml(game.i18n.localize("LAUNDRY.SelectDieForFocus"));
+        return `<li class="${cls}" data-die-index="${r.index}" title="${title}">${valueText}${marker}</li>`;
     }).join("");
 
-    const damageSection = state.damage
-        ? `<div class="damage-section"><strong>Damage:</strong> ${state.damage}</div>`
-        : "";
+    const attackMetaSection = _renderAttackMetaSection(state);
+    const targetSection = _renderTargetSection(state);
+    const damageSection = _renderDamageSection(state);
 
     const teamLuck = Math.max(0, Number(state.teamLuck ?? 0));
     const teamLuckMax = Math.max(0, Number(state.teamLuckMax ?? 0));
 
-    const focusSection = state.isLuckTest ? "" : _renderFocusControls(state);
+    const focusSection = (state.isLuckTest || state.allowFocusControls === false) ? "" : _renderFocusControls(state);
     const luckSection = _renderLuckControls(state, teamLuck, teamLuckMax);
 
     const formulaBits = state.isLuckTest
@@ -270,18 +350,121 @@ function _renderDiceContent(state) {
     return `
     <div class="laundry-dice-roll">
         <div class="dice-formula">${formulaBits}</div>
+        ${attackMetaSection}
+        ${targetSection}
         ${state.preRollLuckUsed ? '<div class="dice-formula">Luck spent: Maximise Successes (all dice treated as 6).</div>' : ''}
         <ol class="dice-rolls">${diceHtml}</ol>
+        <div class="dice-roll-summary">
+            <span class="crit-summary">${_escapeHtml(game.i18n.localize("LAUNDRY.Criticals"))}: ${criticals}</span>
+            <span class="comp-summary">${_escapeHtml(game.i18n.localize("LAUNDRY.Complications"))}: ${complications}</span>
+        </div>
         ${focusSection}
         ${luckSection}
-        <div class="dice-outcome ${isSuccess ? "outcome-success" : "outcome-failure"}">
-            <strong>${isSuccess ? "Success" : "Failure"}</strong>
-            <span class="success-count">(Successes: ${successes}/${complexity})</span>
-            ${benefitLabel ? `<span class="benefit-label">${benefitLabel}</span>` : ""}
+        <div class="dice-outcome ${outcome.cssClass}">
+            <strong>${outcome.label}</strong>
+            <span class="success-count">(Successes: ${outcome.successes}/${outcome.complexity})</span>
             ${state.isLuckTest ? "" : `<span class="focus-spent">(Focus used: ${state.focusSpent ?? 0})</span>`}
         </div>
         ${damageSection}
     </div>`;
+}
+
+function _buildOutcome(state, results) {
+    const successes = results.filter(r => r.success).length;
+    const complexity = Math.max(1, Number(state.complexity ?? 1) || 1);
+
+    return {
+        label: successes >= complexity ? game.i18n.localize("LAUNDRY.Success") : game.i18n.localize("LAUNDRY.Failure"),
+        cssClass: successes >= complexity ? "outcome-success" : "outcome-failure",
+        successes,
+        complexity
+    };
+}
+
+function _renderAttackMetaSection(state) {
+    if (!state.isWeaponAttack) return "";
+    const meta = state.attackMeta ?? null;
+    if (!meta) return "";
+
+    if (!meta.hasTarget) {
+        return `
+            <div class="attack-meta-section">
+                <div><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Target"))}:</strong> ${_escapeHtml(game.i18n.localize("LAUNDRY.AttackNoTarget"))}</div>
+                <div><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.AttackAutoDN"))}:</strong> 4</div>
+            </div>`;
+    }
+
+    const modeLabel = meta.mode === "melee"
+        ? game.i18n.localize("LAUNDRY.AttackModeMelee")
+        : game.i18n.localize("LAUNDRY.AttackModeRanged");
+    const attackerLabel = meta.mode === "melee"
+        ? game.i18n.localize("LAUNDRY.Melee")
+        : game.i18n.localize("LAUNDRY.Accuracy");
+
+    const attackerRating = Number(meta.attackerRating);
+    const defenceRating = Number(meta.defenceRating);
+    const ladderDelta = Math.trunc(Number(meta.ladderDelta ?? 0) || 0);
+    const ladderLabel = ladderDelta > 0
+        ? game.i18n.format("LAUNDRY.LadderDiffHigher", { steps: ladderDelta })
+        : (ladderDelta < 0
+            ? game.i18n.format("LAUNDRY.LadderDiffLower", { steps: Math.abs(ladderDelta) })
+            : game.i18n.localize("LAUNDRY.LadderDiffEqual"));
+
+    return `
+        <div class="attack-meta-section">
+            <div><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.AttackMode"))}:</strong> ${_escapeHtml(modeLabel)}</div>
+            <div><strong>${_escapeHtml(attackerLabel)}:</strong> ${Math.max(0, Math.trunc(attackerRating || 0))} | <strong>${_escapeHtml(game.i18n.localize("LAUNDRY.TargetDefence"))}:</strong> ${Math.max(0, Math.trunc(defenceRating || 0))}</div>
+            <div><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.LadderDifference"))}:</strong> ${_escapeHtml(ladderLabel)} | <strong>${_escapeHtml(game.i18n.localize("LAUNDRY.AttackAutoDN"))}:</strong> ${Math.max(2, Math.min(6, Number(state.dn ?? 4) || 4))}</div>
+            ${meta.focusSpentPreRoll ? `<div class="attack-pre-spend">${_escapeHtml(game.i18n.localize("LAUNDRY.SpendFocusBoost"))}</div>` : ""}
+            ${meta.adrenalineSpentPreRoll ? `<div class="attack-pre-spend">${_escapeHtml(game.i18n.localize("LAUNDRY.SpendAdrenalineBoost"))}</div>` : ""}
+        </div>`;
+}
+
+function _renderTargetSection(state) {
+    const targetName = String(state.targetName ?? "").trim();
+    if (!targetName) return "";
+
+    const count = Math.max(1, Number(state.targetCount ?? 1) || 1);
+    const label = count > 1 ? `${targetName} (+${count - 1} more)` : targetName;
+    return `<div class="target-section"><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Target"))}:</strong> ${_escapeHtml(label)}</div>`;
+}
+
+function _renderDamageSection(state) {
+    const formula = String(state.damage ?? "").trim();
+    const isWeaponAttack = Boolean(state.isWeaponAttack);
+    const hasFormula = Boolean(formula);
+
+    if (!hasFormula && !isWeaponAttack) return "";
+
+    const escapedFormula = _escapeHtml(formula);
+    const total = Number(state.damageTotal);
+    const baseTotal = Number(state.damageBaseTotal);
+    const bonus = Math.max(0, Math.trunc(Number(state.damageBonus ?? 0) || 0));
+    const hasRolledTotal = Number.isFinite(total);
+    const hasBaseTotal = Number.isFinite(baseTotal);
+
+    if (!isWeaponAttack) {
+        return `<div class="damage-section"><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Damage"))}:</strong> ${escapedFormula}</div>`;
+    }
+
+    const hasTarget = Boolean(String(state.targetName ?? "").trim());
+    const buttonDisabled = !hasTarget || !hasRolledTotal;
+    const breakdown = !hasFormula
+        ? game.i18n.localize("LAUNDRY.NoDamageFormula")
+        : (hasRolledTotal
+            ? (bonus > 0 && hasBaseTotal
+                ? `${escapedFormula} = ${Math.max(0, Math.trunc(baseTotal))} + ${bonus} (${_escapeHtml(game.i18n.localize("LAUNDRY.Adrenaline"))}) = <strong class="damage-total">${Math.max(0, Math.trunc(total))}</strong>`
+                : `${escapedFormula} = <strong class="damage-total">${Math.max(0, Math.trunc(total))}</strong>`)
+            : `${escapedFormula} (${_escapeHtml(game.i18n.localize("LAUNDRY.DamageNotRollable"))})`);
+    const buttonTitle = hasTarget
+        ? game.i18n.localize("LAUNDRY.ApplyDamageTooltip")
+        : game.i18n.localize("LAUNDRY.SelectTargetForDamage");
+
+    return `
+        <div class="damage-section weapon-damage-section">
+            <div><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Damage"))}:</strong> ${breakdown}</div>
+            <button type="button" class="apply-damage spend-focus" title="${_escapeHtml(buttonTitle)}" ${buttonDisabled ? "disabled" : ""}>${_escapeHtml(game.i18n.localize("LAUNDRY.ApplyDamage"))}</button>
+        </div>`;
 }
 
 function _renderFocusControls(state) {
@@ -436,6 +619,72 @@ async function _updateDiceMessage(message, state) {
     });
 }
 
+async function _applyDamage(message) {
+    const state = _getDiceState(message);
+    if (!state?.isWeaponAttack) {
+        ui.notifications.warn(game.i18n.localize("LAUNDRY.NotWeaponAttackCard"));
+        return;
+    }
+
+    const targetActor = _resolveTargetActor(state);
+    if (!targetActor) {
+        ui.notifications.warn(game.i18n.localize("LAUNDRY.NoAttackTargetCaptured"));
+        return;
+    }
+
+    const canApply = _canCurrentUserApplyDamage(state);
+    if (!canApply) {
+        ui.notifications.warn(game.i18n.localize("LAUNDRY.CannotApplyDamage"));
+        return;
+    }
+
+    const rawDamage = Number(state.damageTotal);
+    if (!Number.isFinite(rawDamage)) {
+        ui.notifications.warn(game.i18n.localize("LAUNDRY.DamageNotRollable"));
+        return;
+    }
+
+    const rolledDamage = Math.max(0, Math.trunc(rawDamage));
+    const armour = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.armour?.value ?? 0)));
+    const appliedDamage = Math.max(0, rolledDamage - armour);
+    const currentToughness = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.toughness?.value ?? 0)));
+    const maxToughness = Math.max(
+        currentToughness,
+        Math.trunc(Number(targetActor.system?.derived?.toughness?.max ?? currentToughness))
+    );
+    const newToughness = Math.max(0, currentToughness - appliedDamage);
+    const newDamageTaken = Math.max(0, maxToughness - newToughness);
+
+    await targetActor.update({
+        "system.derived.toughness.value": newToughness,
+        "system.derived.toughness.damage": newDamageTaken
+    });
+
+    ui.notifications.info(game.i18n.format("LAUNDRY.DamageApplied", {
+        name: targetActor.name,
+        rolled: rolledDamage,
+        armour,
+        applied: appliedDamage,
+        from: currentToughness,
+        to: newToughness
+    }));
+}
+
+function _resolveTargetActor(state) {
+    const tokenId = state?.targetTokenId;
+    const tokenActor = tokenId ? canvas.tokens?.get(tokenId)?.actor : null;
+    if (tokenActor) return tokenActor;
+
+    const actorId = state?.targetActorId;
+    if (!actorId) return null;
+    return game.actors?.get(actorId) ?? null;
+}
+
+function _canCurrentUserApplyDamage(state) {
+    const targetActor = _resolveTargetActor(state);
+    return Boolean(game.user?.isGM || targetActor?.isOwner);
+}
+
 function _findAutoFocusDie(state) {
     const results = _buildResults(state);
     if (!results.length) return null;
@@ -454,6 +703,98 @@ function _findAutoFocusDie(state) {
 
 function _countFailureDice(state) {
     return _buildResults(state).filter(r => !r.success).length;
+}
+
+function _getPrimaryTargetSnapshot() {
+    const targets = Array.from(game.user?.targets ?? []);
+    if (!targets.length) return null;
+
+    const [primary] = targets;
+    if (!primary) return null;
+
+    const token = primary.document ?? primary;
+    const actor = primary.actor ?? token?.actor ?? null;
+    const name = primary.name ?? token?.name ?? actor?.name ?? "";
+
+    return {
+        name,
+        actorId: actor?.id ?? null,
+        tokenId: primary.id ?? token?.id ?? null,
+        count: targets.length
+    };
+}
+
+function _isMeleeWeapon({ weapon, linkedSkillName = "" } = {}) {
+    const skillName = String(linkedSkillName || weapon?.system?.skill || "").trim().toLowerCase();
+    if (skillName.includes("close") || skillName.includes("melee")) return true;
+    if (skillName.includes("ranged") || skillName.includes("firearm") || skillName.includes("shoot")) return false;
+
+    const rangeText = String(weapon?.system?.range ?? "").trim().toLowerCase();
+    if (!rangeText) return true;
+    if (rangeText.includes("short") || rangeText.includes("medium") || rangeText.includes("long")) return false;
+    return rangeText.includes("close") || rangeText.includes("touch");
+}
+
+function _mapAttackDnFromDelta(delta = 0) {
+    const diff = Math.trunc(Number(delta) || 0);
+    if (diff >= 2) return 2;
+    if (diff === 1) return 3;
+    if (diff === 0) return 4;
+    if (diff === -1) return 5;
+    return 6;
+}
+
+async function _evaluateDamage({ damage, isWeaponAttack, actor, damageBonus = 0 }) {
+    const formula = String(damage ?? "").trim();
+    const bonus = Math.max(0, Math.trunc(Number(damageBonus) || 0));
+    if (!formula || !isWeaponAttack) {
+        return {
+            formula,
+            baseTotal: null,
+            bonus,
+            total: null,
+            result: "",
+            roll: null
+        };
+    }
+
+    try {
+        const roll = new Roll(formula, actor?.getRollData?.() ?? {});
+        await roll.evaluate();
+        const baseTotal = Number(roll.total);
+        const finalTotal = Number.isFinite(baseTotal)
+            ? baseTotal + bonus
+            : null;
+        return {
+            formula,
+            baseTotal,
+            bonus,
+            total: finalTotal,
+            result: roll.result ?? "",
+            roll
+        };
+    } catch (err) {
+        console.warn("Laundry RPG | Failed to evaluate weapon damage roll", err);
+        const flat = Number(formula);
+        if (Number.isFinite(flat)) {
+            return {
+                formula,
+                baseTotal: flat,
+                bonus,
+                total: flat + bonus,
+                result: `${flat}`,
+                roll: null
+            };
+        }
+        return {
+            formula,
+            baseTotal: null,
+            bonus,
+            total: null,
+            result: "",
+            roll: null
+        };
+    }
 }
 
 async function _promptRollConfig(config) {
@@ -516,6 +857,7 @@ async function _promptRollConfig(config) {
         new Dialog({
             title: "Configure Test",
             content,
+            classes: ["laundry-rpg", "laundry-dialog"],
             buttons: {
                 roll: {
                     label: "Roll",
@@ -571,6 +913,24 @@ function _clampDn(value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return 4;
     return Math.max(2, Math.min(6, Math.trunc(n)));
+}
+
+function _clampDie(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 1;
+    return Math.max(1, Math.min(6, Math.trunc(n)));
+}
+
+function _escapeHtml(value) {
+    const text = String(value ?? "");
+    const escape = globalThis.foundry?.utils?.escapeHTML;
+    if (typeof escape === "function") return escape(text);
+    return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 async function _refreshLuckSnapshot(state) {

@@ -1,0 +1,55 @@
+<form class="laundry-attack-dialog-form" autocomplete="off">
+    <header class="attack-dialog-header">
+        <div class="attack-dialog-title-row">
+            <h2>{{localize "LAUNDRY.AttackDialogBrief"}}</h2>
+            <span class="attack-dialog-stamp">{{localize "LAUNDRY.ActiveAgent"}}</span>
+        </div>
+        <div class="attack-dialog-weapon">{{weaponName}}</div>
+    </header>
+
+    <section class="attack-dialog-grid">
+        <div class="attack-dialog-field">
+            <span class="label">{{localize "LAUNDRY.Target"}}:</span>
+            <span class="value">{{targetName}}</span>
+        </div>
+        <div class="attack-dialog-field">
+            <span class="label">{{localize "LAUNDRY.AttackMode"}}:</span>
+            <span class="value">{{modeLabel}}</span>
+        </div>
+        <div class="attack-dialog-field">
+            <span class="label">{{attackerLabel}}:</span>
+            <span class="value">{{attackerRating}}</span>
+        </div>
+        <div class="attack-dialog-field">
+            <span class="label">{{localize "LAUNDRY.TargetDefence"}}:</span>
+            <span class="value">{{defenceRating}}</span>
+        </div>
+        <div class="attack-dialog-field">
+            <span class="label">{{localize "LAUNDRY.LadderDifference"}}:</span>
+            <span class="value">{{ladderDeltaLabel}}</span>
+        </div>
+        <div class="attack-dialog-field attack-dialog-dn">
+            <span class="label">{{localize "LAUNDRY.AttackAutoDN"}}:</span>
+            <span class="value dn-value">{{dn}}</span>
+        </div>
+    </section>
+
+    <section class="attack-dialog-toggles">
+        <label class="attack-dialog-toggle {{#unless canSpendFocus}}is-disabled{{/unless}}">
+            <input type="checkbox" name="spendFocus" {{#unless canSpendFocus}}disabled{{/unless}} />
+            <span>{{localize "LAUNDRY.SpendFocusBoost"}}</span>
+            <small>{{localize "LAUNDRY.Focus"}}: {{focusAvailable}}</small>
+        </label>
+
+        <label class="attack-dialog-toggle {{#unless canSpendAdrenaline}}is-disabled{{/unless}}">
+            <input type="checkbox" name="spendAdrenaline" {{#unless canSpendAdrenaline}}disabled{{/unless}} />
+            <span>{{localize "LAUNDRY.SpendAdrenalineBoost"}}</span>
+            <small>{{localize "LAUNDRY.Adrenaline"}}: {{adrenalineAvailable}}</small>
+        </label>
+    </section>
+
+    <footer class="attack-dialog-actions">
+        <button type="submit" class="roll-attack">{{localize "LAUNDRY.RollAttack"}}</button>
+        <button type="button" data-action="cancel">{{localize "Cancel"}}</button>
+    </footer>
+</form>

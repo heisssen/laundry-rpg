@@ -8,9 +8,9 @@ export class LaundryCharacterBuilder extends Application {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "laundry-character-builder",
-            classes: ["laundry-rpg", "character-builder"],
+            classes: ["laundry-rpg", "character-builder", "laundry-dialog"],
             template: "systems/laundry-rpg/templates/actor/character-builder.html",
-            title: "Initialize Agent",
+            title: "Form 2B: Agent Requisition",
             width: 640,
             height: "auto"
         });
@@ -53,6 +53,7 @@ export class LaundryCharacterBuilder extends Application {
             this._renderAssignmentDetails(ev.currentTarget?.value ?? "");
         });
         html.on("change", ".builder-choice-input", (ev) => this._onChoiceChanged(ev.currentTarget));
+        html.on("change", ".skill-allocation-input", (ev) => this._onSkillAllocationChanged(ev.currentTarget));
 
         const select = html.find("#assignment-select")[0];
         if (select) this._renderAssignmentDetails(select.value);
@@ -67,13 +68,13 @@ export class LaundryCharacterBuilder extends Application {
         if (!form) return;
         const assignmentId = form.querySelector('[name="assignment"]')?.value?.trim();
         if (!assignmentId) {
-            ui.notifications.warn("Select an Assignment to initialize this agent.");
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.SelectAssignmentWarning"));
             return;
         }
 
         const assignmentData = this._assignmentById.get(assignmentId);
         if (!assignmentData) {
-            ui.notifications.error("Assignment details are unavailable.");
+            ui.notifications.error(game.i18n.localize("LAUNDRY.AssignmentUnavailable"));
             return;
         }
 
@@ -83,26 +84,36 @@ export class LaundryCharacterBuilder extends Application {
         const chosenTalents = _uniqueList(
             _readCheckedValues(form, "talent").filter(name => assignmentData.optionalTalents.includes(name))
         );
+        const skillAllocations = this._readSkillAllocations(form, assignmentData);
+        const xpBudget = Number(assignmentData.skillXpBudget ?? 12);
+        const usedXp = _calculateSkillXpUsage(skillAllocations, assignmentData);
+        if (usedXp > xpBudget) {
+            ui.notifications.warn(game.i18n.format("LAUNDRY.SkillXpExceeded", {
+                used: usedXp,
+                max: xpBudget
+            }));
+            return;
+        }
 
         if (assignmentData.skillChoiceCount > 0 && chosenSkills.length !== assignmentData.skillChoiceCount) {
-            ui.notifications.warn(`Select exactly ${assignmentData.skillChoiceCount} optional skill(s).`);
+            ui.notifications.warn(game.i18n.format("LAUNDRY.SelectExactSkills", { count: assignmentData.skillChoiceCount }));
             return;
         }
 
         if (assignmentData.talentChoiceCount > 0 && chosenTalents.length !== assignmentData.talentChoiceCount) {
-            ui.notifications.warn(`Select exactly ${assignmentData.talentChoiceCount} optional talent(s).`);
+            ui.notifications.warn(game.i18n.format("LAUNDRY.SelectExactTalents", { count: assignmentData.talentChoiceCount }));
             return;
         }
 
         const pack = game.packs.get("laundry-rpg.assignments");
         if (!pack) {
-            ui.notifications.error("Assignments compendium not found.");
+            ui.notifications.error(game.i18n.localize("LAUNDRY.AssignmentsMissing"));
             return;
         }
 
         const assignment = await pack.getDocument(assignmentId);
         if (!assignment) {
-            ui.notifications.error("Assignment not found in compendium.");
+            ui.notifications.error(game.i18n.localize("LAUNDRY.AssignmentNotFound"));
             return;
         }
 
@@ -110,15 +121,16 @@ export class LaundryCharacterBuilder extends Application {
         const hasItems = (this.actor?.items?.size ?? 0) > 0;
         if (hasExistingAssignment || hasItems) {
             const confirmed = await Dialog.confirm({
-                title: "Re-initialize Agent?",
-                content: "<p>This agent already has assignment or item data. Re-initializing will add any missing assignment entries and may alter attributes. Continue?</p>"
+                title: game.i18n.localize("LAUNDRY.ReinitializeTitle"),
+                content: `<p>${game.i18n.localize("LAUNDRY.ReinitializeBody")}</p>`
             });
             if (!confirmed) return;
         }
 
         await applyAssignmentToActor(this.actor, assignment, {
             chosenSkills,
-            chosenTalents
+            chosenTalents,
+            skillAllocations
         });
         this.close();
     }
@@ -139,7 +151,7 @@ export class LaundryCharacterBuilder extends Application {
         };
 
         if (!assignment) {
-            setText(".preview-description", "", "Select an assignment to see details.");
+            setText(".preview-description", "", game.i18n.localize("LAUNDRY.SelectAssignmentDetails"));
             setText(".preview-body", "-");
             setText(".preview-mind", "-");
             setText(".preview-spirit", "-");
@@ -148,13 +160,14 @@ export class LaundryCharacterBuilder extends Application {
             setText(".preview-core-talents", "-");
             setText(".preview-optional-talents", "-");
             setText(".preview-equipment", "-");
-            this._renderChoiceList("skill", [], 0, "Select an assignment first.");
-            this._renderChoiceList("talent", [], 0, "Select an assignment first.");
+            this._renderChoiceList("skill", [], 0, game.i18n.localize("LAUNDRY.SelectAssignmentFirst"));
+            this._renderChoiceList("talent", [], 0, game.i18n.localize("LAUNDRY.SelectAssignmentFirst"));
             this._updateChoiceCounters({ skillChoiceCount: 0, talentChoiceCount: 0 });
+            this._renderSkillAllocation(null);
             return;
         }
 
-        setText(".preview-description", assignment.description, "No description.");
+        setText(".preview-description", assignment.description, game.i18n.localize("LAUNDRY.NoDescription"));
         setText(".preview-body", assignment.attributes.body);
         setText(".preview-mind", assignment.attributes.mind);
         setText(".preview-spirit", assignment.attributes.spirit);
@@ -168,15 +181,16 @@ export class LaundryCharacterBuilder extends Application {
             "skill",
             assignment.optionalSkills,
             assignment.skillChoiceCount,
-            "No optional skills for this assignment."
+            game.i18n.localize("LAUNDRY.NoOptionalSkills")
         );
         this._renderChoiceList(
             "talent",
             assignment.optionalTalents,
             assignment.talentChoiceCount,
-            "No optional talents for this assignment."
+            game.i18n.localize("LAUNDRY.NoOptionalTalents")
         );
         this._updateChoiceCounters(assignment);
+        this._renderSkillAllocation(assignment);
     }
 
     _renderChoiceList(kind, options, choiceCount, emptyMessage) {
@@ -189,13 +203,13 @@ export class LaundryCharacterBuilder extends Application {
 
         if (!options.length) {
             listEl.innerHTML = `<p class="builder-choice-empty">${_escapeHtml(emptyMessage)}</p>`;
-            hintEl.textContent = "No selection required.";
+            hintEl.textContent = game.i18n.localize("LAUNDRY.NoSelectionRequired");
             return;
         }
 
         hintEl.textContent = choiceCount > 0
-            ? `Choose ${choiceCount}.`
-            : "Choose any number.";
+            ? game.i18n.format("LAUNDRY.ChooseN", { count: choiceCount })
+            : game.i18n.localize("LAUNDRY.ChooseAny");
 
         listEl.innerHTML = options.map(name => (
             `<label class="builder-choice-option">
@@ -225,12 +239,15 @@ export class LaundryCharacterBuilder extends Application {
             );
             if (checked.length > choiceCount) {
                 inputEl.checked = false;
-                const label = kind === "skill" ? "skills" : "talents";
-                ui.notifications.warn(`You can choose only ${choiceCount} ${label}.`);
+                const isSkill = kind === "skill";
+                ui.notifications.warn(isSkill
+                    ? game.i18n.format("LAUNDRY.SelectExactSkills", { count: choiceCount })
+                    : game.i18n.format("LAUNDRY.SelectExactTalents", { count: choiceCount }));
             }
         }
 
         this._updateChoiceCounters(assignment);
+        if (kind === "skill") this._renderSkillAllocation(assignment);
     }
 
     _updateChoiceCounters(assignment) {
@@ -267,6 +284,175 @@ export class LaundryCharacterBuilder extends Application {
         if (!assignmentId) return null;
         return this._assignmentById.get(assignmentId) ?? null;
     }
+
+    _renderSkillAllocation(assignment) {
+        const root = this.element?.[0];
+        if (!root) return;
+
+        const listEl = root.querySelector(".skill-allocation-list");
+        const counterEl = root.querySelector(".skill-xp-counter");
+        if (!listEl || !counterEl) return;
+
+        if (!assignment) {
+            counterEl.textContent = game.i18n.format("LAUNDRY.SkillXpCounter", { used: 0, max: 0 });
+            counterEl.classList.remove("is-valid", "is-invalid");
+            listEl.innerHTML = `<p class="builder-choice-empty">${_escapeHtml(game.i18n.localize("LAUNDRY.SelectAssignmentFirst"))}</p>`;
+            return;
+        }
+
+        const skills = this._getAllocatableSkills(assignment);
+        if (!skills.length) {
+            counterEl.textContent = game.i18n.format("LAUNDRY.SkillXpCounter", {
+                used: 0,
+                max: Number(assignment.skillXpBudget ?? 0)
+            });
+            counterEl.classList.remove("is-valid", "is-invalid");
+            listEl.innerHTML = `<p class="builder-choice-empty">${_escapeHtml(game.i18n.localize("LAUNDRY.NoOptionalSkills"))}</p>`;
+            return;
+        }
+
+        const previous = this._captureCurrentSkillAllocations(root);
+        listEl.innerHTML = skills.map((skillName) => {
+            const core = assignment.coreSkills.some(s => s.toLowerCase() === skillName.toLowerCase());
+            const baseTraining = core ? 1 : 0;
+            const baseFocus = core ? 1 : 0;
+            const prev = previous.get(skillName.toLowerCase()) ?? {};
+            const training = _clampLevel(prev.training ?? baseTraining, baseTraining, 4);
+            const focus = _clampLevel(prev.focus ?? baseFocus, baseFocus, 4);
+            return `
+                <div class="skill-allocation-row" data-skill-name="${_escapeHtml(skillName)}" data-base-training="${baseTraining}" data-base-focus="${baseFocus}">
+                    <div class="skill-name">
+                        <span>${_escapeHtml(skillName)}</span>
+                        ${core ? `<small>${_escapeHtml(game.i18n.localize("LAUNDRY.CoreSkillBase"))}</small>` : ""}
+                    </div>
+                    <label>${_escapeHtml(game.i18n.localize("LAUNDRY.Training"))}
+                        <input type="number" class="skill-allocation-input" data-skill-name="${_escapeHtml(skillName)}" data-track="training" min="${baseTraining}" max="4" value="${training}" />
+                    </label>
+                    <label>${_escapeHtml(game.i18n.localize("LAUNDRY.Focus"))}
+                        <input type="number" class="skill-allocation-input" data-skill-name="${_escapeHtml(skillName)}" data-track="focus" min="${baseFocus}" max="4" value="${focus}" />
+                    </label>
+                    <span class="skill-allocation-cost">0 XP</span>
+                </div>`;
+        }).join("");
+
+        this._updateSkillXpCounter(assignment);
+    }
+
+    _captureCurrentSkillAllocations(root) {
+        const rows = root.querySelectorAll(".skill-allocation-row");
+        const out = new Map();
+        for (const row of rows) {
+            const skillName = String(row.dataset.skillName ?? "").trim().toLowerCase();
+            if (!skillName) continue;
+            const trainingInput = row.querySelector('input[data-track="training"]');
+            const focusInput = row.querySelector('input[data-track="focus"]');
+            out.set(skillName, {
+                training: Number(trainingInput?.value ?? 0),
+                focus: Number(focusInput?.value ?? 0)
+            });
+        }
+        return out;
+    }
+
+    _getAllocatableSkills(assignment) {
+        const root = this.element?.[0];
+        if (!assignment) return [];
+        if (assignment.skillChoiceCount <= 0) {
+            return _uniqueList(assignment.coreSkills.concat(assignment.optionalSkills));
+        }
+
+        const form = root?.querySelector("form");
+        const selectedOptional = form
+            ? _readCheckedValues(form, "skill").filter(name => assignment.optionalSkills.includes(name))
+            : [];
+        return _uniqueList(assignment.coreSkills.concat(selectedOptional));
+    }
+
+    _onSkillAllocationChanged(inputEl) {
+        if (!inputEl) return;
+        const row = inputEl.closest(".skill-allocation-row");
+        if (!row) return;
+
+        const min = Number(inputEl.min ?? 0);
+        const max = Number(inputEl.max ?? 4);
+        inputEl.value = String(_clampLevel(inputEl.value, min, max));
+
+        const assignment = this._getSelectedAssignment();
+        if (!assignment) return;
+
+        const budget = Number(assignment.skillXpBudget ?? 12);
+        this._updateSkillXpCounter(assignment);
+
+        let allocations = this._readSkillAllocations(this.element?.find("form")[0], assignment);
+        let used = _calculateSkillXpUsage(allocations, assignment);
+        if (used <= budget) return;
+
+        let value = Number(inputEl.value ?? min);
+        while (value > min && used > budget) {
+            value -= 1;
+            inputEl.value = String(value);
+            allocations = this._readSkillAllocations(this.element?.find("form")[0], assignment);
+            used = _calculateSkillXpUsage(allocations, assignment);
+        }
+
+        this._updateSkillXpCounter(assignment);
+        ui.notifications.warn(game.i18n.format("LAUNDRY.SkillXpExceeded", {
+            used,
+            max: budget
+        }));
+    }
+
+    _updateSkillXpCounter(assignment) {
+        const root = this.element?.[0];
+        if (!root || !assignment) return;
+        const counterEl = root.querySelector(".skill-xp-counter");
+        if (!counterEl) return;
+
+        const allocations = this._readSkillAllocations(root.querySelector("form"), assignment);
+        const used = _calculateSkillXpUsage(allocations, assignment);
+        const budget = Number(assignment.skillXpBudget ?? 12);
+        counterEl.textContent = game.i18n.format("LAUNDRY.SkillXpCounter", { used, max: budget });
+        counterEl.classList.toggle("is-valid", used <= budget);
+        counterEl.classList.toggle("is-invalid", used > budget);
+
+        const rows = root.querySelectorAll(".skill-allocation-row");
+        for (const row of rows) {
+            const key = String(row.dataset.skillName ?? "").trim().toLowerCase();
+            const allocation = allocations[key];
+            if (!allocation) continue;
+            const rowCost = _calculateSkillCost(allocation.training, allocation.baseTraining)
+                + _calculateSkillCost(allocation.focus, allocation.baseFocus);
+            const costEl = row.querySelector(".skill-allocation-cost");
+            if (costEl) costEl.textContent = game.i18n.format("LAUNDRY.SkillXpRowCost", { cost: rowCost });
+        }
+    }
+
+    _readSkillAllocations(form, assignment) {
+        if (!form || !assignment) return {};
+        const rows = form.querySelectorAll(".skill-allocation-row");
+        const allocations = {};
+
+        for (const row of rows) {
+            const rawName = String(row.dataset.skillName ?? "").trim();
+            if (!rawName) continue;
+            const key = rawName.toLowerCase();
+            const baseTraining = Number(row.dataset.baseTraining ?? 0);
+            const baseFocus = Number(row.dataset.baseFocus ?? 0);
+            const trainingInput = row.querySelector('input[data-track="training"]');
+            const focusInput = row.querySelector('input[data-track="focus"]');
+            const training = _clampLevel(trainingInput?.value ?? baseTraining, baseTraining, 4);
+            const focus = _clampLevel(focusInput?.value ?? baseFocus, baseFocus, 4);
+            allocations[key] = {
+                name: rawName,
+                training,
+                focus,
+                baseTraining,
+                baseFocus
+            };
+        }
+
+        return allocations;
+    }
 }
 
 async function applyAssignmentToActor(actor, assignment, selected = {}) {
@@ -274,15 +460,19 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     const attributes = sys.attributes ?? {};
     const parsed = _parseAssignmentSystem(sys);
 
-    const selectedSkills = Array.isArray(selected.chosenSkills)
-        ? selected.chosenSkills
-        : [];
-    const selectedTalents = Array.isArray(selected.chosenTalents)
-        ? selected.chosenTalents
-        : [];
+    const selectedSkills = _uniqueList(Array.isArray(selected.chosenSkills) ? selected.chosenSkills : [])
+        .filter(name => parsed.optionalSkills.some(opt => opt.toLowerCase() === name.toLowerCase()));
+    const selectedTalents = _uniqueList(Array.isArray(selected.chosenTalents) ? selected.chosenTalents : [])
+        .filter(name => parsed.optionalTalents.some(opt => opt.toLowerCase() === name.toLowerCase()));
+    const skillAllocations = _normalizeSkillAllocations(selected.skillAllocations);
 
-    const skillsToAdd = _uniqueList(parsed.coreSkills.concat(selectedSkills));
+    const skillPool = parsed.skillChoiceCount > 0
+        ? parsed.coreSkills.concat(selectedSkills)
+        : parsed.coreSkills.concat(parsed.optionalSkills);
+    const allocatedSkillNames = Object.values(skillAllocations).map(entry => entry.name);
+    const skillsToAdd = _uniqueList(skillPool.concat(allocatedSkillNames));
     const talentsToAdd = _uniqueList(parsed.coreTalents.concat(selectedTalents));
+    const desiredSkillLevels = _buildDesiredSkillLevels(skillsToAdd, parsed, skillAllocations);
 
     await actor.update({
         "system.attributes.body.value": attributes.body ?? 1,
@@ -290,8 +480,6 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
         "system.attributes.spirit.value": attributes.spirit ?? 1,
         "system.details.assignment": assignment.name ?? ""
     });
-
-    const existing = new Set(actor.items.map(i => `${i.type}:${i.name.toLowerCase()}`));
 
     const skills = await _fetchCompendiumItems(
         "laundry-rpg.skills",
@@ -311,9 +499,52 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
         parsed.equipment
     );
 
-    const pending = []
-        .concat(skills, talents, equipment)
-        .filter(item => item && !existing.has(`${item.type}:${item.name.toLowerCase()}`));
+    const existingByTypeAndName = new Map(
+        actor.items.map(item => [`${item.type}:${item.name.toLowerCase()}`, item])
+    );
+    const pending = [];
+    const skillUpdates = [];
+
+    for (const skillData of skills) {
+        if (!skillData) continue;
+        const cloned = foundry.utils.deepClone(skillData);
+        const skillKey = String(cloned.name ?? "").trim().toLowerCase();
+        if (!skillKey) continue;
+
+        const desired = desiredSkillLevels.get(skillKey);
+        if (desired) {
+            cloned.system = cloned.system ?? {};
+            cloned.system.training = desired.training;
+            cloned.system.focus = desired.focus;
+        }
+
+        const existing = existingByTypeAndName.get(`skill:${skillKey}`);
+        if (existing) {
+            const update = { _id: existing.id };
+            let changed = false;
+            const desiredTraining = Number(cloned.system?.training ?? 0);
+            const desiredFocus = Number(cloned.system?.focus ?? 0);
+            if (Number(existing.system?.training ?? 0) !== desiredTraining) {
+                update["system.training"] = desiredTraining;
+                changed = true;
+            }
+            if (Number(existing.system?.focus ?? 0) !== desiredFocus) {
+                update["system.focus"] = desiredFocus;
+                changed = true;
+            }
+            if (changed) skillUpdates.push(update);
+            continue;
+        }
+
+        pending.push(cloned);
+    }
+
+    for (const item of talents.concat(equipment)) {
+        if (!item) continue;
+        const key = `${item.type}:${item.name.toLowerCase()}`;
+        if (existingByTypeAndName.has(key)) continue;
+        pending.push(item);
+    }
 
     const dedupe = new Set();
     const toCreate = pending.filter(item => {
@@ -326,8 +557,11 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     if (toCreate.length) {
         await actor.createEmbeddedDocuments("Item", toCreate);
     }
+    if (skillUpdates.length) {
+        await actor.updateEmbeddedDocuments("Item", skillUpdates);
+    }
 
-    ui.notifications.info(`Laundry RPG | Initialized agent as ${assignment.name}`);
+    ui.notifications.info(game.i18n.format("LAUNDRY.AgentInitialized", { assignment: assignment.name }));
 }
 
 function _parseList(value) {
@@ -366,6 +600,90 @@ function _uniqueList(values) {
     return out;
 }
 
+function _clampLevel(value, min = 0, max = 4) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return min;
+    return Math.max(min, Math.min(max, Math.trunc(num)));
+}
+
+function _skillLevelCost(level) {
+    const safe = Math.max(0, Math.trunc(Number(level) || 0));
+    return (safe * (safe + 1)) / 2;
+}
+
+function _calculateSkillCost(level, baseLevel = 0) {
+    const current = Math.max(0, _clampLevel(level, 0, 4));
+    const base = Math.max(0, Math.min(current, _clampLevel(baseLevel, 0, 4)));
+    return _skillLevelCost(current) - _skillLevelCost(base);
+}
+
+function _calculateSkillXpUsage(skillAllocations, assignment) {
+    const coreSet = new Set((assignment?.coreSkills ?? []).map(name => String(name).toLowerCase()));
+    let total = 0;
+
+    for (const allocation of Object.values(skillAllocations ?? {})) {
+        const nameKey = String(allocation?.name ?? "").trim().toLowerCase();
+        if (!nameKey) continue;
+        const isCore = coreSet.has(nameKey);
+        const baseTraining = _clampLevel(allocation.baseTraining ?? (isCore ? 1 : 0), 0, 4);
+        const baseFocus = _clampLevel(allocation.baseFocus ?? (isCore ? 1 : 0), 0, 4);
+        const training = _clampLevel(allocation.training ?? baseTraining, baseTraining, 4);
+        const focus = _clampLevel(allocation.focus ?? baseFocus, baseFocus, 4);
+        total += _calculateSkillCost(training, baseTraining) + _calculateSkillCost(focus, baseFocus);
+    }
+
+    return total;
+}
+
+function _normalizeSkillAllocations(input) {
+    const out = {};
+    if (!input || typeof input !== "object") return out;
+
+    for (const [key, raw] of Object.entries(input)) {
+        const name = String(raw?.name ?? key ?? "").trim();
+        if (!name) continue;
+        const baseTraining = _clampLevel(raw?.baseTraining ?? 0, 0, 4);
+        const baseFocus = _clampLevel(raw?.baseFocus ?? 0, 0, 4);
+        out[name.toLowerCase()] = {
+            name,
+            baseTraining,
+            baseFocus,
+            training: _clampLevel(raw?.training ?? baseTraining, baseTraining, 4),
+            focus: _clampLevel(raw?.focus ?? baseFocus, baseFocus, 4)
+        };
+    }
+
+    return out;
+}
+
+function _buildDesiredSkillLevels(skillNames, assignmentData, allocations) {
+    const coreSet = new Set((assignmentData?.coreSkills ?? []).map(name => String(name).toLowerCase()));
+    const normalized = _normalizeSkillAllocations(allocations);
+    const out = new Map();
+
+    for (const name of _uniqueList(skillNames)) {
+        const key = name.toLowerCase();
+        const isCore = coreSet.has(key);
+        const baseTraining = isCore ? 1 : 0;
+        const baseFocus = isCore ? 1 : 0;
+        const allocation = normalized[key] ?? {
+            name,
+            baseTraining,
+            baseFocus,
+            training: baseTraining,
+            focus: baseFocus
+        };
+
+        out.set(key, {
+            name,
+            training: _clampLevel(allocation.training, baseTraining, 4),
+            focus: _clampLevel(allocation.focus, baseFocus, 4)
+        });
+    }
+
+    return out;
+}
+
 function _parseAssignmentSystem(sys = {}) {
     const listedSkills = _uniqueList(_parseList(sys.coreSkills));
     const parsedCoreSkills = _uniqueList(_parseList(sys.coreSkill));
@@ -393,6 +711,10 @@ function _parseAssignmentSystem(sys = {}) {
     );
     const talentChoiceCount = parsedTalentChoices
         ?? (optionalTalents.length ? Math.min(2, optionalTalents.length) : 0);
+    const parsedSkillXp = Number(sys.skillXP ?? sys.skillXp ?? sys.skillPoints ?? 0);
+    const skillXpBudget = Number.isFinite(parsedSkillXp) && parsedSkillXp > 0
+        ? Math.max(0, Math.trunc(parsedSkillXp))
+        : 12;
 
     return {
         coreSkills,
@@ -401,7 +723,8 @@ function _parseAssignmentSystem(sys = {}) {
         optionalTalents,
         equipment,
         skillChoiceCount,
-        talentChoiceCount
+        talentChoiceCount,
+        skillXpBudget
     };
 }
 
@@ -413,7 +736,7 @@ function _toAssignmentData(doc) {
     return {
         id: doc.id,
         name: doc.name,
-        description: sys.description ?? "",
+        description: _stripHtml(sys.description ?? ""),
         attributes: {
             body: Number(attrs.body ?? 1),
             mind: Number(attrs.mind ?? 1),
@@ -425,7 +748,8 @@ function _toAssignmentData(doc) {
         optionalTalents: parsed.optionalTalents,
         equipment: parsed.equipment,
         skillChoiceCount: parsed.skillChoiceCount,
-        talentChoiceCount: parsed.talentChoiceCount
+        talentChoiceCount: parsed.talentChoiceCount,
+        skillXpBudget: parsed.skillXpBudget
     };
 }
 
@@ -458,7 +782,7 @@ async function _fetchCompendiumItems(packId, type, names, stubFn) {
     const results = [];
 
     for (const name of names) {
-        const entry = index.find(e => e.name === name);
+        const entry = _findCompendiumMatch(index, name);
         if (entry) {
             const doc = await pack.getDocument(entry._id);
             results.push(doc.toObject());
@@ -488,7 +812,7 @@ async function _fetchEquipmentItems(names) {
         let found = null;
         for (const pack of packs) {
             const index = indexes.get(pack.metadata.id) ?? [];
-            const entry = index.find(e => e.name === name);
+            const entry = _findCompendiumMatch(index, name);
             if (entry) {
                 found = (await pack.getDocument(entry._id)).toObject();
                 break;
@@ -526,4 +850,16 @@ function _stubGear(name) {
         img: "icons/svg/item-bag.svg",
         system: { quantity: 1, weight: 0 }
     };
+}
+
+function _findCompendiumMatch(index, name) {
+    const normalized = String(name ?? "").trim().toLowerCase();
+    if (!normalized) return null;
+    return index.find(e =>
+        String(e?.name ?? "").toLowerCase().includes(normalized)
+    ) ?? null;
+}
+
+function _stripHtml(value) {
+    return String(value ?? "").replace(/(<([^>]+)>)/gi, "").trim();
 }

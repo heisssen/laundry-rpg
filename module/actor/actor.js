@@ -28,8 +28,9 @@ export class LaundryActor extends Actor {
 
     _prepareCharacterData(sys) {
         // Safeguard: Ensure derived keys exist (migrating old actors)
+        sys.kpi = Array.isArray(sys.kpi) ? sys.kpi : [];
         sys.derived = sys.derived || {};
-        sys.derived.toughness = sys.derived.toughness || { value: 0 };
+        sys.derived.toughness = sys.derived.toughness || { value: 0, max: 0, damage: 0 };
         sys.derived.injuries = sys.derived.injuries || { value: 0, max: 0 };
         sys.derived.adrenaline = sys.derived.adrenaline || { value: 0, max: 0 };
         sys.derived.melee = sys.derived.melee || { value: 0, label: "" };
@@ -48,8 +49,14 @@ export class LaundryActor extends Actor {
         const reflexesTraining = this._getSkillTraining("Reflexes");
         const awarenessTraining = this._getSkillTraining("Awareness");
 
-        // Toughness = Body + Mind + Spirit
-        sys.derived.toughness.value = total;
+        // Toughness tracks current value via persisted damage while deriving max from attributes.
+        const rawToughnessDamage = Number(sys.derived.toughness.damage ?? 0);
+        const toughnessDamage = Number.isFinite(rawToughnessDamage)
+            ? Math.max(0, Math.trunc(rawToughnessDamage))
+            : 0;
+        sys.derived.toughness.max = total;
+        sys.derived.toughness.damage = Math.min(total, toughnessDamage);
+        sys.derived.toughness.value = Math.max(0, total - sys.derived.toughness.damage);
 
         // Max Injuries = ceil(total / 2)
         sys.derived.injuries.max = Math.ceil(total / 2);

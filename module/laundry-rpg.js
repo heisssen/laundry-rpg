@@ -1,6 +1,7 @@
 import { LaundryActor } from "./actor/actor.js";
 import { LaundryActorSheet } from "./actor/actor-sheet.js";
 import { LaundryCharacterBuilder } from "./actor/character-builder.js";
+import { LaundryGMTracker } from "./apps/gm-tracker.js";
 import { LaundryItem } from "./item/item.js";
 import { LaundryItemSheet } from "./item/item-sheet.js";
 import { bindDiceChatControls } from "./dice.js";
@@ -69,11 +70,38 @@ const LAUNDRY = {
 Hooks.once("init", async function () {
     console.log("Laundry RPG | Initialising The Laundry RPG System");
 
-    game.laundry = { LaundryActor, LaundryItem, LaundryCharacterBuilder, config: LAUNDRY };
+    game.laundry = {
+        LaundryActor,
+        LaundryItem,
+        LaundryCharacterBuilder,
+        LaundryGMTracker,
+        config: LAUNDRY,
+        openGMTracker: () => {
+            if (!game.user?.isGM) return null;
+            const existing = Object.values(ui.windows).find(app =>
+                app instanceof LaundryGMTracker && app.rendered
+            );
+            if (existing) {
+                existing.bringToTop();
+                return existing;
+            }
+            const tracker = new LaundryGMTracker();
+            tracker.render(true);
+            return tracker;
+        }
+    };
     CONFIG.LAUNDRY = LAUNDRY;
 
     CONFIG.Actor.documentClass = LaundryActor;
     CONFIG.Item.documentClass  = LaundryItem;
+    CONFIG.Combat.initiative = foundry.utils.mergeObject(
+        CONFIG.Combat.initiative ?? {},
+        {
+            formula: "@system.derived.initiative.value",
+            decimals: 0
+        },
+        { inplace: false, overwrite: true }
+    );
 
     Actors.unregisterSheet("core", ActorSheet);
     Actors.registerSheet("laundry-rpg", LaundryActorSheet, {
@@ -114,11 +142,49 @@ Hooks.on("renderChatMessage", (message, html) => {
     bindDiceChatControls(message, html);
 });
 
+Hooks.on("renderDialog", (_app, html) => {
+    html.addClass("laundry-dialog-content");
+    html.closest(".window-app").addClass("laundry-dialog");
+});
+
+Hooks.on("renderApplication", (_app, html) => {
+    html.closest(".window-app").addClass("laundry-dialog");
+});
+
+Hooks.on("renderCombatTracker", (_app, html) => {
+    decorateCombatTracker(html);
+});
+
+Hooks.on("updateCombat", (combat, changed) => {
+    if (!_isTurnUpdate(changed)) return;
+    refreshCombatDrivenUIs();
+});
+
+Hooks.on("getSceneControlButtons", (controls) => {
+    if (!game.user?.isGM) return;
+    const tokenControls = controls.find(c => c.name === "token");
+    if (!tokenControls) return;
+    if (tokenControls.tools.some(t => t.name === "laundry-gm-tracker")) return;
+    tokenControls.tools.push({
+        name: "laundry-gm-tracker",
+        title: "LAUNDRY.ThreatTrackerTitle",
+        icon: "fas fa-user-secret",
+        button: true,
+        onClick: () => game.laundry?.openGMTracker?.()
+    });
+});
+
+Hooks.on("laundryRpgRequestBusinessAsUsual", async (payload) => {
+    await LaundryGMTracker.handleBusinessAsUsualRequest(payload);
+});
+
 async function preloadTemplates() {
     return loadTemplates([
         "systems/laundry-rpg/templates/actor/actor-sheet.html",
         "systems/laundry-rpg/templates/actor/character-builder.html",
-        "systems/laundry-rpg/templates/item/item-sheet.html"
+        "systems/laundry-rpg/templates/item/item-sheet.html",
+        "systems/laundry-rpg/templates/apps/attack-dialog.html",
+        "systems/laundry-rpg/templates/apps/gm-tracker.html"
     ]);
 }
 
@@ -135,6 +201,15 @@ function registerSystemSettings() {
     game.settings.register("laundry-rpg", "teamLuckMax", {
         name: "Team Luck Maximum",
         hint: "Maximum team Luck pool (typically number of player characters).",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0
+    });
+
+    game.settings.register("laundry-rpg", "threatLevel", {
+        name: "Threat Level",
+        hint: "Global occult threat pressure used by the GM tracker.",
         scope: "world",
         config: true,
         type: Number,
@@ -158,5 +233,43 @@ async function initializeTeamLuckDefaults() {
     const clampedCurrent = Math.max(0, Math.min(max, current));
     if (clampedCurrent !== current) {
         await game.settings.set("laundry-rpg", "teamLuck", clampedCurrent);
+    }
+}
+
+function decorateCombatTracker(html) {
+    const combat = game.combat;
+    if (!combat) return;
+
+    const activeCombatantId = combat.combatant?.id;
+    const rows = html.find(".combatant");
+    rows.removeClass("laundry-spotlight");
+    rows.find(".laundry-active-stamp").remove();
+
+    if (!activeCombatantId) return;
+    const activeRow = html.find(`.combatant[data-combatant-id="${activeCombatantId}"]`);
+    if (!activeRow.length) return;
+
+    activeRow.addClass("laundry-spotlight");
+    const nameContainer = activeRow.find(".token-name h4, .token-name").first();
+    if (nameContainer.length) {
+        const stamp = document.createElement("span");
+        stamp.className = "laundry-active-stamp";
+        stamp.textContent = game.i18n.localize("LAUNDRY.ActiveAgent");
+        nameContainer.append(stamp);
+    }
+}
+
+function _isTurnUpdate(changed = {}) {
+    return Object.prototype.hasOwnProperty.call(changed, "turn")
+        || Object.prototype.hasOwnProperty.call(changed, "round")
+        || Object.prototype.hasOwnProperty.call(changed, "combatants");
+}
+
+function refreshCombatDrivenUIs() {
+    ui.combat?.render(false);
+    for (const app of Object.values(ui.windows)) {
+        if (app instanceof LaundryActorSheet && app.rendered) {
+            app.render(false);
+        }
     }
 }

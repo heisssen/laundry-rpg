@@ -1,0 +1,24 @@
+<form class="laundry-gm-tracker-form" autocomplete="off">
+    <header class="gm-tracker-header">
+        <h2>{{localize "LAUNDRY.ThreatTrackerTitle"}}</h2>
+        <span class="stamp">{{localize "LAUNDRY.Classified"}}</span>
+    </header>
+
+    <section class="gm-tracker-block">
+        <label for="threat-level">{{localize "LAUNDRY.Threat"}}</label>
+        <div class="threat-controls">
+            <input id="threat-level" type="range" class="threat-range" min="0" max="10" value="{{threatLevel}}" />
+            <input type="number" name="threatLevel" min="0" max="10" value="{{threatLevel}}" />
+        </div>
+        <button type="submit" class="set-threat">{{localize "LAUNDRY.SetThreat"}}</button>
+    </section>
+
+    <section class="gm-tracker-block">
+        <h3>{{localize "LAUNDRY.GMQuickActions"}}</h3>
+        <button type="button" class="award-luck">{{localize "LAUNDRY.AwardLuckAll"}}</button>
+        <button type="button" class="request-bau" {{#unless hasTarget}}disabled{{/unless}}>
+            {{localize "LAUNDRY.RequestBAU"}}
+        </button>
+        <p class="notes">{{localize "LAUNDRY.Target"}}: <strong>{{targetName}}</strong></p>
+    </section>
+</form>

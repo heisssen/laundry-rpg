@@ -23,6 +23,9 @@
                     {{#unless hasAssignment}}
                     <button type="button" class="init-agent">Initialize Agent</button>
                     {{/unless}}
+                    {{#if combat.canEndTurn}}
+                    <button type="button" class="end-turn">{{localize "LAUNDRY.EndTurn"}}</button>
+                    {{/if}}
                     {{/if}}
                 </div>
 
@@ -66,6 +69,7 @@
         <a class="item" data-tab="dossier">Dossier</a>
         <a class="item" data-tab="skills">Skills &amp; Talents</a>
         <a class="item" data-tab="requisition">Requisition</a>
+        <a class="item" data-tab="kpis">{{localize "LAUNDRY.KPIs"}}</a>
         <a class="item" data-tab="magic">Magic</a>
     </nav>
 
@@ -290,6 +294,34 @@
                             <a class="item-control item-edit" title="{{localize 'LAUNDRY.Edit'}}"><i class="fas fa-edit"></i></a>
                             <a class="item-control item-delete" title="{{localize 'LAUNDRY.Delete'}}"><i class="fas fa-trash"></i></a>
                         </div>
+                    </li>
+                    {{/each}}
+                </ol>
+            </section>
+        </div>
+
+        <div class="tab kpis" data-group="primary" data-tab="kpis">
+            <section class="panel">
+                <div class="kpi-head">
+                    <h3 class="section-header stamp-red">{{localize "LAUNDRY.KPIs"}}</h3>
+                    <button type="button" class="kpi-add">{{localize "LAUNDRY.AddKPI"}}</button>
+                </div>
+                <p class="builder-choice-hint">{{localize "LAUNDRY.KPIHint"}}</p>
+                <ol class="items-list compact-list kpi-list">
+                    {{#each kpiEntries as |kpi|}}
+                    <li class="item flexrow kpi-row {{#if kpi.completed}}kpi-completed{{/if}} {{#if kpi.failed}}kpi-failed{{/if}}" data-kpi-index="{{kpi.index}}">
+                        <input type="text" class="kpi-text-input" data-kpi-index="{{kpi.index}}" value="{{kpi.text}}" placeholder="{{localize 'LAUNDRY.KPIPlaceholder'}}" />
+                        <label class="kpi-status">
+                            <input type="checkbox" class="kpi-status-toggle" data-kpi-index="{{kpi.index}}" data-kpi-status="completed" {{#if kpi.completed}}checked{{/if}} />
+                            {{localize "LAUNDRY.Completed"}}
+                        </label>
+                        <label class="kpi-status">
+                            <input type="checkbox" class="kpi-status-toggle" data-kpi-index="{{kpi.index}}" data-kpi-status="failed" {{#if kpi.failed}}checked{{/if}} />
+                            {{localize "LAUNDRY.Failed"}}
+                        </label>
+                        <a class="item-control kpi-delete" data-kpi-index="{{kpi.index}}" title="{{localize 'LAUNDRY.Delete'}}">
+                            <i class="fas fa-trash"></i>
+                        </a>
                     </li>
                     {{/each}}
                 </ol>

@@ -39,6 +39,22 @@ export class LaundryActorSheet extends ActorSheet {
         context.weapons    = items.filter(i => i.type === "weapon");
         context.armour     = items.filter(i => i.type === "armour");
         context.miscGear   = items.filter(i => i.type === "gear");
+        const rawKpi = Array.isArray(actorData.kpi) ? actorData.kpi : [];
+        context.kpiEntries = rawKpi.map((entry, index) => {
+            const text = typeof entry === "string"
+                ? entry
+                : String(entry?.text ?? "");
+            const status = typeof entry === "object"
+                ? String(entry?.status ?? "open")
+                : "open";
+            return {
+                index,
+                text,
+                completed: status === "completed",
+                failed: status === "failed",
+                resolved: status === "completed" || status === "failed"
+            };
+        });
 
         const skillItemsByName = new Map(context.skills.map(s => [s.name, s]));
         const skillDefs = CONFIG.LAUNDRY.skills ?? [];
@@ -72,6 +88,13 @@ export class LaundryActorSheet extends ActorSheet {
         context.isNpc       = context.actor.type === "npc";
         context.isCharacter = context.actor.type === "character";
         context.hasAssignment = !!actorData.details?.assignment;
+
+        const activeCombatant = game.combat?.combatant ?? null;
+        const isActorTurn = Boolean(activeCombatant?.actor?.id === this.actor.id);
+        context.combat = {
+            isActorTurn,
+            canEndTurn: isActorTurn && Boolean(game.user?.isGM || activeCombatant?.actor?.isOwner)
+        };
 
         return context;
     }
@@ -107,6 +130,11 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".inv-tab").click(this._onInventoryTab.bind(this));
         html.find(".inv-search").on("input", this._onInventorySearch.bind(this));
         html.find(".init-agent").click(this._onInitAgent.bind(this));
+        html.find(".end-turn").click(this._onEndTurn.bind(this));
+        html.find(".kpi-add").click(this._onKpiAdd.bind(this));
+        html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
+        html.find(".kpi-text-input").change(this._onKpiTextChange.bind(this));
+        html.find(".kpi-status-toggle").change(this._onKpiStatusToggle.bind(this));
 
         // Item editing
         html.find(".item-edit").click(ev => {
@@ -294,6 +322,81 @@ export class LaundryActorSheet extends ActorSheet {
         }
         const builder = new LaundryCharacterBuilder(this.actor);
         builder.render(true);
+    }
+
+    async _onEndTurn(ev) {
+        ev.preventDefault();
+        const combat = game.combat;
+        if (!combat || !combat.combatant) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.NoActiveCombat"));
+            return;
+        }
+
+        const activeCombatant = combat.combatant;
+        if (activeCombatant.actor?.id !== this.actor.id) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.NotYourTurn"));
+            return;
+        }
+
+        const canControl = game.user?.isGM || activeCombatant.actor?.isOwner;
+        if (!canControl) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.NotYourTurn"));
+            return;
+        }
+
+        await combat.nextTurn();
+    }
+
+    async _onKpiAdd(ev) {
+        ev.preventDefault();
+        const kpis = this._getActorKpis();
+        kpis.push({ text: "", status: "open" });
+        await this.actor.update({ "system.kpi": kpis });
+    }
+
+    async _onKpiDelete(ev) {
+        ev.preventDefault();
+        const index = Number(ev.currentTarget.dataset.kpiIndex);
+        if (!Number.isInteger(index) || index < 0) return;
+        const kpis = this._getActorKpis();
+        if (index >= kpis.length) return;
+        kpis.splice(index, 1);
+        await this.actor.update({ "system.kpi": kpis });
+    }
+
+    async _onKpiTextChange(ev) {
+        const index = Number(ev.currentTarget.dataset.kpiIndex);
+        if (!Number.isInteger(index) || index < 0) return;
+        const kpis = this._getActorKpis();
+        if (!kpis[index]) return;
+        kpis[index].text = String(ev.currentTarget.value ?? "");
+        await this.actor.update({ "system.kpi": kpis });
+    }
+
+    async _onKpiStatusToggle(ev) {
+        const input = ev.currentTarget;
+        const index = Number(input.dataset.kpiIndex);
+        const status = String(input.dataset.kpiStatus ?? "");
+        if (!Number.isInteger(index) || index < 0) return;
+        if (!["completed", "failed"].includes(status)) return;
+
+        const kpis = this._getActorKpis();
+        if (!kpis[index]) return;
+
+        const checked = Boolean(input.checked);
+        kpis[index].status = checked ? status : "open";
+        await this.actor.update({ "system.kpi": kpis });
+    }
+
+    _getActorKpis() {
+        const current = Array.isArray(this.actor.system?.kpi) ? this.actor.system.kpi : [];
+        return current.map(entry => {
+            if (typeof entry === "string") return { text: entry, status: "open" };
+            return {
+                text: String(entry?.text ?? ""),
+                status: ["completed", "failed"].includes(entry?.status) ? entry.status : "open"
+            };
+        });
     }
 
     // ─── Drag & Drop: Assignment ───────────────────────────────────────────────

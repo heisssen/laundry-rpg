@@ -11,8 +11,9 @@
                     "mind": { "value": 1 },
                     "spirit": { "value": 1 }
                 },
+                "kpi": [],
                 "derived": {
-                    "toughness": { "value": 0 },
+                    "toughness": { "value": 0, "max": 0, "damage": 0 },
                     "injuries": { "value": 0, "max": 0 },
                     "adrenaline": { "value": 0, "max": 0 },
                     "melee": { "value": 0, "label": "" },

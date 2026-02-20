@@ -1,14 +1,18 @@
 <form class="character-builder-form" method="post" action="javascript:void(0);">
-    <header class="builder-header">
-        <h2>Initialize {{actorName}}</h2>
-        <p>Select an Assignment, then choose only the optional skills and talents your agent should start with.</p>
+    <header class="builder-header form-2b-header">
+        <div class="form-2b-top">
+            <h2>{{localize "LAUNDRY.Form2BTitle"}}</h2>
+            <span class="form-2b-stamp">{{localize "LAUNDRY.Classified"}}</span>
+        </div>
+        <p class="form-2b-subtitle">{{localize "LAUNDRY.Form2BSubtitle"}}</p>
+        <p>{{localize "LAUNDRY.Form2BHint"}} <strong>{{actorName}}</strong>.</p>
     </header>
 
     {{#if hasAssignments}}
     <div class="builder-field">
-        <label for="assignment-select">Assignment</label>
+        <label for="assignment-select">{{localize "LAUNDRY.Assignment"}}</label>
         <select name="assignment" id="assignment-select" required>
-            <option value="">Select Assignment</option>
+            <option value="">{{localize "LAUNDRY.SelectAssignment"}}</option>
             {{#each assignments as |assignment|}}
             <option value="{{assignment.id}}">
                 {{assignment.name}} (B{{assignment.attributes.body}} / M{{assignment.attributes.mind}} / S{{assignment.attributes.spirit}})
@@ -20,47 +24,58 @@
     <div class="builder-selection-grid">
         <section class="builder-choice-group">
             <div class="builder-choice-head">
-                <h3>Optional Skills</h3>
+                <h3>{{localize "LAUNDRY.OptionalSkills"}}</h3>
                 <span class="builder-choice-counter skill-choice-counter">0 selected</span>
             </div>
-            <p class="builder-choice-hint skill-choice-hint">Select an assignment to configure optional skills.</p>
+            <p class="builder-choice-hint skill-choice-hint">{{localize "LAUNDRY.SelectAssignmentForSkills"}}</p>
             <div class="builder-choice-list skill-choices">
-                <p class="builder-choice-empty">Select an assignment first.</p>
+                <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
             </div>
         </section>
 
         <section class="builder-choice-group">
             <div class="builder-choice-head">
-                <h3>Optional Talents</h3>
+                <h3>{{localize "LAUNDRY.OptionalTalents"}}</h3>
                 <span class="builder-choice-counter talent-choice-counter">0 selected</span>
             </div>
-            <p class="builder-choice-hint talent-choice-hint">Select an assignment to configure optional talents.</p>
+            <p class="builder-choice-hint talent-choice-hint">{{localize "LAUNDRY.SelectAssignmentForTalents"}}</p>
             <div class="builder-choice-list talent-choices">
-                <p class="builder-choice-empty">Select an assignment first.</p>
+                <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
             </div>
         </section>
     </div>
 
-    <div class="builder-preview">
-        <h3>Assignment Preview</h3>
-        <p class="preview-description">Select an assignment to see details.</p>
-        <div class="preview-attributes">
-            <span>Body: <strong class="preview-body">-</strong></span>
-            <span>Mind: <strong class="preview-mind">-</strong></span>
-            <span>Spirit: <strong class="preview-spirit">-</strong></span>
+    <section class="builder-choice-group skill-allocation-group">
+        <div class="builder-choice-head">
+            <h3>{{localize "LAUNDRY.SkillAllocation"}}</h3>
+            <span class="builder-choice-counter skill-xp-counter">{{localize "LAUNDRY.SkillXpCounter" used=0 max=0}}</span>
         </div>
-        <div class="preview-row"><span>Core Skill(s):</span> <span class="preview-core-skills">-</span></div>
-        <div class="preview-row"><span>Optional Skills:</span> <span class="preview-optional-skills">-</span></div>
-        <div class="preview-row"><span>Core Talent(s):</span> <span class="preview-core-talents">-</span></div>
-        <div class="preview-row"><span>Talent Options:</span> <span class="preview-optional-talents">-</span></div>
-        <div class="preview-row"><span>Equipment:</span> <span class="preview-equipment">-</span></div>
+        <p class="builder-choice-hint">{{localize "LAUNDRY.SkillAllocationHint"}}</p>
+        <div class="skill-allocation-list">
+            <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
+        </div>
+    </section>
+
+    <div class="builder-preview">
+        <h3>{{localize "LAUNDRY.AssignmentPreview"}}</h3>
+        <p class="preview-description">{{localize "LAUNDRY.SelectAssignmentDetails"}}</p>
+        <div class="preview-attributes">
+            <span>{{localize "LAUNDRY.Body"}}: <strong class="preview-body">-</strong></span>
+            <span>{{localize "LAUNDRY.Mind"}}: <strong class="preview-mind">-</strong></span>
+            <span>{{localize "LAUNDRY.Spirit"}}: <strong class="preview-spirit">-</strong></span>
+        </div>
+        <div class="preview-row"><span>{{localize "LAUNDRY.CoreSkills"}}:</span> <span class="preview-core-skills">-</span></div>
+        <div class="preview-row"><span>{{localize "LAUNDRY.OptionalSkills"}}:</span> <span class="preview-optional-skills">-</span></div>
+        <div class="preview-row"><span>{{localize "LAUNDRY.CoreTalent"}}:</span> <span class="preview-core-talents">-</span></div>
+        <div class="preview-row"><span>{{localize "LAUNDRY.OptionalTalents"}}:</span> <span class="preview-optional-talents">-</span></div>
+        <div class="preview-row"><span>{{localize "LAUNDRY.Equipment"}}:</span> <span class="preview-equipment">-</span></div>
     </div>
 
     <div class="builder-actions">
-        <button type="submit" class="builder-confirm">Initialize Agent</button>
+        <button type="submit" class="builder-confirm">{{localize "LAUNDRY.InitAgent"}}</button>
         <button type="button" class="builder-cancel" data-action="close">Cancel</button>
     </div>
     {{else}}
-    <p class="builder-empty">No assignments found in the `laundry-rpg.assignments` compendium.</p>
+    <p class="builder-empty">{{localize "LAUNDRY.NoAssignmentsFound"}}</p>
     {{/if}}
 </form>

@@ -22,6 +22,65 @@
     font-size: 13px;
 }
 
+/* ── Universal Dialog Skin ──────────────────────────────────────────────── */
+.laundry-dialog .window-header {
+    background: linear-gradient(180deg, #3b3b3b 0%, #1f1f1f 100%);
+    color: #f4ead5;
+    border-bottom: 1px solid #111;
+}
+
+.laundry-dialog .window-title {
+    font-family: var(--laundry-font);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.laundry-dialog .window-content {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.26), rgba(0,0,0,0.02)),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 6px),
+        var(--laundry-paper);
+    border-left: 2px solid #c8b792;
+    border-right: 2px solid #c8b792;
+    position: relative;
+    overflow: hidden;
+}
+
+.laundry-dialog .dialog-buttons button {
+    font-family: var(--laundry-font);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid #292929;
+    background: #f9f2e2;
+}
+
+.laundry-dialog .dialog-buttons button.default,
+.laundry-dialog .dialog-buttons button:hover {
+    border-color: var(--laundry-stamp);
+    color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.08);
+}
+
+.laundry-dialog-content {
+    font-family: var(--laundry-font);
+}
+
+.laundry-dialog .window-content::before {
+    content: "TOP SECRET";
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    border: 2px solid rgba(178,31,31,0.75);
+    color: rgba(178,31,31,0.75);
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    transform: rotate(-6deg);
+    pointer-events: none;
+}
+
 .window-app.laundry-rpg .window-content,
 .laundry-rpg .sheet-body {
     background: var(--laundry-paper);
@@ -142,6 +201,23 @@
 
 .laundry-rpg .init-agent:hover {
     background: rgba(178,31,31,0.18);
+}
+
+.laundry-rpg .end-turn {
+    border: 2px solid #8b0000;
+    background: rgba(139,0,0,0.14);
+    color: #8b0000;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 4px 9px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+}
+
+.laundry-rpg .end-turn:hover {
+    background: rgba(139,0,0,0.24);
 }
 
 /* ── Attributes ─────────────────────────────────────────────────────────── */
@@ -688,6 +764,72 @@
     color: var(--laundry-ink-muted);
 }
 
+.laundry-rpg .skill-allocation-group {
+    border-style: double;
+}
+
+.laundry-rpg .skill-allocation-list {
+    max-height: 240px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 2px;
+}
+
+.laundry-rpg .skill-allocation-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(72px, 86px) minmax(72px, 86px) auto;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.5);
+    padding: 6px;
+}
+
+.laundry-rpg .skill-allocation-row .skill-name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+}
+
+.laundry-rpg .skill-allocation-row .skill-name small {
+    color: var(--laundry-ink-muted);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.laundry-rpg .skill-allocation-row label {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .skill-allocation-row input {
+    width: 100%;
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    text-align: center;
+    padding: 2px 4px;
+}
+
+.laundry-rpg .skill-allocation-cost {
+    justify-self: end;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
 .laundry-rpg .builder-preview {
     border: 1px solid var(--laundry-line);
     background: rgba(255,255,255,0.4);
@@ -749,10 +891,328 @@
     cursor: pointer;
 }
 
+.laundry-rpg .form-2b-header {
+    border: 2px double var(--laundry-line-dark);
+    background: rgba(255,255,255,0.4);
+    padding: 8px;
+}
+
+.laundry-rpg .form-2b-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.laundry-rpg .form-2b-stamp {
+    border: 2px solid var(--laundry-stamp);
+    color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.1);
+    padding: 2px 8px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    font-weight: bold;
+    transform: rotate(-4deg);
+}
+
+.laundry-rpg .form-2b-subtitle {
+    margin: 4px 0 2px;
+    font-size: 11px;
+    color: var(--laundry-ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.laundry-rpg .kpi-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.laundry-rpg .kpi-add {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.6);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.laundry-rpg .kpi-add:hover {
+    border-color: var(--laundry-stamp);
+    color: var(--laundry-stamp);
+}
+
+.laundry-rpg .kpi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.laundry-rpg .kpi-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.45);
+    padding: 6px;
+}
+
+.laundry-rpg .kpi-text-input {
+    width: 100%;
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    padding: 3px 5px;
+}
+
+.laundry-rpg .kpi-status {
+    font-size: 10px;
+    color: var(--laundry-ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.laundry-rpg .kpi-row.kpi-completed .kpi-text-input,
+.laundry-rpg .kpi-row.kpi-failed .kpi-text-input {
+    text-decoration: line-through;
+    color: #6a5c48;
+}
+
+.laundry-rpg .kpi-row.kpi-completed {
+    border-color: #2e6b3f;
+}
+
+.laundry-rpg .kpi-row.kpi-failed {
+    border-color: #9a4b2c;
+}
+
+.laundry-rpg.gm-tracker .window-content {
+    padding: 8px;
+}
+
+.laundry-rpg .laundry-gm-tracker-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.laundry-rpg .gm-tracker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed var(--laundry-line-dark);
+    padding-bottom: 6px;
+}
+
+.laundry-rpg .gm-tracker-header h2 {
+    margin: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.laundry-rpg .gm-tracker-block {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.4);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.laundry-rpg .threat-controls {
+    display: grid;
+    grid-template-columns: 1fr 58px;
+    gap: 6px;
+    align-items: center;
+}
+
+.laundry-rpg .gm-tracker-block button {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.7);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.laundry-rpg .gm-tracker-block button:hover:not(:disabled) {
+    border-color: var(--laundry-stamp);
+    color: var(--laundry-stamp);
+}
+
 @media (max-width: 680px) {
     .laundry-rpg .builder-selection-grid {
         grid-template-columns: 1fr;
     }
+
+    .laundry-rpg .skill-allocation-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .laundry-rpg .skill-allocation-cost {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+}
+
+/* ── Attack Dialog ─────────────────────────────────────────────────────── */
+.laundry-attack-dialog .window-content {
+    background:
+        linear-gradient(165deg, rgba(255,255,255,0.45), rgba(255,255,255,0.08)),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 6px),
+        var(--laundry-paper);
+}
+
+.laundry-attack-dialog .laundry-attack-dialog-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 2px double var(--laundry-line-dark);
+    padding: 10px;
+    font-family: var(--laundry-font);
+}
+
+.laundry-attack-dialog .attack-dialog-header {
+    border-bottom: 1px dashed var(--laundry-line-dark);
+    padding-bottom: 6px;
+}
+
+.laundry-attack-dialog .attack-dialog-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.laundry-attack-dialog .attack-dialog-title-row h2 {
+    margin: 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-stamp);
+}
+
+.laundry-attack-dialog .attack-dialog-stamp {
+    border: 1px solid var(--laundry-stamp);
+    color: var(--laundry-stamp);
+    font-size: 9px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    transform: rotate(-2deg);
+    background: rgba(178,31,31,0.08);
+}
+
+.laundry-attack-dialog .attack-dialog-weapon {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--laundry-ink);
+}
+
+.laundry-attack-dialog .attack-dialog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.laundry-attack-dialog .attack-dialog-field {
+    border: 1px solid var(--laundry-line);
+    padding: 5px 6px;
+    background: rgba(255,255,255,0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.laundry-attack-dialog .attack-dialog-field .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--laundry-ink-muted);
+    letter-spacing: 0.06em;
+}
+
+.laundry-attack-dialog .attack-dialog-field .value {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.laundry-attack-dialog .attack-dialog-dn .dn-value {
+    color: var(--laundry-stamp);
+    font-size: 15px;
+}
+
+.laundry-attack-dialog .attack-dialog-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.laundry-attack-dialog .attack-dialog-toggle {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.44);
+    padding: 6px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: 6px;
+    row-gap: 2px;
+}
+
+.laundry-attack-dialog .attack-dialog-toggle span {
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--laundry-ink);
+}
+
+.laundry-attack-dialog .attack-dialog-toggle small {
+    font-size: 10px;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-attack-dialog .attack-dialog-toggle.is-disabled {
+    opacity: 0.55;
+}
+
+.laundry-attack-dialog .attack-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px dashed var(--laundry-line-dark);
+    padding-top: 8px;
+}
+
+.laundry-attack-dialog .attack-dialog-actions button {
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.7);
+    padding: 4px 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.laundry-attack-dialog .attack-dialog-actions .roll-attack {
+    border: 2px solid var(--laundry-stamp);
+    color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.12);
+    font-weight: bold;
 }
 
 /* ── Chat Dice Card ─────────────────────────────────────────────────────── */
@@ -769,6 +1229,20 @@
     margin-bottom: 4px;
 }
 
+.laundry-dice-roll .attack-meta-section {
+    margin: 0 0 6px;
+    font-size: 11px;
+    color: var(--laundry-ink-muted);
+    border: 1px dashed rgba(0,0,0,0.2);
+    padding: 5px 6px;
+    background: rgba(255,255,255,0.35);
+}
+
+.laundry-dice-roll .attack-pre-spend {
+    color: var(--laundry-stamp);
+    font-weight: bold;
+}
+
 .laundry-dice-roll .dice-rolls {
     list-style: none;
     display: flex;
@@ -782,6 +1256,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: relative;
     width: 32px;
     height: 32px;
     border: 2px solid var(--laundry-line-dark);
@@ -810,6 +1285,51 @@
     color: var(--laundry-stamp);
 }
 
+.laundry-dice-roll .roll.die.die-critical {
+    outline: 2px solid var(--laundry-accent);
+    outline-offset: -4px;
+}
+
+.laundry-dice-roll .roll.die.die-complication {
+    outline: 2px solid #9a4b2c;
+    outline-offset: -4px;
+}
+
+.laundry-dice-roll .roll.die .die-marker {
+    position: absolute;
+    top: 1px;
+    right: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.laundry-dice-roll .roll.die .marker-critical {
+    color: var(--laundry-accent);
+}
+
+.laundry-dice-roll .roll.die .marker-complication {
+    color: #9a4b2c;
+}
+
+.laundry-dice-roll .dice-roll-summary {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 11px;
+    margin: 0 0 4px;
+}
+
+.laundry-dice-roll .dice-roll-summary .crit-summary {
+    color: var(--laundry-accent);
+    font-weight: bold;
+}
+
+.laundry-dice-roll .dice-roll-summary .comp-summary {
+    color: #9a4b2c;
+    font-weight: bold;
+}
+
 .laundry-dice-roll .dice-outcome {
     font-size: 14px;
     font-weight: bold;
@@ -819,6 +1339,7 @@
 }
 
 .laundry-dice-roll .dice-outcome.outcome-success { color: var(--laundry-success); }
+.laundry-dice-roll .dice-outcome.outcome-marginal { color: var(--laundry-accent); }
 .laundry-dice-roll .dice-outcome.outcome-failure { color: var(--laundry-stamp); }
 
 .laundry-dice-roll .success-count,
@@ -864,6 +1385,12 @@
     color: var(--laundry-ink-muted);
 }
 
+.laundry-dice-roll .target-section {
+    font-size: 11px;
+    color: var(--laundry-ink-muted);
+    margin-bottom: 4px;
+}
+
 .laundry-dice-roll .damage-section {
     font-size: 11px;
     color: var(--laundry-ink-muted);
@@ -873,7 +1400,51 @@
     padding-top: 4px;
 }
 
+.laundry-dice-roll .weapon-damage-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.laundry-dice-roll .damage-total {
+    color: var(--laundry-ink);
+}
+
+/* ── Combat Spotlight ───────────────────────────────────────────────────── */
+.combat-tracker .combatant.laundry-spotlight,
+#combat-popout .combatant.laundry-spotlight {
+    position: relative;
+    border: 1px solid rgba(139, 0, 0, 0.65);
+    box-shadow: 0 0 10px rgba(178,31,31,0.35), inset 0 0 0 1px rgba(255,255,255,0.25);
+    background: linear-gradient(90deg, rgba(178,31,31,0.18), rgba(178,31,31,0.04));
+}
+
+.combat-tracker .combatant .laundry-active-stamp,
+#combat-popout .combatant .laundry-active-stamp {
+    margin-left: 6px;
+    border: 1px solid #8b0000;
+    color: #8b0000;
+    background: rgba(139,0,0,0.1);
+    font-size: 9px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 1px 4px;
+    transform: rotate(-2deg);
+    display: inline-block;
+}
+
 @media (max-width: 700px) {
+    .laundry-attack-dialog .attack-dialog-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .kpi-row {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
     .laundry-rpg .dossier-header {
         flex-direction: column;
     }
