@@ -10,6 +10,19 @@
 
 const TEAM_LUCK_SETTING = "teamLuck";
 const TEAM_LUCK_MAX_SETTING = "teamLuckMax";
+const ROLL_EFFECT_DIFFICULTY_PREFIX = "flags.laundry-rpg.modifiers.difficulty.";
+const PHYSICAL_EFFECT_ICON = "icons/svg/blood.svg";
+const PSYCHOLOGICAL_EFFECT_ICON = "icons/svg/terror.svg";
+const SUPPORTED_OUTCOME_STATUS_IDS = new Set([
+    "prone",
+    "stunned",
+    "blinded",
+    "unconscious",
+    "incapacitated",
+    "frightened",
+    "bleeding",
+    "weakened"
+]);
 
 export function getWeaponAttackContext({ actor, weapon, linkedSkillName = "" } = {}) {
     const target = _getPrimaryTargetSnapshot();
@@ -73,9 +86,23 @@ export async function rollDice({
             : _inferDifficultyPreset(_clampDn(dn), Math.max(1, Number(complexity) || 1)),
         preRollLuck: "none"
     };
+    const actor = actorId ? game.actors?.get(actorId) : null;
+    const normalizedRollContext = _normalizeRollContext({
+        rollContext,
+        actor,
+        focusItemId,
+        flavor
+    });
+    const effectDifficultyPenalty = _getDifficultyPenaltyFromEffects({
+        actor,
+        rollContext: normalizedRollContext
+    });
 
     const configured = prompt
-        ? await _promptRollConfig(baseConfig)
+        ? await _promptRollConfig(baseConfig, {
+            complexityPenalty: effectDifficultyPenalty.complexityDelta,
+            penaltyNotice: effectDifficultyPenalty.notice
+        })
         : baseConfig;
 
     if (!configured) return null;
@@ -100,11 +127,18 @@ export async function rollDice({
             return null;
         }
     }
+    const effectComplexityDelta = isLuckTest
+        ? 0
+        : Math.trunc(Number(effectDifficultyPenalty.complexityDelta) || 0);
+    const configuredComplexity = Math.max(1, Math.trunc(Number(configured.complexity) || 1));
+    const finalComplexity = isLuckTest
+        ? 1
+        : Math.max(1, configuredComplexity + effectComplexityDelta);
 
     return _executeRoll({
         pool: finalPool,
         dn: isLuckTest ? 4 : _clampDn(configured.dn),
-        complexity: isLuckTest ? 1 : Math.max(1, Number(configured.complexity) || 1),
+        complexity: finalComplexity,
         flavor,
         damage,
         damageBonus: Math.max(0, Math.trunc(Number(damageBonus) || 0)),
@@ -118,7 +152,11 @@ export async function rollDice({
         isLuckTest,
         difficultyPreset: configured.difficultyPreset,
         preRollLuckUsed,
-        rollContext
+        rollContext: normalizedRollContext,
+        effectComplexityDelta,
+        effectComplexityNotes: Array.isArray(effectDifficultyPenalty.notes)
+            ? effectDifficultyPenalty.notes
+            : []
     });
 }
 
@@ -131,6 +169,11 @@ export function bindDiceChatControls(message, html) {
     html.find(".roll-mishap").off("click.laundry-roll-mishap").on("click.laundry-roll-mishap", async (ev) => {
         ev.preventDefault();
         await _rollMishapFromButton(ev);
+    });
+
+    html.find(".apply-roll-effect").off("click.laundry-apply-roll-effect").on("click.laundry-apply-roll-effect", async (ev) => {
+        ev.preventDefault();
+        await _applyOutcomeEffectFromButton(ev);
     });
 
     const state = _getDiceState(message);
@@ -224,7 +267,9 @@ async function _executeRoll({
     isLuckTest,
     difficultyPreset,
     preRollLuckUsed,
-    rollContext
+    rollContext,
+    effectComplexityDelta = 0,
+    effectComplexityNotes = []
 }) {
     const actor = actorId ? game.actors?.get(actorId) : null;
     const normalizedRollContext = _normalizeRollContext({
@@ -246,6 +291,13 @@ async function _executeRoll({
             rollContext: normalizedRollContext,
             isWeaponAttack
         });
+    const statusNotes = [
+        ...(Array.isArray(statusMods.notes) ? statusMods.notes : []),
+        ...(Array.isArray(effectComplexityNotes) ? effectComplexityNotes : [])
+    ]
+        .map(note => String(note ?? "").trim())
+        .filter(Boolean);
+    const uniqueStatusNotes = Array.from(new Set(statusNotes));
     const basePool = Math.max(0, Math.trunc(Number(pool) || 0));
     const adjustedPool = Math.max(1, basePool + Math.trunc(Number(statusMods.poolDelta ?? 0) || 0));
     const baseShift = _clampShift(shift);
@@ -292,7 +344,8 @@ async function _executeRoll({
         baseShift,
         statusShiftDelta,
         statusPoolDelta: Math.trunc(Number(statusMods.poolDelta ?? 0) || 0),
-        statusNotes: Array.isArray(statusMods.notes) ? statusMods.notes : [],
+        statusComplexityDelta: Math.trunc(Number(effectComplexityDelta) || 0),
+        statusNotes: uniqueStatusNotes,
         difficultyPreset: _normalizeDifficultyPreset(difficultyPreset || _inferDifficultyPreset(dn, complexity)),
         showDifficultyPreset: !isLuckTest && !isWeaponAttack && !normalizedRollContext.isSpell,
         isOpposedTest: _normalizeDifficultyPreset(difficultyPreset || _inferDifficultyPreset(dn, complexity)) === "opposed",
@@ -593,11 +646,13 @@ function _renderStatusModifierSection(state) {
     const notes = Array.isArray(state.statusNotes) ? state.statusNotes : [];
     const poolDelta = Math.trunc(Number(state.statusPoolDelta ?? 0) || 0);
     const shiftDelta = Math.trunc(Number(state.statusShiftDelta ?? 0) || 0);
-    if (!notes.length && poolDelta === 0 && shiftDelta === 0) return "";
+    const complexityDelta = Math.trunc(Number(state.statusComplexityDelta ?? 0) || 0);
+    if (!notes.length && poolDelta === 0 && shiftDelta === 0 && complexityDelta === 0) return "";
 
     const parts = [];
     if (poolDelta !== 0) parts.push(`Pool ${poolDelta > 0 ? "+" : ""}${poolDelta}`);
     if (shiftDelta !== 0) parts.push(`DN Shift ${shiftDelta > 0 ? "+" : ""}${shiftDelta}`);
+    if (complexityDelta !== 0) parts.push(`Complexity ${complexityDelta > 0 ? "+" : ""}${complexityDelta}`);
     const compact = parts.length ? ` (${parts.join(", ")})` : "";
     const noteText = notes.map(note => _escapeHtml(note)).join(" | ");
 
@@ -1545,17 +1600,33 @@ async function _rollInjuryFromButton(ev) {
     });
     const outcome = resolved?.text ?? _getInjuryOutcome(total);
     const targetLabel = targetName ? ` for ${_escapeHtml(targetName)}` : "";
-    const statusId = String(resolved?.statusId ?? "").trim().toLowerCase();
+    const statusId = _normalizeOutcomeStatusId(resolved?.statusId, outcome, "injury");
     const durationRounds = Math.max(0, Math.trunc(Number(resolved?.durationRounds) || 0));
-    const statusApplied = Boolean(
-        targetActor
-        && statusId
-        && await game.laundry?.applyCondition?.(targetActor, statusId, {
-            durationRounds,
-            source: "injury-table",
-            suppressChat: true
-        })
-    );
+    const modifierChanges = _mergeDifficultyModifierChanges([
+        ..._sanitizeModifierChanges(resolved?.modifierChanges),
+        ..._extractDifficultyModifierChangesFromText(outcome)
+    ]);
+    const effectCategory = _inferOutcomeCategory({
+        effectType: "injury",
+        outcomeText: outcome
+    });
+    const effectName = _deriveOutcomeEffectName({
+        effectType: "injury",
+        outcomeText: outcome,
+        fallbackTotal: total
+    });
+    const applyButton = _renderOutcomeApplyButton({
+        actorId: targetActor?.id ?? "",
+        effectType: "injury",
+        effectCategory,
+        effectName,
+        outcomeText: outcome,
+        statusId,
+        durationRounds,
+        sourceTag: "injury-table",
+        tableName: resolved?.tableName ?? "",
+        modifierChanges
+    });
     const lethalThresholdReached = total >= 6;
 
     if (targetActor?.type === "npc" && lethalThresholdReached) {
@@ -1580,7 +1651,9 @@ async function _rollInjuryFromButton(ev) {
                 1d6 + ${damageTaken} = <strong>${total}</strong>
                 <span class="injury-outcome">(${_escapeHtml(outcome)})</span>
                 ${resolved?.tableName ? `<div class="injury-outcome">Table: ${_escapeHtml(resolved.tableName)}</div>` : ""}
-                ${statusApplied ? `<div class="injury-outcome">Condition Applied: ${_escapeHtml(statusId)}</div>` : ""}
+                ${statusId ? `<div class="injury-outcome">Condition: ${_escapeHtml(statusId)}</div>` : ""}
+                ${modifierChanges.length ? `<div class="injury-outcome">${_escapeHtml(_formatDifficultyModifierSummary(modifierChanges))}</div>` : ""}
+                ${applyButton}
             </div>`,
         rolls: [roll],
         sound: CONFIG.sounds.dice
@@ -1608,17 +1681,33 @@ async function _rollMishapFromButton(ev) {
         total
     });
     const outcome = resolved?.text ?? _getMishapOutcome(total);
-    const statusId = String(resolved?.statusId ?? "").trim().toLowerCase();
+    const statusId = _normalizeOutcomeStatusId(resolved?.statusId, outcome, "mishap");
     const durationRounds = Math.max(0, Math.trunc(Number(resolved?.durationRounds) || 0));
-    const statusApplied = Boolean(
-        actor
-        && statusId
-        && await game.laundry?.applyCondition?.(actor, statusId, {
-            durationRounds,
-            source: "mishap-table",
-            suppressChat: true
-        })
-    );
+    const modifierChanges = _mergeDifficultyModifierChanges([
+        ..._sanitizeModifierChanges(resolved?.modifierChanges),
+        ..._extractDifficultyModifierChangesFromText(outcome)
+    ]);
+    const effectCategory = _inferOutcomeCategory({
+        effectType: "mishap",
+        outcomeText: outcome
+    });
+    const effectName = _deriveOutcomeEffectName({
+        effectType: "mishap",
+        outcomeText: outcome,
+        fallbackTotal: total
+    });
+    const applyButton = _renderOutcomeApplyButton({
+        actorId: actor?.id ?? "",
+        effectType: "mishap",
+        effectCategory,
+        effectName,
+        outcomeText: outcome,
+        statusId,
+        durationRounds,
+        sourceTag: "mishap-table",
+        tableName: resolved?.tableName ?? "",
+        modifierChanges
+    });
 
     await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
@@ -1628,7 +1717,9 @@ async function _rollMishapFromButton(ev) {
                 <strong>${total}</strong>
                 <span class="mishap-outcome">- ${_escapeHtml(outcome)}</span>
                 ${resolved?.tableName ? `<div class="mishap-outcome">Table: ${_escapeHtml(resolved.tableName)}</div>` : ""}
-                ${statusApplied ? `<div class="mishap-outcome">Condition Applied: ${_escapeHtml(statusId)}</div>` : ""}
+                ${statusId ? `<div class="mishap-outcome">Condition: ${_escapeHtml(statusId)}</div>` : ""}
+                ${modifierChanges.length ? `<div class="mishap-outcome">${_escapeHtml(_formatDifficultyModifierSummary(modifierChanges))}</div>` : ""}
+                ${applyButton}
             </div>`,
         rolls: [roll],
         sound: CONFIG.sounds.dice
@@ -1643,6 +1734,424 @@ function _getMishapOutcome(total) {
     return "Catastrophic Breach: severe anomaly manifests (Incapacitated/Lethal fallout).";
 }
 
+function _renderOutcomeApplyButton({
+    actorId = "",
+    effectType = "",
+    effectCategory = "",
+    effectName = "",
+    outcomeText = "",
+    statusId = "",
+    durationRounds = 0,
+    sourceTag = "",
+    tableName = "",
+    modifierChanges = []
+} = {}) {
+    const targetActorId = String(actorId ?? "").trim();
+    const disabled = targetActorId ? "" : "disabled";
+    const title = targetActorId
+        ? "Create Active Effect and apply status automation."
+        : "Target actor is unavailable.";
+    return `<button
+        type="button"
+        class="apply-roll-effect spend-focus"
+        data-actor-id="${_escapeHtml(targetActorId)}"
+        data-effect-type="${_escapeHtml(String(effectType ?? "").trim().toLowerCase())}"
+        data-effect-category="${_escapeHtml(String(effectCategory ?? "").trim().toLowerCase())}"
+        data-effect-name="${_escapeHtml(_encodeDataValue(effectName))}"
+        data-outcome-text="${_escapeHtml(_encodeDataValue(outcomeText))}"
+        data-status-id="${_escapeHtml(String(statusId ?? "").trim().toLowerCase())}"
+        data-duration-rounds="${Math.max(0, Math.trunc(Number(durationRounds) || 0))}"
+        data-source-tag="${_escapeHtml(String(sourceTag ?? "").trim())}"
+        data-table-name="${_escapeHtml(_encodeDataValue(tableName))}"
+        data-modifier-changes="${_escapeHtml(_encodeDataValue(JSON.stringify(_sanitizeModifierChanges(modifierChanges))))}"
+        title="${_escapeHtml(title)}"
+        ${disabled}
+    >Apply Effect</button>`;
+}
+
+async function _applyOutcomeEffectFromButton(ev) {
+    const button = ev?.currentTarget;
+    if (!button) return;
+    if (button.dataset?.applied === "true") return;
+
+    const actorId = String(button.dataset?.actorId ?? "").trim();
+    if (!actorId) {
+        ui.notifications.warn("No actor is linked to this outcome card.");
+        return;
+    }
+    const actor = game.actors?.get(actorId) ?? null;
+    if (!actor) {
+        ui.notifications.warn("Linked actor could not be found.");
+        return;
+    }
+    if (!(game.user?.isGM || actor.isOwner)) {
+        ui.notifications.warn("Only the GM or actor owner can apply this effect.");
+        return;
+    }
+
+    const effectType = String(button.dataset?.effectType ?? "").trim().toLowerCase();
+    const effectCategory = String(button.dataset?.effectCategory ?? "").trim().toLowerCase();
+    const effectNameRaw = _decodeDataValue(button.dataset?.effectName ?? "");
+    const outcomeText = _decodeDataValue(button.dataset?.outcomeText ?? "");
+    const sourceTag = String(button.dataset?.sourceTag ?? "").trim() || `${effectType || "outcome"}-chat`;
+    const tableName = _decodeDataValue(button.dataset?.tableName ?? "");
+    const parsedChanges = _safeParseJsonArray(_decodeDataValue(button.dataset?.modifierChanges ?? ""));
+    const modifierChanges = _mergeDifficultyModifierChanges([
+        ..._sanitizeModifierChanges(parsedChanges),
+        ..._extractDifficultyModifierChangesFromText(outcomeText)
+    ]);
+    const statusId = _normalizeOutcomeStatusId(button.dataset?.statusId ?? "", outcomeText, effectType);
+    const durationRounds = Math.max(0, Math.trunc(Number(button.dataset?.durationRounds) || 0));
+    const effectName = effectNameRaw || _deriveOutcomeEffectName({
+        effectType,
+        outcomeText,
+        fallbackTotal: null
+    });
+    const category = effectCategory || _inferOutcomeCategory({
+        effectType,
+        outcomeText
+    });
+    const icon = category === "psychological"
+        ? PSYCHOLOGICAL_EFFECT_ICON
+        : PHYSICAL_EFFECT_ICON;
+
+    await _createOutcomeActiveEffect({
+        actor,
+        effectName,
+        icon,
+        effectType,
+        outcomeText,
+        statusId,
+        durationRounds,
+        sourceTag,
+        tableName,
+        modifierChanges
+    });
+
+    let statusApplied = false;
+    if (statusId) {
+        statusApplied = await _applyStatusEffectToActor(actor, statusId, {
+            durationRounds,
+            sourceTag
+        });
+    }
+
+    const modifierSummary = modifierChanges.length
+        ? _formatDifficultyModifierSummary(modifierChanges)
+        : "";
+    const statusSummary = statusApplied
+        ? `Status: ${statusId}.`
+        : (statusId ? `Status marker requested: ${statusId}.` : "No status marker.");
+    const extra = modifierSummary ? ` ${modifierSummary}` : "";
+    ui.notifications.info(`${actor.name}: applied ${effectName}. ${statusSummary}${extra}`);
+
+    button.dataset.applied = "true";
+    button.disabled = true;
+    button.classList.add("is-applied");
+    button.textContent = "Effect Applied";
+}
+
+async function _createOutcomeActiveEffect({
+    actor,
+    effectName,
+    icon,
+    effectType,
+    outcomeText,
+    statusId,
+    durationRounds = 0,
+    sourceTag = "",
+    tableName = "",
+    modifierChanges = []
+} = {}) {
+    if (!actor) return null;
+    const safeName = String(effectName ?? "").trim() || "Outcome Effect";
+    const safeIcon = String(icon ?? "").trim() || PHYSICAL_EFFECT_ICON;
+    const safeChanges = _sanitizeModifierChanges(modifierChanges);
+    const safeDuration = Math.max(0, Math.trunc(Number(durationRounds) || 0));
+    const safeStatusId = _normalizeOutcomeStatusId(statusId, outcomeText, effectType);
+
+    const effectData = {
+        name: safeName,
+        img: safeIcon,
+        disabled: false,
+        origin: actor.uuid,
+        changes: safeChanges,
+        flags: {
+            "laundry-rpg": {
+                outcomeEffect: {
+                    type: String(effectType ?? "").trim().toLowerCase() || "outcome",
+                    statusId: safeStatusId,
+                    source: String(sourceTag ?? "").trim() || "chat-outcome",
+                    tableName: String(tableName ?? "").trim(),
+                    outcomeText: String(outcomeText ?? "").trim(),
+                    appliedBy: game.user?.id ?? null,
+                    appliedAt: Date.now()
+                }
+            }
+        }
+    };
+
+    const combat = game.combat;
+    if (safeDuration > 0 && combat?.started) {
+        effectData.duration = {
+            rounds: safeDuration,
+            startRound: Math.max(0, Math.trunc(Number(combat.round ?? 0) || 0)),
+            startTurn: Math.max(0, Math.trunc(Number(combat.turn ?? 0) || 0))
+        };
+    }
+
+    const created = await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
+    return created?.[0] ?? null;
+}
+
+async function _applyStatusEffectToActor(actor, statusId, { durationRounds = 0, sourceTag = "chat-outcome" } = {}) {
+    const safeStatusId = String(statusId ?? "").trim().toLowerCase();
+    if (!actor || !safeStatusId) return false;
+
+    if (typeof actor.toggleStatusEffect === "function") {
+        try {
+            await actor.toggleStatusEffect(safeStatusId, { active: true });
+            if (_collectActorStatuses(actor).has(safeStatusId)) return true;
+        } catch (err) {
+            console.warn(`Laundry RPG | Failed to toggle status '${safeStatusId}' via actor.toggleStatusEffect`, err);
+        }
+    }
+
+    if (typeof game.laundry?.applyCondition === "function") {
+        return Boolean(await game.laundry.applyCondition(actor, safeStatusId, {
+            durationRounds,
+            source: sourceTag,
+            suppressChat: true
+        }));
+    }
+
+    return false;
+}
+
+function _inferOutcomeCategory({ effectType = "", outcomeText = "" } = {}) {
+    const type = String(effectType ?? "").trim().toLowerCase();
+    if (type === "mishap") return "psychological";
+
+    const text = String(outcomeText ?? "").trim().toLowerCase();
+    const psychologicalPattern = /\b(psychological|phobia|hallucination|dread|terrified|frightened|mind|spirit|trauma)\b/;
+    return psychologicalPattern.test(text) ? "psychological" : "physical";
+}
+
+function _deriveOutcomeEffectName({ effectType = "", outcomeText = "", fallbackTotal = null } = {}) {
+    const text = String(outcomeText ?? "").replace(/\s+/g, " ").trim();
+    if (!text) {
+        const label = String(effectType ?? "").trim().toLowerCase() === "mishap"
+            ? "Magical Mishap"
+            : "Injury";
+        return Number.isFinite(Number(fallbackTotal))
+            ? `${label} (${Math.max(0, Math.trunc(Number(fallbackTotal) || 0))})`
+            : label;
+    }
+
+    const sentence = text.split(/[.:\n]/)[0] ?? text;
+    const trimmed = sentence.replace(/\b(?:you|until)\b.*$/i, "").trim() || sentence.trim();
+    const compact = trimmed.replace(/\s+/g, " ");
+    return compact.length > 72 ? compact.slice(0, 72).trim() : compact;
+}
+
+function _normalizeOutcomeStatusId(statusId, outcomeText = "", effectType = "") {
+    const provided = _normalizeModifierToken(statusId);
+    if (SUPPORTED_OUTCOME_STATUS_IDS.has(provided)) return provided;
+
+    const text = String(outcomeText ?? "").toLowerCase();
+    if (/\bunconscious\b/.test(text)) return "unconscious";
+    if (/\bincapacitated\b/.test(text)) return "incapacitated";
+    if (/\bblinded\b/.test(text)) return "blinded";
+    if (/\bprone\b/.test(text)) return "prone";
+    if (/\bstunned\b/.test(text)) return "stunned";
+    if (/\bterrified\b|\bfrightened\b|\bphobia\b/.test(text)) return "frightened";
+    if (/\bbleeding\b/.test(text)) return "bleeding";
+    if (/\bweakened\b/.test(text)) return "weakened";
+
+    const normalizedType = String(effectType ?? "").trim().toLowerCase();
+    if (normalizedType === "mishap" && /\bbacklash|arcane|breach|mishap\b/.test(text)) {
+        return "";
+    }
+    return "";
+}
+
+function _extractDifficultyModifierChangesFromText(outcomeText) {
+    const text = String(outcomeText ?? "").trim();
+    if (!text) return [];
+
+    const changes = [];
+    const pattern = /increase(?:s|d)?\s+the\s+difficulty\s+of\s+(.+?)\s+tests?(?:\s+you\s+make)?\s+by\s+(\d+)/gi;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+        const descriptor = String(match[1] ?? "").trim();
+        const amount = Math.max(0, Math.trunc(Number(match[2]) || 0));
+        if (!descriptor || amount <= 0) continue;
+        const scopedKeys = _resolveDifficultyModifierKeysFromDescriptor(descriptor);
+        for (const scopedKey of scopedKeys) {
+            changes.push({
+                key: `${ROLL_EFFECT_DIFFICULTY_PREFIX}${scopedKey}`,
+                mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+                value: amount
+            });
+        }
+    }
+
+    return _mergeDifficultyModifierChanges(changes);
+}
+
+function _resolveDifficultyModifierKeysFromDescriptor(descriptor) {
+    const raw = String(descriptor ?? "").trim().toLowerCase();
+    if (!raw) return [];
+
+    const attributes = [];
+    if (/\bbody\b/.test(raw)) attributes.push("body");
+    if (/\bmind\b/.test(raw)) attributes.push("mind");
+    if (/\bspirit\b/.test(raw)) attributes.push("spirit");
+    if (!attributes.length && /\ball\s+tests?\b/.test(raw)) attributes.push("all");
+
+    const skillTerms = [];
+    const parenthetical = [...raw.matchAll(/\(([^)]+)\)/g)].map(match => String(match[1] ?? ""));
+    for (const term of parenthetical) {
+        const parts = term.split(/,|\/|&|\band\b/gi);
+        for (const part of parts) {
+            const normalized = _normalizeModifierSkillToken(part);
+            if (normalized) skillTerms.push(normalized);
+        }
+    }
+
+    const uniqueAttributes = Array.from(new Set(attributes.map(entry => _normalizeModifierToken(entry)).filter(Boolean)));
+    const uniqueSkills = Array.from(new Set(skillTerms));
+    if (!uniqueAttributes.length && !uniqueSkills.length) return [];
+    if (uniqueAttributes.length && uniqueSkills.length) {
+        return uniqueAttributes.flatMap(attribute => uniqueSkills.map(skill => `${attribute}.${skill}`));
+    }
+    if (uniqueAttributes.length) {
+        return uniqueAttributes.map(attribute => `${attribute}.all`);
+    }
+    return uniqueSkills.map(skill => `all.${skill}`);
+}
+
+function _normalizeModifierSkillToken(value) {
+    let text = String(value ?? "").toLowerCase();
+    text = text
+        .replace(/\b(skill|skills|test|tests|check|checks|roll|rolls|all|the|of|you|make|which|require|required)\b/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    return _normalizeModifierToken(text);
+}
+
+function _normalizeDifficultyChangeKey(rawKey) {
+    const input = String(rawKey ?? "").trim();
+    if (!input) return null;
+    const lowered = input.toLowerCase();
+    const withPrefix = lowered.startsWith(ROLL_EFFECT_DIFFICULTY_PREFIX)
+        ? lowered
+        : `${ROLL_EFFECT_DIFFICULTY_PREFIX}${lowered}`;
+    const scoped = withPrefix.slice(ROLL_EFFECT_DIFFICULTY_PREFIX.length);
+    const [attributeRaw, skillRaw = "all"] = scoped.split(".");
+    const attribute = _normalizeModifierToken(attributeRaw || "");
+    const skill = _normalizeModifierToken(skillRaw || "all") || "all";
+    if (!attribute) return null;
+    return `${ROLL_EFFECT_DIFFICULTY_PREFIX}${attribute}.${skill}`;
+}
+
+function _sanitizeModifierChanges(changes = []) {
+    const entries = Array.isArray(changes) ? changes : [];
+    const sanitized = [];
+    for (const entry of entries) {
+        const normalizedKey = _normalizeDifficultyChangeKey(entry?.key);
+        if (!normalizedKey) continue;
+        const modeRaw = Number(entry?.mode);
+        const mode = Number.isFinite(modeRaw)
+            ? Math.trunc(modeRaw)
+            : CONST.ACTIVE_EFFECT_MODES.ADD;
+        const numericValue = Number(entry?.value);
+        if (!Number.isFinite(numericValue) || numericValue === 0) continue;
+        sanitized.push({
+            key: normalizedKey,
+            mode,
+            value: Math.trunc(numericValue)
+        });
+    }
+    return sanitized;
+}
+
+function _mergeDifficultyModifierChanges(changes = []) {
+    const normalized = _sanitizeModifierChanges(changes);
+    if (!normalized.length) return [];
+
+    const merged = new Map();
+    for (const change of normalized) {
+        const index = `${change.key}|${change.mode}`;
+        const current = merged.get(index) ?? 0;
+        merged.set(index, current + Math.trunc(Number(change.value) || 0));
+    }
+
+    return Array.from(merged.entries())
+        .map(([index, value]) => {
+            const [key, modeRaw] = index.split("|");
+            return {
+                key,
+                mode: Math.trunc(Number(modeRaw) || CONST.ACTIVE_EFFECT_MODES.ADD),
+                value: Math.trunc(Number(value) || 0)
+            };
+        })
+        .filter(change => change.value !== 0);
+}
+
+function _safeParseJsonArray(raw) {
+    const text = String(raw ?? "").trim();
+    if (!text) return [];
+    try {
+        const parsed = JSON.parse(text);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (_err) {
+        return [];
+    }
+}
+
+function _encodeDataValue(value) {
+    return encodeURIComponent(String(value ?? ""));
+}
+
+function _decodeDataValue(value) {
+    const text = String(value ?? "");
+    if (!text) return "";
+    try {
+        return decodeURIComponent(text);
+    } catch (_err) {
+        return text;
+    }
+}
+
+function _formatDifficultyModifierSummary(changes = []) {
+    const normalized = _sanitizeModifierChanges(changes);
+    if (!normalized.length) return "";
+
+    const parts = normalized.map(change => {
+        const scoped = change.key.slice(ROLL_EFFECT_DIFFICULTY_PREFIX.length);
+        const [attributeRaw, skillRaw = "all"] = scoped.split(".");
+        const attribute = attributeRaw === "all"
+            ? "All"
+            : `${attributeRaw.charAt(0).toUpperCase()}${attributeRaw.slice(1)}`;
+        const skill = skillRaw === "all"
+            ? "all tests"
+            : skillRaw
+                .split("-")
+                .map(chunk => chunk ? `${chunk.charAt(0).toUpperCase()}${chunk.slice(1)}` : "")
+                .filter(Boolean)
+                .join(" ");
+        const label = skillRaw === "all"
+            ? `${attribute} (${skill})`
+            : `${attribute} (${skill})`;
+        const value = Math.trunc(Number(change.value) || 0);
+        return `${value > 0 ? "+" : ""}${value} Complexity ${label}`;
+    });
+
+    return `Difficulty Modifiers: ${parts.join("; ")}.`;
+}
+
 async function _resolveOutcomeFromAutomationTable({ tableType, total } = {}) {
     const table = await game.laundry?.getAutomationTable?.(tableType);
     if (!table) return null;
@@ -1652,14 +2161,21 @@ async function _resolveOutcomeFromAutomationTable({ tableType, total } = {}) {
     const picked = _pickTableResultByTotal(results, total);
     if (!picked) return null;
 
+    const laundryFlags = picked.flags?.["laundry-rpg"] ?? {};
     const flagData = picked.getFlag?.("laundry-rpg", "conditionData")
-        ?? picked.flags?.["laundry-rpg"]
+        ?? laundryFlags?.conditionData
+        ?? laundryFlags
         ?? {};
+    const modifierChanges = _mergeDifficultyModifierChanges([
+        ..._sanitizeModifierChanges(flagData?.modifierChanges),
+        ..._sanitizeModifierChanges(laundryFlags?.modifierChanges)
+    ]);
     return {
         tableName: String(table.name ?? "").trim(),
         text: _extractTableResultText(picked),
         statusId: String(flagData?.statusId ?? "").trim().toLowerCase(),
-        durationRounds: Math.max(0, Math.trunc(Number(flagData?.durationRounds) || 0))
+        durationRounds: Math.max(0, Math.trunc(Number(flagData?.durationRounds) || 0)),
+        modifierChanges
     };
 }
 
@@ -1807,10 +2323,18 @@ async function _evaluateDamage({ damage, isWeaponAttack, actor, damageBonus = 0 
     }
 }
 
-async function _promptRollConfig(config) {
+async function _promptRollConfig(config, {
+    complexityPenalty = 0,
+    penaltyNotice = ""
+} = {}) {
     const teamLuck = await _getTeamLuck();
     const teamLuckMax = await _getTeamLuckMax();
     const selectedPreset = _normalizeDifficultyPreset(config.difficultyPreset);
+    const safeComplexityPenalty = Math.max(0, Math.trunc(Number(complexityPenalty) || 0));
+    const penaltyNoticeText = String(penaltyNotice ?? "").trim();
+    const penaltyNoticeHtml = safeComplexityPenalty > 0
+        ? `<p class="roll-config-alert">⚠️ +${safeComplexityPenalty} Complexity (Injury Penalty)${penaltyNoticeText ? ` — ${_escapeHtml(penaltyNoticeText)}` : ""}</p>`
+        : "";
 
     const shiftOpts = [
         { value: "-2", label: "Greater Advantage (-2 DN)" },
@@ -1826,6 +2350,7 @@ async function _promptRollConfig(config) {
             <strong>FORM C7</strong>
             <span>Operational Test Warrant</span>
         </div>
+        ${penaltyNoticeHtml}
         <div class="form-group">
             <label>Test Type</label>
             <select name="testType">
@@ -1944,7 +2469,18 @@ async function _promptRollConfig(config) {
                         } else {
                             const presetLabel = presetInput?.selectedOptions?.[0]?.textContent?.trim() ?? "Standard";
                             const shiftLabel = shiftInput?.selectedOptions?.[0]?.textContent?.trim() ?? "None";
-                            summary.textContent = `Common Test: ${presetLabel}; ${shiftLabel}.`;
+                            const difficultyPreset = _normalizeDifficultyPreset(
+                                presetInput?.value ?? config.difficultyPreset
+                            );
+                            const baseComplexity = Math.max(
+                                1,
+                                Math.trunc(Number(_getDifficultyPresetData(difficultyPreset).complexity) || 1)
+                            );
+                            const effectiveComplexity = Math.max(1, baseComplexity + safeComplexityPenalty);
+                            const penaltySummary = safeComplexityPenalty > 0
+                                ? ` (+${safeComplexityPenalty} Injury Penalty)`
+                                : "";
+                            summary.textContent = `Common Test: ${presetLabel}; ${shiftLabel}; Comp ${effectiveComplexity}${penaltySummary}.`;
                         }
                     }
                 };
@@ -1992,6 +2528,103 @@ function _escapeHtml(value) {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+function _normalizeModifierToken(value) {
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+function _resolveActiveEffectChangeDelta(change = {}) {
+    const mode = Math.trunc(Number(change?.mode) || CONST.ACTIVE_EFFECT_MODES.ADD);
+    const value = Number(change?.value);
+    if (!Number.isFinite(value) || value === 0) return 0;
+    if (mode === CONST.ACTIVE_EFFECT_MODES.ADD) return Math.trunc(value);
+    if (mode === CONST.ACTIVE_EFFECT_MODES.OVERRIDE) return Math.trunc(value);
+    return 0;
+}
+
+function _collectDifficultyModifierMapFromEffects(actor) {
+    const totals = new Map();
+    if (!actor) return totals;
+
+    for (const effect of actor.effects ?? []) {
+        if (effect?.disabled === true) continue;
+        const changes = Array.isArray(effect?.changes) ? effect.changes : [];
+        for (const change of changes) {
+            const normalizedKey = _normalizeDifficultyChangeKey(change?.key);
+            if (!normalizedKey) continue;
+            const scopedKey = normalizedKey.slice(ROLL_EFFECT_DIFFICULTY_PREFIX.length);
+            const delta = _resolveActiveEffectChangeDelta(change);
+            if (!delta) continue;
+            totals.set(scopedKey, (totals.get(scopedKey) ?? 0) + delta);
+        }
+    }
+
+    return totals;
+}
+
+function _getDifficultyPenaltyFromEffects({ actor, rollContext = null } = {}) {
+    if (!actor) {
+        return { complexityDelta: 0, notes: [], notice: "", matches: [] };
+    }
+
+    const map = _collectDifficultyModifierMapFromEffects(actor);
+    if (!map.size) {
+        return { complexityDelta: 0, notes: [], notice: "", matches: [] };
+    }
+
+    const attributeToken = _normalizeModifierToken(
+        rollContext?.attribute
+        || (String(rollContext?.sourceType ?? "").toLowerCase() === "attribute"
+            ? rollContext?.sourceName
+            : "")
+    );
+    const skillToken = _normalizeModifierToken(
+        rollContext?.skillName
+        || (["skill", "weapon", "spell"].includes(String(rollContext?.sourceType ?? "").toLowerCase())
+            ? rollContext?.sourceName
+            : "")
+    );
+
+    const candidates = [];
+    if (attributeToken && skillToken) candidates.push(`${attributeToken}.${skillToken}`);
+    if (attributeToken) candidates.push(`${attributeToken}.all`);
+    if (skillToken) candidates.push(`all.${skillToken}`);
+    candidates.push("all.all");
+
+    const scopedKeys = Array.from(new Set(candidates.filter(Boolean)));
+    let complexityDelta = 0;
+    const matches = [];
+    for (const key of scopedKeys) {
+        const value = Math.trunc(Number(map.get(key) ?? 0) || 0);
+        if (!value) continue;
+        complexityDelta += value;
+        matches.push({ key, value });
+    }
+
+    if (!complexityDelta) {
+        return { complexityDelta: 0, notes: [], notice: "", matches: [] };
+    }
+
+    const summary = matches
+        .map(entry => `${entry.key} ${entry.value > 0 ? "+" : ""}${entry.value}`)
+        .join(", ");
+    const notes = [
+        complexityDelta > 0
+            ? `Injury Penalty: +${complexityDelta} Complexity.`
+            : `Modifier: ${complexityDelta} Complexity.`
+    ];
+
+    return {
+        complexityDelta,
+        notes,
+        notice: summary ? `Matched effect modifiers: ${summary}` : "",
+        matches
+    };
 }
 
 async function _refreshLuckSnapshot(state) {

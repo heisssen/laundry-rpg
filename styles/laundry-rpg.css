@@ -2317,6 +2317,17 @@
     color: var(--laundry-ink-muted);
 }
 
+.laundry-roll-config .roll-config-alert {
+    margin: 0;
+    border: 1px solid rgba(139, 0, 0, 0.5);
+    background: rgba(178, 31, 31, 0.14);
+    color: #7a1616;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.03em;
+    padding: 4px 6px;
+}
+
 .laundry-roll-config .roll-config-summary {
     margin: 0;
     padding: 4px 6px;
@@ -2822,6 +2833,34 @@
     font-weight: bold;
     padding: 3px 8px;
     cursor: pointer;
+}
+
+.laundry-injury-result-card .apply-roll-effect,
+.laundry-mishap-result-card .apply-roll-effect {
+    margin-top: 6px;
+    border: 1px solid var(--laundry-accent);
+    background: rgba(47,74,93,0.14);
+    color: var(--laundry-accent);
+    font-family: var(--laundry-font, "Courier New", monospace);
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.laundry-injury-result-card .apply-roll-effect:disabled,
+.laundry-mishap-result-card .apply-roll-effect:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.laundry-injury-result-card .apply-roll-effect.is-applied,
+.laundry-mishap-result-card .apply-roll-effect.is-applied {
+    border-color: var(--laundry-success);
+    color: var(--laundry-success);
+    background: rgba(46,107,63,0.14);
 }
 
 .laundry-death-card {

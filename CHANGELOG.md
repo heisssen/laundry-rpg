@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.15.0 - 2026-02-20
+
+### Added
+- Injury and Mishap result chat cards now include an `Apply Effect` action that creates a dedicated `ActiveEffect` on the target actor.
+- Outcome effects now store roll penalties as `ActiveEffect.changes` entries under `flags.laundry-rpg.modifiers.difficulty.*` (including scoped keys such as `body.dexterity` and broader keys such as `body.all`).
+- Smart Roll configuration now surfaces injury-derived complexity penalties in-dialog as `⚠️ +X Complexity (Injury Penalty)`.
+
+### Changed
+- Injury/Mishap automation now derives effect metadata (name/category/icon/status) from table outcomes and applies status toggles through `actor.toggleStatusEffect(...)` with system-condition fallback.
+- Roll evaluation now inspects active effects before execution and applies matched difficulty modifiers directly to final test Complexity.
+- Expanded Laundry condition registry with `Incapacitated` and `Unconscious` status effects for direct automation mapping from outcome cards.
+
 ## 1.14.2 - 2026-02-20
 
 ### Fixed

@@ -111,6 +111,20 @@ const LAUNDRY_CONDITIONS = {
         img: "icons/svg/terror.svg",
         defaultDurationRounds: 1,
         clearAtTurnStart: false
+    },
+    incapacitated: {
+        id: "incapacitated",
+        name: "Incapacitated",
+        img: "icons/svg/net.svg",
+        defaultDurationRounds: 1,
+        clearAtTurnStart: false
+    },
+    unconscious: {
+        id: "unconscious",
+        name: "Unconscious",
+        img: "icons/svg/sleep.svg",
+        defaultDurationRounds: 1,
+        clearAtTurnStart: false
     }
 };
 const LAUNDRY_STATUS_EFFECTS = Object.values(LAUNDRY_CONDITIONS).map(entry => ({
