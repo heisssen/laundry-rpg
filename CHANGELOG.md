@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.1 - 2026-02-20
+
+### Changed
+- Separated actor sheets by type: full sheet is now used for `character`, while `npc` uses a dedicated minimal operational sheet.
+- Added dedicated `npc-sheet.html` registration and template preload for Foundry v12/v13.
+
 ## 1.14.0 - 2026-02-20
 
 ### Added
