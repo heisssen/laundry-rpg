@@ -344,7 +344,8 @@ export class LaundryActorSheet extends ActorSheet {
             if (!item) return;
             const confirmed = await Dialog.confirm({
                 title: game.i18n.localize("LAUNDRY.DeleteItem"),
-                content: `<p>${game.i18n.format("LAUNDRY.DeleteItemConfirm", { name: item.name })}</p>`
+                content: `<p>${game.i18n.format("LAUNDRY.DeleteItemConfirm", { name: item.name })}</p>`,
+                classes: ["laundry-rpg", "laundry-dialog"]
             });
             if (confirmed) {
                 await this.actor.deleteEmbeddedDocuments("Item", [li.dataset.itemId]);
@@ -982,7 +983,8 @@ export class LaundryActorSheet extends ActorSheet {
                     title: game.i18n.localize("LAUNDRY.TalentPrereqOverrideTitle"),
                     content: `<p>${game.i18n.format("LAUNDRY.TalentPrereqOverrideBody", {
                         talent: itemData.name
-                    })}</p><p>${details}</p>`
+                    })}</p><p>${details}</p>`,
+                    classes: ["laundry-rpg", "laundry-dialog"]
                 });
                 if (!override) return false;
             }

@@ -73,7 +73,8 @@ export class LaundryAutomationSettings extends FormApplication {
 
         const confirmed = await Dialog.confirm({
             title: "Reset Automation Table",
-            content: `<p>Reset linked <strong>${tableType}</strong> automation table to system default?</p>`
+            content: `<p>Reset linked <strong>${tableType}</strong> automation table to system default?</p>`,
+            classes: ["laundry-rpg", "laundry-dialog"]
         });
         if (!confirmed) return;
 

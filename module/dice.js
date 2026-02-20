@@ -1041,7 +1041,8 @@ async function _applyDamage(message) {
         if (canAdrenalineReact) {
             const spendAdrenaline = await Dialog.confirm({
                 title: "Adrenaline Reaction",
-                content: `<p><strong>${_escapeHtml(targetActor.name ?? "Agent")}</strong> can spend 1 Adrenaline to halve incoming damage.</p>`
+                content: `<p><strong>${_escapeHtml(targetActor.name ?? "Agent")}</strong> can spend 1 Adrenaline to halve incoming damage.</p>`,
+                classes: ["laundry-rpg", "laundry-dialog"]
             });
             if (spendAdrenaline) {
                 nextAdrenaline = Math.max(0, nextAdrenaline - 1);
@@ -1821,6 +1822,10 @@ async function _promptRollConfig(config) {
 
     const content = `
     <form class="laundry-roll-config">
+        <div class="roll-config-banner">
+            <strong>FORM C7</strong>
+            <span>Operational Test Warrant</span>
+        </div>
         <div class="form-group">
             <label>Test Type</label>
             <select name="testType">
@@ -1832,7 +1837,7 @@ async function _promptRollConfig(config) {
             <label>Dice Pool</label>
             <input type="number" name="pool" min="0" value="${Math.max(0, Number(config.pool) || 0)}" />
         </div>
-        <div class="form-group">
+        <div class="form-group" data-roll-config-row="difficulty">
             <label>Skill Difficulty Preset</label>
             <select name="difficultyPreset">
                 <option value="standard" ${selectedPreset === "standard" ? "selected" : ""}>Standard (DN 4, Comp 1)</option>
@@ -1842,13 +1847,13 @@ async function _promptRollConfig(config) {
             </select>
             <p class="notes">Opposed: compare successes with the opposing roll.</p>
         </div>
-        <div class="form-group">
+        <div class="form-group" data-roll-config-row="shift">
             <label>Advantage</label>
             <select name="shift">
                 ${shiftOpts.map(o => `<option value="${o.value}" ${Number(o.value) === Number(config.shift) ? "selected" : ""}>${o.label}</option>`).join("")}
             </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" data-roll-config-row="preluck">
             <label>Pre-roll Luck</label>
             <select name="preRollLuck">
                 <option value="none">Do not spend Luck</option>
@@ -1856,6 +1861,7 @@ async function _promptRollConfig(config) {
             </select>
             <p class="notes">Team Luck currently: ${teamLuck}/${teamLuckMax}</p>
         </div>
+        <p class="roll-config-summary" data-roll-config-summary></p>
     </form>`;
 
     return new Promise(resolve => {
@@ -1869,7 +1875,8 @@ async function _promptRollConfig(config) {
         new Dialog({
             title: "Configure Test",
             content,
-            classes: ["laundry-rpg", "laundry-dialog"],
+            classes: ["laundry-rpg", "laundry-dialog", "laundry-roll-config-dialog"],
+            width: 460,
             buttons: {
                 roll: {
                     label: "Roll",
@@ -1912,6 +1919,41 @@ async function _promptRollConfig(config) {
                 }
             },
             default: "roll",
+            render: (html) => {
+                const root = html[0];
+                if (!root) return;
+
+                const testTypeInput = root.querySelector('[name="testType"]');
+                const presetInput = root.querySelector('[name="difficultyPreset"]');
+                const shiftInput = root.querySelector('[name="shift"]');
+                const poolInput = root.querySelector('[name="pool"]');
+                const difficultyRow = root.querySelector('[data-roll-config-row="difficulty"]');
+                const shiftRow = root.querySelector('[data-roll-config-row="shift"]');
+                const preLuckRow = root.querySelector('[data-roll-config-row="preluck"]');
+                const summary = root.querySelector("[data-roll-config-summary]");
+
+                const syncView = () => {
+                    const isLuckTest = testTypeInput?.value === "luck";
+                    if (difficultyRow) difficultyRow.hidden = isLuckTest;
+                    if (shiftRow) shiftRow.hidden = isLuckTest;
+                    if (preLuckRow) preLuckRow.hidden = isLuckTest;
+                    if (poolInput) poolInput.disabled = isLuckTest;
+                    if (summary) {
+                        if (isLuckTest) {
+                            summary.textContent = `Luck Test: Team Luck ${teamLuck}/${teamLuckMax}, DN 4, Comp 1.`;
+                        } else {
+                            const presetLabel = presetInput?.selectedOptions?.[0]?.textContent?.trim() ?? "Standard";
+                            const shiftLabel = shiftInput?.selectedOptions?.[0]?.textContent?.trim() ?? "None";
+                            summary.textContent = `Common Test: ${presetLabel}; ${shiftLabel}.`;
+                        }
+                    }
+                };
+
+                testTypeInput?.addEventListener("change", syncView);
+                presetInput?.addEventListener("change", syncView);
+                shiftInput?.addEventListener("change", syncView);
+                syncView();
+            },
             close: () => finish(null)
         }).render(true);
     });

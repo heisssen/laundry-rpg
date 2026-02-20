@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.14.2 - 2026-02-20
+
+### Fixed
+- `Configure Test` dialog no longer clips the lower action bar; `Roll` remains visible and usable on constrained window heights.
+- Quick token-HUD selectors now use an explicit `Roll` action label instead of generic confirmation text.
+
+### Changed
+- Unified dialog confirm prompts under Laundry dossier styling for visual consistency across combat, setup, and character workflows.
+- Improved test/picker dialog UX with clearer form grouping, lightweight context summaries, and dossier metadata previews while preserving the bureaucratic Laundry visual language.
+
 ## 1.14.1 - 2026-02-20
 
 ### Changed

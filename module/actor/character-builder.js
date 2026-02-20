@@ -204,7 +204,8 @@ export class LaundryCharacterBuilder extends Application {
         if (hasExistingAssignment || hasItems) {
             const confirmed = await Dialog.confirm({
                 title: game.i18n.localize("LAUNDRY.ReinitializeTitle"),
-                content: `<p>${game.i18n.localize("LAUNDRY.ReinitializeBody")}</p>`
+                content: `<p>${game.i18n.localize("LAUNDRY.ReinitializeBody")}</p>`,
+                classes: ["laundry-rpg", "laundry-dialog"]
             });
             if (!confirmed) return;
         }

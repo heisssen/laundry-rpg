@@ -412,7 +412,8 @@ export class LaundryGMTracker extends Application {
         const gmName = game.users?.get(sourceUserId)?.name ?? game.i18n.localize("LAUNDRY.GM");
         const confirmed = await Dialog.confirm({
             title: game.i18n.localize("LAUNDRY.BusinessAsUsualCheck"),
-            content: `<p>${game.i18n.format("LAUNDRY.BAUDialogPrompt", { gm: gmName, name: actorName ?? actor.name })}</p>`
+            content: `<p>${game.i18n.format("LAUNDRY.BAUDialogPrompt", { gm: gmName, name: actorName ?? actor.name })}</p>`,
+            classes: ["laundry-rpg", "laundry-dialog"]
         });
         if (!confirmed) return;
 

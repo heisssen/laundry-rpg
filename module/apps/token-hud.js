@@ -2,7 +2,70 @@ function _getActorStatuses(actor) {
     return game.laundry?.getActorStatuses?.(actor) ?? new Set();
 }
 
-async function _pickDocument(title, entries = [], { nameKey = "name", emptyWarning = "No entries available." } = {}) {
+function _escapeHtml(value) {
+    return foundry.utils.escapeHTML(String(value ?? ""));
+}
+
+function _renderPickerDetails(entry, detailsBuilder) {
+    if (typeof detailsBuilder !== "function") return "";
+    const rows = detailsBuilder(entry)
+        .filter(row => row && String(row.value ?? "").trim().length > 0)
+        .map(row => ({
+            label: _escapeHtml(row.label ?? ""),
+            value: _escapeHtml(row.value ?? "")
+        }));
+
+    if (!rows.length) {
+        return `<p class="notes">No dossier details on record.</p>`;
+    }
+
+    return `<dl class="laundry-picker-meta">${
+        rows.map(row => `<dt>${row.label}</dt><dd>${row.value}</dd>`).join("")
+    }</dl>`;
+}
+
+function _buildWeaponPickerRows(weapon) {
+    const ammoMax = Math.max(0, Math.trunc(Number(weapon?.system?.ammoMax) || 0));
+    const ammoCurrent = Math.max(0, Math.trunc(Number(weapon?.system?.ammo) || 0));
+    const ammoLabel = ammoMax > 0
+        ? `${ammoCurrent}/${ammoMax}`
+        : "Not tracked";
+
+    return [
+        { label: "Skill", value: weapon?.system?.skill ?? "Close Combat" },
+        { label: "Damage", value: weapon?.system?.damage ?? "-" },
+        { label: "Ammo", value: ammoLabel },
+        { label: "Traits", value: weapon?.system?.traits ?? "None" }
+    ];
+}
+
+function _buildSpellPickerRows(spell) {
+    const level = Math.max(1, Math.trunc(Number(spell?.system?.level) || 1));
+    const dn = Math.max(2, Math.min(6, Math.trunc(Number(spell?.system?.dn) || 4)));
+    const complexity = Math.max(
+        1,
+        Math.trunc(Number(spell?.system?.complexity ?? spell?.system?.level) || 1)
+    );
+
+    return [
+        { label: "Level", value: level },
+        { label: "Difficulty", value: `DN ${dn}:${complexity}` },
+        { label: "Duration", value: spell?.system?.duration ?? "Varies" },
+        { label: "Target", value: spell?.system?.target ?? "Varies" }
+    ];
+}
+
+async function _pickDocument(
+    title,
+    entries = [],
+    {
+        nameKey = "name",
+        emptyWarning = "No entries available.",
+        submitLabel = "Confirm",
+        subtitle = "",
+        detailsBuilder = null
+    } = {}
+) {
     if (!entries.length) {
         ui.notifications.warn(emptyWarning);
         return null;
@@ -20,24 +83,32 @@ async function _pickDocument(title, entries = [], { nameKey = "name", emptyWarni
         const options = entries.map(entry => {
             const id = String(entry?.id ?? "");
             const name = String(entry?.[nameKey] ?? entry?.name ?? id);
-            return `<option value="${foundry.utils.escapeHTML(id)}">${foundry.utils.escapeHTML(name)}</option>`;
+            return `<option value="${_escapeHtml(id)}">${_escapeHtml(name)}</option>`;
         }).join("");
+        const subtitleHtml = subtitle
+            ? `<p class="picker-intro">${_escapeHtml(subtitle)}</p>`
+            : "";
+        const previewHtml = typeof detailsBuilder === "function"
+            ? `<div class="laundry-picker-preview" data-picker-preview></div>`
+            : "";
 
         const content = `
             <form class="laundry-token-hud-picker">
+                ${subtitleHtml}
                 <div class="form-group">
                     <label>Select:</label>
                     <select name="entryId">${options}</select>
                 </div>
+                ${previewHtml}
             </form>`;
 
         new Dialog({
             title,
             content,
-            classes: ["laundry-rpg", "laundry-dialog"],
+            classes: ["laundry-rpg", "laundry-dialog", "laundry-picker-dialog"],
             buttons: {
-                ok: {
-                    label: "Confirm",
+                roll: {
+                    label: submitLabel,
                     callback: (html) => {
                         const selected = String(
                             html[0]?.querySelector('[name="entryId"]')?.value ?? ""
@@ -50,7 +121,22 @@ async function _pickDocument(title, entries = [], { nameKey = "name", emptyWarni
                     callback: () => finish(null)
                 }
             },
-            default: "ok",
+            default: "roll",
+            render: (html) => {
+                const root = html[0];
+                const select = root?.querySelector('[name="entryId"]');
+                const preview = root?.querySelector("[data-picker-preview]");
+                if (!select || !preview || typeof detailsBuilder !== "function") return;
+
+                const renderPreview = () => {
+                    const selectedId = String(select.value ?? "").trim();
+                    const selected = entries.find(entry => String(entry?.id ?? "") === selectedId) ?? entries[0];
+                    preview.innerHTML = _renderPickerDetails(selected, detailsBuilder);
+                };
+
+                select.addEventListener("change", renderPreview);
+                renderPreview();
+            },
             close: () => finish(null)
         }).render(true);
     });
@@ -64,7 +150,10 @@ async function _quickAttack(actor) {
     const equipped = weapons.filter(item => item.system?.equipped);
     const candidates = equipped.length ? equipped : weapons;
     const selected = await _pickDocument("Quick Attack", candidates, {
-        emptyWarning: "No weapons available."
+        emptyWarning: "No weapons available.",
+        submitLabel: game.i18n.localize("LAUNDRY.Roll"),
+        subtitle: "Select a weapon and roll attack immediately.",
+        detailsBuilder: _buildWeaponPickerRows
     });
     if (!selected) return;
     await selected.roll();
@@ -76,7 +165,10 @@ async function _quickCast(actor) {
         .filter(item => item.type === "spell")
         .sort((a, b) => a.name.localeCompare(b.name));
     const selected = await _pickDocument("Quick Cast", spells, {
-        emptyWarning: "No spells available."
+        emptyWarning: "No spells available.",
+        submitLabel: game.i18n.localize("LAUNDRY.Roll"),
+        subtitle: "Select a spell and roll casting test immediately.",
+        detailsBuilder: _buildSpellPickerRows
     });
     if (!selected) return;
     await selected.roll();

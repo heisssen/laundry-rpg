@@ -75,7 +75,8 @@ export class LaundryItem extends Item {
         if (usesAmmo && ammoCurrent <= 0 && traitProfile.reload) {
             const reloadConfirmed = await Dialog.confirm({
                 title: "Reload Required",
-                content: `<p><strong>${foundry.utils.escapeHTML(this.name ?? "Weapon")}</strong> is empty. Spend 1 Action to reload to ${ammoMax}?</p>`
+                content: `<p><strong>${foundry.utils.escapeHTML(this.name ?? "Weapon")}</strong> is empty. Spend 1 Action to reload to ${ammoMax}?</p>`,
+                classes: ["laundry-rpg", "laundry-dialog"]
             });
             if (reloadConfirmed) {
                 const actionSpentForReload = await game.laundry?.consumeCombatAction?.(actor, { warn: true });
