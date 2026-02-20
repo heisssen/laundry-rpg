@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.18.2 - 2026-02-20
+
+### Changed
+- Re-styled Requisition/Support, Endeavour, Mission, and Threat chat cards to match the same flat dossier look-and-feel used by skill-check roll cards (`laundry-dice-roll`): paper background, crisp borders, compact typography, and cleaner row spacing.
+- Removed `.laundry-rpg` scoping from shared chat-card selectors so the unified styling now always applies inside chat messages (not only inside app containers).
+- Unified Requisition & Support / Endeavours / Mission Generator app controls (buttons, labels, inputs, previews, requisition rows) under the same skill-check visual language for one consistent UI style.
+- Kept status readability while simplifying card accents: approved/denied/mission/threat states now use restrained border + stamp color treatment instead of heavier gradient/left-bar variants.
+
 ## 1.18.1 - 2026-02-21
 
 ### Changed
