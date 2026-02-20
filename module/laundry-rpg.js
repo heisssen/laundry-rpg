@@ -77,6 +77,13 @@ const LAUNDRY_CONDITIONS = {
         defaultDurationRounds: 0,
         clearAtTurnStart: false
     },
+    deafened: {
+        id: "deafened",
+        name: "Deafened",
+        img: "icons/svg/deaf.svg",
+        defaultDurationRounds: 0,
+        clearAtTurnStart: false
+    },
     prone: {
         id: "prone",
         name: "Prone",

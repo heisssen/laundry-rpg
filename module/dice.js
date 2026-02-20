@@ -17,12 +17,146 @@ const SUPPORTED_OUTCOME_STATUS_IDS = new Set([
     "prone",
     "stunned",
     "blinded",
+    "deafened",
     "unconscious",
     "incapacitated",
     "frightened",
     "bleeding",
     "weakened"
 ]);
+const LOCAL_CRITICAL_TABLES = {
+    physical_injuries: [
+        {
+            roll: "1-2",
+            injury: "Arm Wound",
+            effect: "You drop an object you're carrying. Until this injury is healed, you increase the Difficulty of all Body (Dexterity) Tests you make by 1."
+        },
+        {
+            roll: "3-4",
+            injury: "Leg Wound",
+            effect: "You are knocked Prone. Until this injury is healed, you increase the Difficulty of all Body (Athletics) Tests you make by 1."
+        },
+        {
+            roll: "5-8",
+            injury: "Head Wound",
+            effect: "You are Stunned until the end of your next turn. Until this injury is healed, you increase the Difficulty of all Body (Reflexes) Tests you make by 1."
+        },
+        {
+            roll: "9-10",
+            injury: "Internal Injury",
+            effect: "You are Incapacitated until the end of your next turn. Until this injury is healed, you increase the Difficulty of all Body (Fortitude and Might) Tests you make by 1."
+        },
+        {
+            roll: "11-12",
+            injury: "Broken Arm",
+            effect: "You drop an object that you're carrying. Until this injury is healed, you reduce your Melee and Accuracy by one step. Additionally, you increase the Difficulty of all Tests which would require the use of two arms by 1."
+        },
+        {
+            roll: "13-14",
+            injury: "Broken Leg",
+            effect: "You are knocked Prone. Until this injury is healed, reduce your Speed by 1 step, and increase the Difficulty of all Body (Athletics and Stealth) Tests you make by 1."
+        },
+        {
+            roll: "15-17",
+            injury: "Brain Injury",
+            effect: "You fall Unconscious until the end of your next turn. Until this injury is healed, you always go last in the turn order, and you increase the Difficulty of all Body Tests you make by 1."
+        },
+        {
+            roll: "18+",
+            injury: "Instant Death",
+            effect: "You instantly die a gruesome death!"
+        }
+    ],
+    psychological_injuries: [
+        {
+            roll: "1-2",
+            injury: "Shocked",
+            effect: "You let out a loud shout, yelp, or scream. Until this Injury is healed, increase the Difficulty of all Mind (Intuition) Tests you make by 1."
+        },
+        {
+            roll: "3-4",
+            injury: "Phobia",
+            effect: "Until this Injury is healed, you are Frightened of the cause of this Injury."
+        },
+        {
+            roll: "5-8",
+            injury: "Confused",
+            effect: "You are Stunned until the end of your next turn. Until this Injury is healed, increase the Difficulty of all Mind (Awareness) Tests you make by 1."
+        },
+        {
+            roll: "9-10",
+            injury: "Existential Dread",
+            effect: "You are Incapacitated until the end of your next turn. Until this Injury is healed, you increase the Difficulty of all Spirit (Resolve) Tests you make by 1."
+        },
+        {
+            roll: "11-12",
+            injury: "Reality Denial",
+            effect: "You are Blinded and Deafened until the end of your next turn. Until this Injury is healed, you increase the Difficulty of all Spirit (Zeal) and Mind (Magic) Tests by 1."
+        },
+        {
+            roll: "13-14",
+            injury: "Traumatised",
+            effect: "Until this Injury is healed, you are Terrified of the cause of this Injury."
+        },
+        {
+            roll: "15-17",
+            injury: "Hallucinations",
+            effect: "You fall Unconscious until the end of your next turn. Until this Injury is healed, you cannot make Extended Tests, and you increase the Difficulty of all Mind and Spirit Tests you make by 1."
+        },
+        {
+            roll: "18+",
+            injury: "Broken Mind",
+            effect: "Your mind completely crumbles and you are plunged into an unwaking coma."
+        }
+    ],
+    magical_mishaps: [
+        {
+            roll: "2-3",
+            effect: "Incursion",
+            description: "The caster opens a Level 4 Dimensional Gateway, with one portal in their Zone, and the other in an unknown dimension. An exonome of the spell's Level enters the Zone, per Summons (below). Unless the gateway is sealed, more exonomes may appear over the coming Rounds, hours, and days."
+        },
+        {
+            roll: "4",
+            effect: "Outbreak",
+            description: "Extra-dimensional energies escape from the spellcaster's control. All Zones within Medium Range of their current location are transformed into a Hazard which inflicts Psychological Damage equal to the spell's Level."
+        },
+        {
+            roll: "5",
+            effect: "Summons",
+            description: "The caster accidentally summons an exonome of the spell's Level into their Zone. If the exonome has no physical form, it immediately attempts Possession of a target in its Zone, ignoring the spell's usual 1 hour Casting Time. If it already has physical form, it reacts violently, and attempts to escape."
+        },
+        {
+            roll: "6",
+            effect: "Ground Zero",
+            description: "Bizarre forces spin around the spellcaster, barely within their power to contain. Their current Zone is transformed into a Hazard which inflicts Psychological Damage equal to the spell's Level."
+        },
+        {
+            roll: "7",
+            effect: "Psychological Injury",
+            description: "The caster suffers a Psychological Injury. Level 1 spells inflict Minor Injuries, Level 2-3 spells inflict Serious Injuries, and Level 4+ spells inflict Deadly Injuries."
+        },
+        {
+            roll: "8",
+            effect: "Warping",
+            description: "The GM adjusts the Environmental Traits of the spellcaster's Zone to reflect the misfiring extra-dimensional static coursing through the space. Scale the results to the Level of the spell - a Level 1 Warping might only cover the Zone in Lightly Obscuring green fog, whilst Level 4 Warping could flatten Cover, impose Difficult Terrain, and plunge it into Darkness."
+        },
+        {
+            roll: "9",
+            effect: "Miscast",
+            description: "After resolving the spell's effects (if any), the caster immediately triggers a second spell, successfully cast at the original spell's Level. If the original spell targeted the caster, they blast their spirit out of their body using Astral Projection. If the original spell targeted another creature, the caster and the target are bound in a Destiny Entanglement Geas. If the original spell targeted a Zone or inanimate creature, the GM chooses an appropriate effect due to Energy Transference."
+        },
+        {
+            roll: "10",
+            effect: "Dread",
+            description: "The caster seems to have gotten away scott free... but a gnawing sensation at the back of their mind warns them that the looming spectre of CASE NIGHTMARE GREEN is creeping ever-closer. Increase Threat by +1."
+        },
+        {
+            roll: "11-12",
+            effect: "Dark Future",
+            description: "In the interdimensional ether the caster is haunted by dreadful visions of a post-cataclysmic world - along with useful details of a potential future. The caster triggers a successful Prognostication at the spell's Level if they are a Laundry operative. NPCs trigger the Dread effect instead."
+        }
+    ]
+};
 
 export function getWeaponAttackContext({ actor, weapon, linkedSkillName = "" } = {}) {
     const target = _getPrimaryTargetSnapshot();
@@ -1591,12 +1725,14 @@ async function _rollInjuryFromButton(ev) {
     const targetName = String(button?.dataset?.targetName ?? "").trim();
     const targetActorId = String(button?.dataset?.targetActorId ?? "").trim();
     const targetActor = targetActorId ? game.actors?.get(targetActorId) ?? null : null;
+    const injuryType = String(button?.dataset?.injuryType ?? "physical").trim().toLowerCase();
     const roll = new Roll(`1d6 + ${damageTaken}`);
     await roll.evaluate();
     const total = Math.max(0, Math.trunc(Number(roll.total ?? 0) || 0));
-    const resolved = await _resolveOutcomeFromAutomationTable({
+    const resolved = await _resolveOutcomeFromCriticalTables({
         tableType: "injury",
-        total
+        total,
+        injuryType
     });
     const outcome = resolved?.text ?? _getInjuryOutcome(total);
     const targetLabel = targetName ? ` for ${_escapeHtml(targetName)}` : "";
@@ -1615,11 +1751,13 @@ async function _rollInjuryFromButton(ev) {
         outcomeText: outcome,
         fallbackTotal: total
     });
+    const resolvedEffectName = String(resolved?.effectName ?? "").trim();
+    const finalEffectName = resolvedEffectName || effectName;
     const applyButton = _renderOutcomeApplyButton({
         actorId: targetActor?.id ?? "",
         effectType: "injury",
         effectCategory,
-        effectName,
+        effectName: finalEffectName,
         outcomeText: outcome,
         statusId,
         durationRounds,
@@ -1673,10 +1811,10 @@ async function _rollMishapFromButton(ev) {
     const actorId = String(button?.dataset?.actorId ?? "").trim();
     const actor = actorId ? game.actors?.get(actorId) ?? null : null;
     const sourceLabel = sourceName ? ` (${_escapeHtml(sourceName)})` : "";
-    const roll = new Roll("1d6");
+    const roll = new Roll(_getRollFormulaForOutcomeTable("mishap"));
     await roll.evaluate();
     const total = Math.max(1, Math.trunc(Number(roll.total ?? 1) || 1));
-    const resolved = await _resolveOutcomeFromAutomationTable({
+    const resolved = await _resolveOutcomeFromCriticalTables({
         tableType: "mishap",
         total
     });
@@ -1696,11 +1834,13 @@ async function _rollMishapFromButton(ev) {
         outcomeText: outcome,
         fallbackTotal: total
     });
+    const resolvedEffectName = String(resolved?.effectName ?? "").trim();
+    const finalEffectName = resolvedEffectName || effectName;
     const applyButton = _renderOutcomeApplyButton({
         actorId: actor?.id ?? "",
         effectType: "mishap",
         effectCategory,
-        effectName,
+        effectName: finalEffectName,
         outcomeText: outcome,
         statusId,
         durationRounds,
@@ -1732,6 +1872,148 @@ function _getMishapOutcome(total) {
     if (n <= 4) return "Signal Bleed: nearby electronics glitch and occult signatures spike.";
     if (n === 5) return "Aetheric Backlash: the caster suffers immediate Bleeding trauma.";
     return "Catastrophic Breach: severe anomaly manifests (Incapacitated/Lethal fallout).";
+}
+
+function _getRollFormulaForOutcomeTable(tableType = "") {
+    const normalizedType = String(tableType ?? "").trim().toLowerCase();
+    if (normalizedType !== "mishap") return "1d6";
+
+    const rows = _getLocalOutcomeRows({ tableType: normalizedType });
+    const max = _getMaxRollValueFromRows(rows);
+    return max > 6 ? "2d6" : "1d6";
+}
+
+function _getLocalOutcomeRows({ tableType = "", injuryType = "physical" } = {}) {
+    const normalizedType = String(tableType ?? "").trim().toLowerCase();
+    if (normalizedType === "mishap") {
+        return Array.isArray(LOCAL_CRITICAL_TABLES.magical_mishaps)
+            ? LOCAL_CRITICAL_TABLES.magical_mishaps
+            : [];
+    }
+
+    if (normalizedType !== "injury") return [];
+    const normalizedInjuryType = String(injuryType ?? "physical").trim().toLowerCase();
+    const isPsychological = normalizedInjuryType.startsWith("psy");
+    return isPsychological
+        ? (Array.isArray(LOCAL_CRITICAL_TABLES.psychological_injuries)
+            ? LOCAL_CRITICAL_TABLES.psychological_injuries
+            : [])
+        : (Array.isArray(LOCAL_CRITICAL_TABLES.physical_injuries)
+            ? LOCAL_CRITICAL_TABLES.physical_injuries
+            : []);
+}
+
+function _parseRollRangeSpec(rawRange) {
+    const text = String(rawRange ?? "").trim();
+    if (!text) return null;
+
+    const rangeMatch = text.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+        const min = Math.max(0, Math.trunc(Number(rangeMatch[1]) || 0));
+        const max = Math.max(min, Math.trunc(Number(rangeMatch[2]) || min));
+        return { min, max };
+    }
+
+    const plusMatch = text.match(/^(\d+)\s*\+$/);
+    if (plusMatch) {
+        const min = Math.max(0, Math.trunc(Number(plusMatch[1]) || 0));
+        return { min, max: Number.POSITIVE_INFINITY };
+    }
+
+    const exactMatch = text.match(/^(\d+)$/);
+    if (exactMatch) {
+        const exact = Math.max(0, Math.trunc(Number(exactMatch[1]) || 0));
+        return { min: exact, max: exact };
+    }
+
+    return null;
+}
+
+function _pickLocalOutcomeByTotal(rows, total) {
+    const safeTotal = Math.max(0, Math.trunc(Number(total) || 0));
+    const parsed = rows
+        .map(row => ({ row, range: _parseRollRangeSpec(row?.roll) }))
+        .filter(entry => entry.range !== null);
+    if (!parsed.length) return null;
+
+    const direct = parsed.find(entry => safeTotal >= entry.range.min && safeTotal <= entry.range.max);
+    if (direct) return direct.row;
+
+    const nearestBelow = parsed
+        .filter(entry => safeTotal >= entry.range.min)
+        .sort((a, b) => b.range.min - a.range.min)[0];
+    if (nearestBelow) return nearestBelow.row;
+
+    const nearestAbove = parsed
+        .sort((a, b) => a.range.min - b.range.min)[0];
+    return nearestAbove?.row ?? null;
+}
+
+function _getMaxRollValueFromRows(rows = []) {
+    const parsed = rows
+        .map(row => _parseRollRangeSpec(row?.roll))
+        .filter(Boolean);
+    if (!parsed.length) return 0;
+    let max = 0;
+    for (const range of parsed) {
+        if (!Number.isFinite(range.max)) return Number.POSITIVE_INFINITY;
+        max = Math.max(max, Math.trunc(Number(range.max) || 0));
+    }
+    return max;
+}
+
+function _buildLocalOutcomeResult({ tableType = "", injuryType = "physical", row = null } = {}) {
+    if (!row) return null;
+    const normalizedType = String(tableType ?? "").trim().toLowerCase();
+    const normalizedInjuryType = String(injuryType ?? "physical").trim().toLowerCase();
+    const isPsychologicalInjury = normalizedType === "injury" && normalizedInjuryType.startsWith("psy");
+
+    if (normalizedType === "injury") {
+        const injuryName = String(row?.injury ?? "").trim();
+        const effectText = String(row?.effect ?? "").trim();
+        const text = injuryName && effectText
+            ? `${injuryName}: ${effectText}`
+            : (effectText || injuryName);
+        return {
+            tableName: isPsychologicalInjury
+                ? "Psychological Injuries (tables.json)"
+                : "Physical Injuries (tables.json)",
+            effectName: injuryName || (isPsychologicalInjury ? "Psychological Injury" : "Physical Injury"),
+            text,
+            statusId: _normalizeOutcomeStatusId("", text, normalizedType),
+            durationRounds: /until the end of your next turn/i.test(text) ? 1 : 0,
+            modifierChanges: []
+        };
+    }
+
+    if (normalizedType === "mishap") {
+        const effectName = String(row?.effect ?? "").trim() || "Magical Mishap";
+        const description = String(row?.description ?? "").trim();
+        const text = description ? `${effectName}: ${description}` : effectName;
+        return {
+            tableName: "Magical Mishaps (tables.json)",
+            effectName,
+            text,
+            statusId: _normalizeOutcomeStatusId("", text, normalizedType),
+            durationRounds: /until the end of your next turn/i.test(text) ? 1 : 0,
+            modifierChanges: []
+        };
+    }
+
+    return null;
+}
+
+function _resolveOutcomeFromLocalCriticalTables({ tableType = "", total = 0, injuryType = "physical" } = {}) {
+    const rows = _getLocalOutcomeRows({ tableType, injuryType });
+    if (!rows.length) return null;
+    const picked = _pickLocalOutcomeByTotal(rows, total);
+    return _buildLocalOutcomeResult({ tableType, injuryType, row: picked });
+}
+
+async function _resolveOutcomeFromCriticalTables({ tableType = "", total = 0, injuryType = "physical" } = {}) {
+    const local = _resolveOutcomeFromLocalCriticalTables({ tableType, total, injuryType });
+    if (local) return local;
+    return _resolveOutcomeFromAutomationTable({ tableType, total });
 }
 
 function _renderOutcomeApplyButton({
@@ -1961,6 +2243,7 @@ function _normalizeOutcomeStatusId(statusId, outcomeText = "", effectType = "") 
     const text = String(outcomeText ?? "").toLowerCase();
     if (/\bunconscious\b/.test(text)) return "unconscious";
     if (/\bincapacitated\b/.test(text)) return "incapacitated";
+    if (/\bdeafened\b/.test(text)) return "deafened";
     if (/\bblinded\b/.test(text)) return "blinded";
     if (/\bprone\b/.test(text)) return "prone";
     if (/\bstunned\b/.test(text)) return "stunned";
@@ -2004,11 +2287,33 @@ function _resolveDifficultyModifierKeysFromDescriptor(descriptor) {
     const raw = String(descriptor ?? "").trim().toLowerCase();
     if (!raw) return [];
 
-    const attributes = [];
-    if (/\bbody\b/.test(raw)) attributes.push("body");
-    if (/\bmind\b/.test(raw)) attributes.push("mind");
-    if (/\bspirit\b/.test(raw)) attributes.push("spirit");
-    if (!attributes.length && /\ball\s+tests?\b/.test(raw)) attributes.push("all");
+    const attributeTerms = [];
+    if (/\bbody\b/.test(raw)) attributeTerms.push("body");
+    if (/\bmind\b/.test(raw)) attributeTerms.push("mind");
+    if (/\bspirit\b/.test(raw)) attributeTerms.push("spirit");
+    if (!attributeTerms.length && /\ball\s+tests?\b/.test(raw)) attributeTerms.push("all");
+
+    const pairedKeys = [];
+    const pairedAttributes = new Set();
+    const pairedMatches = [...raw.matchAll(/\b(body|mind|spirit)\b\s*\(([^)]+)\)/g)];
+    for (const match of pairedMatches) {
+        const attribute = _normalizeModifierToken(match[1] ?? "");
+        if (!attribute) continue;
+        pairedAttributes.add(attribute);
+
+        const term = String(match[2] ?? "");
+        const parts = term.split(/,|\/|&|\band\b/gi);
+        const normalizedSkills = parts
+            .map(part => _normalizeModifierSkillToken(part))
+            .filter(Boolean);
+        if (!normalizedSkills.length) {
+            pairedKeys.push(`${attribute}.all`);
+            continue;
+        }
+        for (const skill of normalizedSkills) {
+            pairedKeys.push(`${attribute}.${skill}`);
+        }
+    }
 
     const skillTerms = [];
     const parenthetical = [...raw.matchAll(/\(([^)]+)\)/g)].map(match => String(match[1] ?? ""));
@@ -2020,8 +2325,28 @@ function _resolveDifficultyModifierKeysFromDescriptor(descriptor) {
         }
     }
 
-    const uniqueAttributes = Array.from(new Set(attributes.map(entry => _normalizeModifierToken(entry)).filter(Boolean)));
+    const uniqueAttributes = Array.from(new Set(attributeTerms.map(entry => _normalizeModifierToken(entry)).filter(Boolean)));
     const uniqueSkills = Array.from(new Set(skillTerms));
+    const results = new Set(pairedKeys);
+
+    if (results.size) {
+        const unpairedAttributes = uniqueAttributes.filter(attribute => !pairedAttributes.has(attribute));
+        if (unpairedAttributes.length) {
+            if (uniqueSkills.length) {
+                for (const attribute of unpairedAttributes) {
+                    for (const skill of uniqueSkills) {
+                        results.add(`${attribute}.${skill}`);
+                    }
+                }
+            } else {
+                for (const attribute of unpairedAttributes) {
+                    results.add(`${attribute}.all`);
+                }
+            }
+        }
+        return Array.from(results);
+    }
+
     if (!uniqueAttributes.length && !uniqueSkills.length) return [];
     if (uniqueAttributes.length && uniqueSkills.length) {
         return uniqueAttributes.flatMap(attribute => uniqueSkills.map(skill => `${attribute}.${skill}`));

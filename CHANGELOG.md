@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.15.1 - 2026-02-20
+
+### Added
+- Embedded the full `tables.json` critical data set directly into runtime dice automation (`Physical Injuries`, `Psychological Injuries`, `Magical Mishaps`) so all critical outcomes resolve from the same source data even when `tables.json` is not shipped.
+- Added `Deafened` as a first-class Laundry condition/status to support psychological injury outcomes like `Reality Denial`.
+
+### Changed
+- Injury and Mishap roll resolution now prioritizes the embedded critical table data path, with automation RollTable lookup only as fallback.
+- Mishap outcome rolls now auto-select `2d6` when table ranges exceed `1d6`, matching the imported `Magical Mishaps` table bands.
+- Difficulty modifier parsing now correctly handles paired descriptors like `Spirit (Zeal) and Mind (Magic)` when generating `ActiveEffect.changes` flag keys.
+
 ## 1.15.0 - 2026-02-20
 
 ### Added
