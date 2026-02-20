@@ -147,7 +147,12 @@ export class LaundryActorSheet extends ActorSheet {
             actionsRemaining: 0,
             moveRemaining: 0
         };
-        const statusIds = ["blinded", "prone", "stunned", "weakened"];
+        const statusIds = Object.keys(game.laundry?.conditions ?? {
+            blinded: true,
+            prone: true,
+            stunned: true,
+            weakened: true
+        });
         const actorStatusSet = this._getActorStatusSet();
         const conditionConfigs = statusIds.map(id => this._getConditionConfig(id));
         const activeConditions = conditionConfigs.filter(entry => actorStatusSet.has(entry.id));

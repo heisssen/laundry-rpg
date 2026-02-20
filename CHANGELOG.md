@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.13.0 - 2026-02-20
+
+### Added
+- Token HUD combat controls for quick field actions: Quick Attack, Quick Cast, Use Action/Move, Spend Adrenaline (+1 Action), Stand from Prone, and GM Tracker shortcut.
+- GM Tracker upgraded with Combat Dashboard 2.0: live combatant board (Initiative, Toughness, Adrenaline, statuses, turn-economy state) and inline quick controls.
+- New Automation Tables settings app (System Settings menu) for linking/opening/resetting Injury and Mishap RollTables.
+- Area attack template workflow: optional measured-template placement from the attack dialog, with Apply Damage resolving targets from the template footprint.
+- Expanded condition set with `Bleeding` and `Frightened`, including active roll modifiers and combat-time automation.
+- CI pipeline (`.github/workflows/ci.yml`) with Node tests, syntax checks, compendium QA, pack rebuild, and artifact drift checks.
+- Compendium QA script (`scripts/qa_compendiums.mjs`) and Macro source pack (`macros.json` -> `packs/macros.db`) with ready-to-use Laundry play macros.
+
+### Changed
+- Release workflow now runs tests, compendium QA, and pack consistency gates before publishing release assets.
+- Weapon data model and pack rebuilds now include ammo/area defaults required by the new automation layer (`ammo`, `ammoMax`, `areaDistance`).
+- Actor sheet condition controls now read condition IDs dynamically from system condition registry.
+
 ## 1.12.1 - 2026-02-20
 
 ### Fixed

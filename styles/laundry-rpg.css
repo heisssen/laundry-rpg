@@ -1969,6 +1969,88 @@
     gap: 4px;
 }
 
+.laundry-rpg .gm-combat-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.laundry-rpg .gm-combat-board {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.laundry-rpg .gm-combat-row {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.45);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.laundry-rpg .gm-combat-row.gm-combat-active {
+    border-color: var(--laundry-stamp);
+    box-shadow: inset 0 0 0 1px rgba(178,31,31,0.25);
+}
+
+.laundry-rpg .gm-combat-row.gm-combat-critical {
+    border-color: #8b0000;
+    background: rgba(139,0,0,0.08);
+}
+
+.laundry-rpg .gm-combat-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.laundry-rpg .gm-combat-main strong {
+    color: var(--laundry-stamp);
+    letter-spacing: 0.06em;
+}
+
+.laundry-rpg .gm-combat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+#token-hud .laundry-token-hud-actions {
+    position: absolute;
+    top: 0;
+    left: -44px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    pointer-events: auto;
+}
+
+#token-hud .laundry-token-hud-actions .control-icon {
+    border: 1px solid rgba(0, 0, 0, 0.65);
+    background: rgba(246, 239, 225, 0.9);
+    color: #2d2213;
+}
+
+#token-hud .laundry-token-hud-actions .control-icon:hover {
+    border-color: #8b0000;
+    color: #8b0000;
+}
+
+#token-hud .laundry-token-hud-actions .control-icon-label {
+    font-family: var(--laundry-font, "Courier New", monospace);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 9px;
+    display: grid;
+    place-items: center;
+}
+
 @media (max-width: 680px) {
     .laundry-rpg .builder-layout {
         grid-template-columns: 1fr;
@@ -2106,6 +2188,11 @@
 .laundry-attack-dialog .attack-dialog-toggle small {
     font-size: 10px;
     color: var(--laundry-ink-muted);
+}
+
+.laundry-attack-dialog .attack-dialog-toggle small input[type="number"] {
+    width: 56px;
+    margin-left: 4px;
 }
 
 .laundry-attack-dialog .attack-dialog-toggle.is-disabled {

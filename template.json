@@ -98,6 +98,7 @@
             "traits": "",
             "ammo": 0,
             "ammoMax": 0,
+            "areaDistance": 2,
             "equipped": false
         },
         "armour": {

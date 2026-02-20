@@ -132,6 +132,15 @@ export class LaundryItem extends Item {
             return null;
         }
 
+        let areaTemplateInfo = null;
+        if (Boolean(attackSelection.areaMode) && Boolean(attackSelection.placeAreaTemplate)) {
+            areaTemplateInfo = await _placeAreaTemplate({
+                actor,
+                targetSnapshot: attackSelection.target ?? null,
+                distance: Math.max(1, Math.trunc(Number(attackSelection.areaTemplateDistance) || 1))
+            });
+        }
+
         const actionSpent = await game.laundry?.consumeCombatAction?.(actor, { warn: true });
         if (actionSpent === false) return null;
 
@@ -180,6 +189,9 @@ export class LaundryItem extends Item {
                 fireMode: String(attackSelection.fireMode ?? "single"),
                 suppressiveMode: Boolean(attackSelection.suppressiveMode),
                 areaMode: Boolean(attackSelection.areaMode),
+                areaTemplateId: areaTemplateInfo?.templateId ?? null,
+                areaTemplateSceneId: areaTemplateInfo?.sceneId ?? null,
+                areaTemplateDistance: areaTemplateInfo?.distance ?? null,
                 ammoSpent,
                 ammoRemaining,
                 adrenalineSpentPreRoll: Boolean(attackSelection.spendAdrenaline)
@@ -261,4 +273,48 @@ function _extractWeaponTraits(rawTraits) {
         area: has("area") || has("blast") || has("spread"),
         reload: has("reload")
     };
+}
+
+async function _placeAreaTemplate({ actor, targetSnapshot = null, distance = 1 } = {}) {
+    if (!canvas?.scene) return null;
+    const safeDistance = Math.max(1, Math.trunc(Number(distance) || 1));
+    const origin = _resolveTemplateOrigin(actor, targetSnapshot);
+    if (!origin) return null;
+
+    const templateData = {
+        t: "circle",
+        user: game.user?.id ?? null,
+        distance: safeDistance,
+        direction: 0,
+        x: origin.x,
+        y: origin.y,
+        fillColor: game.user?.color ?? "#8b0000",
+        flags: {
+            "laundry-rpg": {
+                source: "area-attack",
+                actorId: actor?.id ?? null
+            }
+        }
+    };
+
+    const created = await canvas.scene.createEmbeddedDocuments("MeasuredTemplate", [templateData]);
+    const template = created?.[0] ?? null;
+    if (!template) return null;
+
+    return {
+        templateId: template.id,
+        sceneId: canvas.scene.id,
+        distance: safeDistance
+    };
+}
+
+function _resolveTemplateOrigin(actor, targetSnapshot) {
+    const targetTokenId = String(targetSnapshot?.tokenId ?? "").trim();
+    const targetToken = targetTokenId ? canvas.tokens?.get(targetTokenId) ?? null : null;
+    if (targetToken?.center) return { x: targetToken.center.x, y: targetToken.center.y };
+
+    const actorToken = canvas.tokens?.placeables?.find(token => token.actor?.id === actor?.id) ?? null;
+    if (actorToken?.center) return { x: actorToken.center.x, y: actorToken.center.y };
+
+    return null;
 }

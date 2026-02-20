@@ -52,4 +52,43 @@
         <p class="notes">{{localize "LAUNDRY.NoPlayerCharacters"}}</p>
         {{/if}}
     </section>
+
+    <section class="gm-tracker-block">
+        <h3>Combat Dashboard</h3>
+        {{#if hasCombat}}
+        <div class="gm-combat-summary">
+            <span class="gm-pc-stat">Total {{combatSummary.total}}</span>
+            <span class="gm-pc-stat">Critical {{combatSummary.critical}}</span>
+            <span class="gm-pc-stat">No Action {{combatSummary.noActions}}</span>
+            <span class="gm-pc-stat">No Move {{combatSummary.noMove}}</span>
+            <button type="button" class="combat-next-turn">Next Turn</button>
+        </div>
+        <div class="gm-combat-board">
+            {{#each combatants as |entry|}}
+            <div class="gm-combat-row {{#if entry.isActive}}gm-combat-active{{/if}} {{#if entry.isCritical}}gm-combat-critical{{/if}}">
+                <div class="gm-combat-main">
+                    <strong>{{entry.name}}</strong>
+                    <span>Init {{entry.initiative}}</span>
+                    <span>TGH {{entry.toughnessValue}}/{{entry.toughnessMax}}</span>
+                    <span>ADR {{entry.adrenalineValue}}/{{entry.adrenalineMax}}</span>
+                    <span>ACT {{entry.actionsRemaining}} | MOV {{entry.moveRemaining}}</span>
+                    <span>STS {{entry.statuses}}</span>
+                </div>
+                <div class="gm-combat-actions">
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="toughness" data-delta="-1">-TGH</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="toughness" data-delta="1">+TGH</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline" data-delta="-1">-ADR</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline" data-delta="1">+ADR</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="action" data-delta="0">Use Action</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="move" data-delta="0">Use Move</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline-action" data-delta="0">+Action (ADR)</button>
+                    <button type="button" class="combat-open-sheet" data-actor-id="{{entry.actorId}}">Sheet</button>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+        {{else}}
+        <p class="notes">No active combat dashboard data.</p>
+        {{/if}}
+    </section>
 </form>

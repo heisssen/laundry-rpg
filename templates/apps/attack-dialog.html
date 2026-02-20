@@ -59,6 +59,14 @@
             <span>Area Trait Active</span>
             <small>Apply damage to all currently targeted tokens on hit.</small>
         </label>
+        <label class="attack-dialog-toggle">
+            <input type="checkbox" name="placeAreaTemplate" checked />
+            <span>Place Area Template</span>
+            <small>
+                Radius
+                <input type="number" name="areaTemplateDistance" min="1" value="{{areaTemplateDistance}}" />
+            </small>
+        </label>
         {{/if}}
     </section>
 

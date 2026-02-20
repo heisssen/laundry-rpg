@@ -112,6 +112,9 @@ def _normalize_system(item_type: str, system: dict) -> dict:
         out["range"] = str(out.get("range") or "Close").strip()
         out["skill"] = str(out.get("skill") or "Close Combat").strip()
         out["traits"] = str(out.get("traits") or "").strip()
+        out["ammo"] = max(0, int(out.get("ammo", 0) or 0))
+        out["ammoMax"] = max(0, int(out.get("ammoMax", 0) or 0))
+        out["areaDistance"] = max(1, int(out.get("areaDistance", 2) or 2))
         out["equipped"] = bool(out.get("equipped", False))
     elif item_type == "armour":
         out["description"] = str(out.get("description") or "").strip()
@@ -317,6 +320,36 @@ def build_rules_journal() -> list[dict]:
     return docs
 
 
+def build_macros() -> list[dict]:
+    path = ROOT / "macros.json"
+    if not path.exists():
+        return []
+    data = _read_source("macros.json")
+    if not isinstance(data, list):
+        return []
+
+    docs: list[dict] = []
+    for idx, entry in enumerate(data):
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+        docs.append({
+            "_id": str(entry.get("_id") or _stable_id("macro", name)),
+            "name": name,
+            "type": str(entry.get("type") or "script"),
+            "scope": str(entry.get("scope") or "global"),
+            "img": str(entry.get("img") or "icons/svg/dice-target.svg"),
+            "command": str(entry.get("command") or "").rstrip(),
+            "folder": entry.get("folder"),
+            "ownership": entry.get("ownership", {"default": 2}),
+            "flags": entry.get("flags", {}),
+            "sort": int(entry.get("sort", idx * 1000) or 0)
+        })
+    return docs
+
+
 def main() -> None:
     assignment_source = "assignments.json" if (ROOT / "assignments.json").exists() else "assigments.json"
     assignments_data = _read_source(assignment_source)
@@ -331,6 +364,7 @@ def main() -> None:
         "skills.db": build_skills(),
         "spells.db": build_spells(),
         "rules.db": build_rules_journal(),
+        "macros.db": build_macros(),
     }
 
     for filename, docs in outputs.items():

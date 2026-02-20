@@ -1,0 +1,43 @@
+<form class="laundry-automation-settings-form" autocomplete="off">
+    <header class="gm-tracker-header">
+        <h2>Automation Tables</h2>
+        <span class="stamp">{{localize "LAUNDRY.Classified"}}</span>
+    </header>
+
+    <section class="gm-tracker-block">
+        <h3>Injury Table</h3>
+        <label for="laundry-injury-table">Linked RollTable</label>
+        <select id="laundry-injury-table" name="injuryTableUuid">
+            <option value="">-- None --</option>
+            {{#each tables as |table|}}
+            <option value="{{table.uuid}}" {{#if (laundryEq table.uuid ../injuryTableUuid)}}selected{{/if}}>{{table.name}}</option>
+            {{/each}}
+        </select>
+        <p class="notes">Current: <strong>{{injuryTableName}}</strong></p>
+        <div class="gm-pc-actions">
+            <button type="button" class="open-table" data-field="injuryTableUuid">Open Table</button>
+            <button type="button" class="reset-table" data-table-type="injury">Reset Default</button>
+        </div>
+    </section>
+
+    <section class="gm-tracker-block">
+        <h3>Mishap Table</h3>
+        <label for="laundry-mishap-table">Linked RollTable</label>
+        <select id="laundry-mishap-table" name="mishapTableUuid">
+            <option value="">-- None --</option>
+            {{#each tables as |table|}}
+            <option value="{{table.uuid}}" {{#if (laundryEq table.uuid ../mishapTableUuid)}}selected{{/if}}>{{table.name}}</option>
+            {{/each}}
+        </select>
+        <p class="notes">Current: <strong>{{mishapTableName}}</strong></p>
+        <div class="gm-pc-actions">
+            <button type="button" class="open-table" data-field="mishapTableUuid">Open Table</button>
+            <button type="button" class="reset-table" data-table-type="mishap">Reset Default</button>
+        </div>
+    </section>
+
+    <footer class="attack-dialog-actions">
+        <button type="submit" class="roll-attack">Save</button>
+        <button type="button" class="cancel-settings">Cancel</button>
+    </footer>
+</form>

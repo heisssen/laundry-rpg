@@ -1,7 +1,9 @@
 import { LaundryActor } from "./actor/actor.js";
 import { LaundryActorSheet } from "./actor/actor-sheet.js";
 import { LaundryCharacterBuilder } from "./actor/character-builder.js";
+import { LaundryAutomationSettings } from "./apps/automation-settings.js";
 import { LaundryGMTracker } from "./apps/gm-tracker.js";
+import { bindTokenHudControls } from "./apps/token-hud.js";
 import { LaundryItem } from "./item/item.js";
 import { LaundryItemSheet } from "./item/item-sheet.js";
 import { bindDiceChatControls } from "./dice.js";
@@ -95,6 +97,20 @@ const LAUNDRY_CONDITIONS = {
         img: "icons/svg/downgrade.svg",
         defaultDurationRounds: 1,
         clearAtTurnStart: false
+    },
+    bleeding: {
+        id: "bleeding",
+        name: "Bleeding",
+        img: "icons/svg/blood.svg",
+        defaultDurationRounds: 0,
+        clearAtTurnStart: false
+    },
+    frightened: {
+        id: "frightened",
+        name: "Frightened",
+        img: "icons/svg/terror.svg",
+        defaultDurationRounds: 1,
+        clearAtTurnStart: false
     }
 };
 const LAUNDRY_STATUS_EFFECTS = Object.values(LAUNDRY_CONDITIONS).map(entry => ({
@@ -126,6 +142,8 @@ Hooks.once("init", async function () {
         applyCondition: (actor, statusId, options = {}) => applyCondition(actor, statusId, options),
         removeCondition: (actor, statusId, options = {}) => removeCondition(actor, statusId, options),
         getAutomationTable: (tableType) => getAutomationTable(tableType),
+        setAutomationTable: (tableType, tableUuid) => setAutomationTable(tableType, tableUuid),
+        resetAutomationTable: (tableType) => resetAutomationTable(tableType),
         ensureAutomationTables: () => ensureAutomationRollTables(),
         openGMTracker: () => {
             if (!game.user?.isGM) return null;
@@ -198,6 +216,10 @@ Hooks.on("renderChatMessage", (message, html) => {
     bindDiceChatControls(message, html);
 });
 
+Hooks.on("renderTokenHUD", (app, html) => {
+    bindTokenHudControls(app, html);
+});
+
 Hooks.on("renderDialog", (_app, html) => {
     html.addClass("laundry-dialog-content");
     html.closest(".window-app").addClass("laundry-dialog");
@@ -253,11 +275,21 @@ async function preloadTemplates() {
         "systems/laundry-rpg/templates/actor/character-builder.html",
         "systems/laundry-rpg/templates/item/item-sheet.html",
         "systems/laundry-rpg/templates/apps/attack-dialog.html",
-        "systems/laundry-rpg/templates/apps/gm-tracker.html"
+        "systems/laundry-rpg/templates/apps/gm-tracker.html",
+        "systems/laundry-rpg/templates/apps/automation-settings.html"
     ]);
 }
 
 function registerSystemSettings() {
+    game.settings.registerMenu("laundry-rpg", "automationTablesMenu", {
+        name: "Automation Tables",
+        hint: "Choose and manage linked Injury and Mishap RollTables.",
+        label: "Configure",
+        icon: "fas fa-table-list",
+        type: LaundryAutomationSettings,
+        restricted: true
+    });
+
     game.settings.register("laundry-rpg", "teamLuck", {
         name: "Team Luck",
         hint: "Current team Luck pool used for Luck spending and Luck Tests.",
@@ -325,7 +357,8 @@ async function initializeTeamLuckDefaults() {
 
 async function getAutomationTable(tableType) {
     const normalized = String(tableType ?? "").trim().toLowerCase();
-    const settingKey = normalized === "mishap" ? MISHAP_TABLE_SETTING : INJURY_TABLE_SETTING;
+    const settingKey = _getAutomationSettingKey(normalized);
+    if (!settingKey) return null;
     const tableUuid = String(game.settings.get("laundry-rpg", settingKey) ?? "").trim();
     if (!tableUuid) return null;
     try {
@@ -335,6 +368,40 @@ async function getAutomationTable(tableType) {
         console.warn(`Laundry RPG | Failed to resolve automation RollTable: ${tableType}`, err);
         return null;
     }
+}
+
+async function setAutomationTable(tableType, tableUuid = "") {
+    const settingKey = _getAutomationSettingKey(tableType);
+    if (!settingKey) return false;
+
+    const normalizedUuid = String(tableUuid ?? "").trim();
+    if (normalizedUuid) {
+        try {
+            const table = await fromUuid(normalizedUuid);
+            if (!(table instanceof RollTable)) return false;
+        } catch (_err) {
+            return false;
+        }
+    }
+
+    await game.settings.set("laundry-rpg", settingKey, normalizedUuid);
+    return true;
+}
+
+async function resetAutomationTable(tableType) {
+    const normalized = String(tableType ?? "").trim().toLowerCase();
+    const settingKey = _getAutomationSettingKey(normalized);
+    if (!settingKey) return null;
+
+    await game.settings.set("laundry-rpg", settingKey, "");
+    const defaults = normalized === "mishap"
+        ? _buildDefaultMishapTableData()
+        : _buildDefaultInjuryTableData();
+    return _ensureAutomationTable({
+        tableType: normalized,
+        settingKey,
+        defaults
+    });
 }
 
 async function ensureAutomationRollTables() {
@@ -359,6 +426,13 @@ async function _ensureAutomationTable({ tableType, settingKey, defaults } = {}) 
     await game.settings.set("laundry-rpg", settingKey, table.uuid);
     console.log(`Laundry RPG | Created default ${tableType} RollTable: ${table.uuid}`);
     return table;
+}
+
+function _getAutomationSettingKey(tableType) {
+    const normalized = String(tableType ?? "").trim().toLowerCase();
+    if (normalized === "injury") return INJURY_TABLE_SETTING;
+    if (normalized === "mishap") return MISHAP_TABLE_SETTING;
+    return null;
 }
 
 function _buildDefaultInjuryTableData() {
@@ -829,7 +903,12 @@ async function initializeTurnEconomyForActiveCombatant(combat) {
     const normalized = _normalizeTurnEconomyState(combat, existing);
     if (existing?.turnKey === normalized.turnKey) return;
 
-    for (const statusId of _collectActorStatuses(actor)) {
+    const activeStatuses = _collectActorStatuses(actor);
+    if (activeStatuses.has("bleeding")) {
+        await _applyBleedingTick(actor);
+    }
+
+    for (const statusId of activeStatuses) {
         const definition = _getConditionDefinition(statusId);
         if (!definition?.clearAtTurnStart) continue;
         if (statusId === "stunned") {
@@ -845,4 +924,27 @@ async function initializeTurnEconomyForActiveCombatant(combat) {
     }
 
     await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, normalized);
+}
+
+async function _applyBleedingTick(actor) {
+    const currentToughness = Math.max(0, Math.trunc(Number(actor.system?.derived?.toughness?.value) || 0));
+    if (currentToughness <= 0) return;
+
+    const maxToughness = Math.max(
+        currentToughness,
+        Math.trunc(Number(actor.system?.derived?.toughness?.max ?? currentToughness))
+    );
+    const nextToughness = Math.max(0, currentToughness - 1);
+    const nextDamage = Math.max(0, maxToughness - nextToughness);
+
+    await actor.update({
+        "system.derived.toughness.value": nextToughness,
+        "system.derived.toughness.damage": nextDamage
+    });
+
+    const safeName = foundry.utils.escapeHTML(actor.name ?? "Agent");
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<p><strong>${safeName}</strong> suffers 1 Toughness from Bleeding (${currentToughness} → ${nextToughness}).</p>`
+    });
 }

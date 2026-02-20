@@ -1,0 +1,46 @@
+name: Laundry RPG CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run tests
+        run: node --test tests/*.test.mjs
+
+      - name: Syntax check core modules
+        run: |
+          set -euo pipefail
+          node --check module/laundry-rpg.js
+          node --check module/dice.js
+          node --check module/item/item.js
+          node --check module/actor/actor-sheet.js
+          node --check module/apps/gm-tracker.js
+          node --check module/apps/attack-dialog.js
+          node --check module/apps/token-hud.js
+          node --check module/apps/automation-settings.js
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Rebuild packs
+        run: python3 scripts/rebuild_packs_from_json.py
+
+      - name: Ensure pack artifacts are up to date
+        run: git diff --exit-code -- packs

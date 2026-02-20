@@ -21,6 +21,7 @@ export class LaundryGMTracker extends Application {
         const threatLevel = Number(game.settings.get("laundry-rpg", "threatLevel")) || 0;
         const target = _getPrimaryTargetToken();
         const actor = target?.actor ?? null;
+        const combat = game.combat ?? null;
         const pcs = _getPlayerCharacters().map(pc => {
             const adrenalineValue = Math.max(0, Math.trunc(Number(pc.system?.derived?.adrenaline?.value) || 0));
             const adrenalineMax = Math.max(0, Math.trunc(Number(pc.system?.derived?.adrenaline?.max) || 0));
@@ -37,13 +38,60 @@ export class LaundryGMTracker extends Application {
                 kpiOpen: kpiSummary.open
             };
         });
+        const combatants = Array.from(combat?.combatants ?? [])
+            .map(combatant => {
+                const cActor = combatant.actor;
+                const statuses = Array.from(game.laundry?.getActorStatuses?.(cActor) ?? []);
+                const turnEconomy = game.laundry?.getCombatTurnEconomy?.(cActor) ?? {
+                    tracked: false,
+                    actionsRemaining: 0,
+                    moveRemaining: 0
+                };
+                const toughnessValue = Math.max(0, Math.trunc(Number(cActor?.system?.derived?.toughness?.value) || 0));
+                const toughnessMax = Math.max(0, Math.trunc(Number(cActor?.system?.derived?.toughness?.max) || 0));
+                const adrenalineValue = Math.max(0, Math.trunc(Number(cActor?.system?.derived?.adrenaline?.value) || 0));
+                const adrenalineMax = Math.max(0, Math.trunc(Number(cActor?.system?.derived?.adrenaline?.max) || 0));
+                return {
+                    id: combatant.id,
+                    actorId: cActor?.id ?? "",
+                    name: cActor?.name ?? combatant.name ?? "Combatant",
+                    isActive: combat?.combatant?.id === combatant.id,
+                    initiative: Number.isFinite(Number(combatant.initiative))
+                        ? Math.trunc(Number(combatant.initiative))
+                        : 0,
+                    toughnessValue,
+                    toughnessMax,
+                    adrenalineValue,
+                    adrenalineMax,
+                    statuses: statuses.join(", ") || "None",
+                    isCritical: toughnessValue <= 0,
+                    actionsRemaining: Math.max(0, Math.trunc(Number(turnEconomy.actionsRemaining) || 0)),
+                    moveRemaining: Math.max(0, Math.trunc(Number(turnEconomy.moveRemaining) || 0)),
+                    noActionsLeft: Boolean(turnEconomy.tracked && Number(turnEconomy.actionsRemaining) <= 0),
+                    noMoveLeft: Boolean(turnEconomy.tracked && Number(turnEconomy.moveRemaining) <= 0)
+                };
+            })
+            .sort((a, b) => {
+                if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+                return b.initiative - a.initiative;
+            });
+        const combatSummary = {
+            total: combatants.length,
+            critical: combatants.filter(entry => entry.isCritical).length,
+            noActions: combatants.filter(entry => entry.noActionsLeft).length,
+            noMove: combatants.filter(entry => entry.noMoveLeft).length
+        };
+
         return {
             ...data,
             threatLevel: Math.max(0, Math.min(10, Math.trunc(threatLevel))),
             targetName: actor?.name ?? target?.name ?? game.i18n.localize("LAUNDRY.AttackNoTarget"),
             hasTarget: Boolean(actor),
             pcs,
-            hasPcs: pcs.length > 0
+            hasPcs: pcs.length > 0,
+            hasCombat: Boolean(combat && combat.started && combatants.length),
+            combatants,
+            combatSummary
         };
     }
 
@@ -70,6 +118,9 @@ export class LaundryGMTracker extends Application {
         html.find(".pc-bau").on("click", (ev) => this._onBauForPc(ev));
         html.find(".pc-open-sheet").on("click", (ev) => this._onOpenDossier(ev));
         html.find(".pc-kpi-ping").on("click", (ev) => this._onKpiPing(ev));
+        html.find(".combat-adjust").on("click", (ev) => this._onCombatAdjust(ev));
+        html.find(".combat-open-sheet").on("click", (ev) => this._onCombatOpenSheet(ev));
+        html.find(".combat-next-turn").on("click", (ev) => this._onCombatNextTurn(ev));
         html.find(".open-rules").on("click", (ev) => this._onOpenCompendium(ev, "laundry-rpg.rules"));
         html.find(".open-spells").on("click", (ev) => this._onOpenCompendium(ev, "laundry-rpg.spells"));
     }
@@ -218,6 +269,61 @@ export class LaundryGMTracker extends Application {
             content: `${game.i18n.format("LAUNDRY.KPIPingSent", { name: actor.name })} (${game.i18n.localize("LAUNDRY.KPIStatusOpen")}: ${kpiSummary.open})`
         });
         ui.notifications.info(game.i18n.format("LAUNDRY.KPIPingSent", { name: actor.name }));
+    }
+
+    async _onCombatAdjust(ev) {
+        ev.preventDefault();
+        const button = ev.currentTarget;
+        const actorId = String(button.dataset.actorId ?? "").trim();
+        const resource = String(button.dataset.resource ?? "").trim().toLowerCase();
+        const delta = Math.trunc(Number(button.dataset.delta) || 0);
+        if (!actorId || (!delta && !["action", "move", "adrenaline-action"].includes(resource))) return;
+
+        const actor = game.actors?.get(actorId);
+        if (!actor) return;
+
+        if (resource === "toughness") {
+            const current = Math.max(0, Math.trunc(Number(actor.system?.derived?.toughness?.value) || 0));
+            const max = Math.max(0, Math.trunc(Number(actor.system?.derived?.toughness?.max) || 0));
+            const next = Math.max(0, Math.min(max, current + delta));
+            if (next !== current) {
+                await actor.update({
+                    "system.derived.toughness.value": next,
+                    "system.derived.toughness.damage": Math.max(0, max - next)
+                });
+            }
+        } else if (resource === "adrenaline") {
+            const current = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value) || 0));
+            const max = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.max) || 0));
+            const next = Math.max(0, Math.min(max, current + delta));
+            if (next !== current) {
+                await actor.update({ "system.derived.adrenaline.value": next });
+            }
+        } else if (resource === "action") {
+            await game.laundry?.consumeCombatAction?.(actor, { warn: true });
+        } else if (resource === "move") {
+            await game.laundry?.consumeCombatMove?.(actor, { warn: true });
+        } else if (resource === "adrenaline-action") {
+            await game.laundry?.spendAdrenalineForExtraAction?.(actor);
+        }
+
+        this.render(false);
+    }
+
+    async _onCombatOpenSheet(ev) {
+        ev.preventDefault();
+        const actorId = String(ev.currentTarget.dataset.actorId ?? "").trim();
+        if (!actorId) return;
+        const actor = game.actors?.get(actorId);
+        actor?.sheet?.render(true);
+    }
+
+    async _onCombatNextTurn(ev) {
+        ev.preventDefault();
+        if (!game.user?.isGM) return;
+        if (!game.combat?.started) return;
+        await game.combat.nextTurn();
+        this.render(false);
     }
 
     _onOpenCompendium(ev, packId) {

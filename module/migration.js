@@ -25,6 +25,9 @@ export async function migrateWorld() {
                 if (item.system?.skill === "Ranged Combat") {
                     u["system.skill"] = "Ranged";
                 }
+                if (typeof item.system?.ammo !== "number") u["system.ammo"] = 0;
+                if (typeof item.system?.ammoMax !== "number") u["system.ammoMax"] = 0;
+                if (typeof item.system?.areaDistance !== "number") u["system.areaDistance"] = 2;
             }
 
             if (Object.keys(u).length) itemUpdates.push({ _id: item.id, ...u });

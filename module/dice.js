@@ -1014,7 +1014,10 @@ async function _applyDamage(message) {
     const traits = _extractWeaponTraits(state);
     const attackMeta = state.attackMeta ?? {};
     const isAreaAttack = Boolean(traits.area || attackMeta.areaMode);
-    const targets = isAreaAttack ? allTargets : [allTargets[0]];
+    const templateTargets = isAreaAttack ? _resolveTemplateActors(state) : [];
+    const targets = isAreaAttack
+        ? (templateTargets.length ? templateTargets : allTargets)
+        : [allTargets[0]];
     const criticals = results.filter(result => result.rawValue === 6).length;
     const summaries = [];
     const armourIgnored = traits.piercing ? criticals : 0;
@@ -1141,6 +1144,48 @@ function _resolveTargetActors(state) {
         targetActorId: state?.targetActorId ?? null
     });
     return single ? [single] : [];
+}
+
+function _resolveTemplateActors(state) {
+    const templateId = String(state?.attackMeta?.areaTemplateId ?? "").trim();
+    const templateSceneId = String(state?.attackMeta?.areaTemplateSceneId ?? "").trim();
+    if (!templateId) return [];
+    if (!canvas?.scene || (templateSceneId && canvas.scene.id !== templateSceneId)) return [];
+
+    const templateDoc = canvas.scene.templates?.get(templateId) ?? null;
+    if (!templateDoc) return [];
+    const templateObject = canvas.templates?.get(templateId)
+        ?? canvas.templates?.placeables?.find(entry => entry.id === templateId)
+        ?? null;
+
+    const actors = [];
+    for (const token of canvas.tokens?.placeables ?? []) {
+        const actor = token?.actor ?? null;
+        if (!actor || token.document?.hidden) continue;
+        if (_tokenInsideTemplate(token, templateDoc, templateObject)) {
+            actors.push(actor);
+        }
+    }
+    return _dedupeActors(actors);
+}
+
+function _tokenInsideTemplate(token, templateDoc, templateObject) {
+    const center = token?.center ?? null;
+    if (!center) return false;
+
+    const shape = templateObject?.shape ?? null;
+    if (shape?.contains) {
+        const localX = center.x - Number(templateDoc?.x ?? templateObject?.x ?? 0);
+        const localY = center.y - Number(templateDoc?.y ?? templateObject?.y ?? 0);
+        return Boolean(shape.contains(localX, localY));
+    }
+
+    const gridDistance = Number(canvas?.scene?.grid?.distance) || 1;
+    const gridSize = Number(canvas?.scene?.grid?.size) || 100;
+    const radiusPixels = (Math.max(0, Number(templateDoc?.distance) || 0) / gridDistance) * gridSize;
+    const dx = center.x - Number(templateDoc?.x ?? 0);
+    const dy = center.y - Number(templateDoc?.y ?? 0);
+    return (dx * dx + dy * dy) <= (radiusPixels * radiusPixels);
 }
 
 function _canCurrentUserApplyDamage(state) {
@@ -1309,6 +1354,10 @@ function _getStatusRollModifiers({ actor, targetActor, rollContext, isWeaponAtta
         || attribute === "body"
         || sourceType === "attribute" && sourceName === "body"
         || ["athletics", "might", "fortitude", "close combat", "ranged", "reflexes", "survival", "stealth"].includes(skillName);
+    const isMindSpiritRoll = attribute === "mind"
+        || attribute === "spirit"
+        || sourceType === "attribute" && (sourceName === "mind" || sourceName === "spirit")
+        || ["academics", "awareness", "bureaucracy", "computers", "engineering", "intuition", "magic", "medicine", "occult", "presence", "resolve", "science", "technology", "zeal", "fast talk"].includes(skillName);
 
     if (own.has("blinded") && isVisionRoll) {
         poolDelta -= 1;
@@ -1318,6 +1367,16 @@ function _getStatusRollModifiers({ actor, targetActor, rollContext, isWeaponAtta
     if (own.has("weakened") && isBodyRoll) {
         poolDelta -= 1;
         notes.push("Weakened: -1 die on Body/physical actions.");
+    }
+
+    if (own.has("bleeding") && isBodyRoll) {
+        poolDelta -= 1;
+        notes.push("Bleeding: -1 die on strenuous physical actions.");
+    }
+
+    if (own.has("frightened") && (isMindSpiritRoll || isWeaponAttack)) {
+        poolDelta -= 1;
+        notes.push("Frightened: -1 die on attacks and Mind/Spirit actions.");
     }
 
     if (isWeaponAttack) {

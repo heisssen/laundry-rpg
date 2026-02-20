@@ -47,6 +47,10 @@ export class LaundryAttackDialog extends Application {
             current: Math.max(0, Math.trunc(Number(ammo?.current) || 0)),
             max: Math.max(0, Math.trunc(Number(ammo?.max) || 0))
         };
+        this.areaTemplateDistance = Math.max(
+            1,
+            Math.trunc(Number(this.weapon?.system?.areaDistance) || 2)
+        );
         this.adrenalineAvailable = Math.max(0, Math.trunc(Number(adrenalineAvailable) || 0));
 
         this._resolved = false;
@@ -94,7 +98,8 @@ export class LaundryAttackDialog extends Application {
             fireModes,
             canSelectFireMode: fireModes.filter(mode => mode.enabled !== false).length > 1,
             ammo: this.ammo,
-            traitProfile: this.traitProfile
+            traitProfile: this.traitProfile,
+            areaTemplateDistance: this.areaTemplateDistance
         };
     }
 
@@ -130,6 +135,11 @@ export class LaundryAttackDialog extends Application {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const spendAdrenaline = formData.get("spendAdrenaline") === "on" && this.adrenalineAvailable > 0;
+        const placeAreaTemplate = formData.get("placeAreaTemplate") === "on";
+        const areaTemplateDistance = Math.max(
+            1,
+            Math.trunc(Number(formData.get("areaTemplateDistance") ?? this.areaTemplateDistance) || this.areaTemplateDistance)
+        );
         const requestedMode = String(formData.get("fireMode") ?? "single").trim().toLowerCase();
         const fireModes = this._getFireModes();
         const enabledModes = fireModes.filter(mode => mode.enabled !== false);
@@ -146,6 +156,8 @@ export class LaundryAttackDialog extends Application {
             fireMode: fireMode.id,
             suppressiveMode: fireMode.id === "suppressive",
             areaMode: Boolean(this.traitProfile?.area),
+            placeAreaTemplate,
+            areaTemplateDistance,
             complexityBonus: Math.max(0, Math.trunc(Number(fireMode.complexityBonus) || 0)),
             ammoCost: Math.max(0, Math.trunc(Number(fireMode.ammoCost) || 0)),
             poolBonus: Math.max(0, Math.trunc(Number(fireMode.poolBonus) || 0)) + (spendAdrenaline ? 1 : 0),

@@ -123,6 +123,10 @@
                 <input type="number" name="system.ammoMax" value="{{system.ammoMax}}" min="0" />
             </div>
             <div class="form-group">
+                <label>Area Radius</label>
+                <input type="number" name="system.areaDistance" value="{{system.areaDistance}}" min="1" />
+            </div>
+            <div class="form-group">
                 <label>{{localize "LAUNDRY.Equipped"}}</label>
                 <input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} />
             </div>

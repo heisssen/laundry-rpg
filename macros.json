@@ -1,0 +1,110 @@
+[
+  {
+    "_id": "lauquickatk001",
+    "name": "Laundry: Quick Attack",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/sword.svg",
+    "command": "const actor = canvas.tokens?.controlled?.[0]?.actor;\nif (!actor) return ui.notifications.warn(\"Select a controlled token first.\");\nconst weapons = actor.items.filter(i => i.type === \"weapon\").sort((a, b) => a.name.localeCompare(b.name));\nif (!weapons.length) return ui.notifications.warn(\"No weapons available.\");\nconst equipped = weapons.filter(i => i.system?.equipped);\nawait (equipped[0] ?? weapons[0]).roll();",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "lauquickcast01",
+    "name": "Laundry: Quick Cast",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/daze.svg",
+    "command": "const actor = canvas.tokens?.controlled?.[0]?.actor;\nif (!actor) return ui.notifications.warn(\"Select a controlled token first.\");\nconst spells = actor.items.filter(i => i.type === \"spell\").sort((a, b) => a.name.localeCompare(b.name));\nif (!spells.length) return ui.notifications.warn(\"No spells available.\");\nawait spells[0].roll();",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "laushortrest01",
+    "name": "Laundry: Take a Breather",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/regen.svg",
+    "command": "const actor = canvas.tokens?.controlled?.[0]?.actor;\nif (!actor) return ui.notifications.warn(\"Select a controlled token first.\");\nconst maxAdr = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.max) || 0));\nawait actor.update({\"system.derived.adrenaline.value\": maxAdr});\nui.notifications.info(`${actor.name}: Adrenaline restored.`);",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "laulongrest0001",
+    "name": "Laundry: Standard Rest",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/sleep.svg",
+    "command": "const actor = canvas.tokens?.controlled?.[0]?.actor;\nif (!actor) return ui.notifications.warn(\"Select a controlled token first.\");\nconst maxAdr = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.max) || 0));\nconst maxTgh = Math.max(0, Math.trunc(Number(actor.system?.derived?.toughness?.max) || 0));\nawait actor.update({\n  \"system.derived.adrenaline.value\": maxAdr,\n  \"system.derived.toughness.value\": maxTgh,\n  \"system.derived.toughness.damage\": 0\n});\nChatMessage.create({speaker: ChatMessage.getSpeaker({actor}), content: `<p><strong>${foundry.utils.escapeHTML(actor.name)}</strong> completed a Standard Rest.</p>`});",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "lauoppose00001",
+    "name": "Laundry: Resolve Opposed",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/dice-target.svg",
+    "command": "const msg = game.messages.contents.slice().reverse().find(entry => {\n  const state = entry.getFlag(\"laundry-rpg\", \"diceState\");\n  return state?.isOpposedTest && !state?.opposedResolution && (entry.isOwner || game.user.isGM);\n});\nif (!msg) return ui.notifications.warn(\"No unresolved opposed roll cards found.\");\nconst selector = `li.chat-message[data-message-id=\"${msg.id}\"] .resolve-opposed`;\nconst button = document.querySelector(selector);\nif (button) return button.click();\nui.notifications.info(\"Open the chat card and click Resolve Opposed.\");",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "laugmtracker001",
+    "name": "Laundry: Open GM Tracker",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/eye.svg",
+    "command": "if (!game.user?.isGM) return ui.notifications.warn(\"GM only.\");\ngame.laundry?.openGMTracker?.();",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "lauadraction01",
+    "name": "Laundry: Spend Adrenaline (+1 Action)",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/lightning.svg",
+    "command": "const actor = canvas.tokens?.controlled?.[0]?.actor;\nif (!actor) return ui.notifications.warn(\"Select a controlled token first.\");\nawait game.laundry?.spendAdrenalineForExtraAction?.(actor);",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "lauuseaction001",
+    "name": "Laundry: Use Action",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/mystery-man.svg",
+    "command": "const actor = canvas.tokens?.controlled?.[0]?.actor;\nif (!actor) return ui.notifications.warn(\"Select a controlled token first.\");\nawait game.laundry?.consumeCombatAction?.(actor, {warn: true});",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  },
+  {
+    "_id": "lauusemove0001",
+    "name": "Laundry: Use Move",
+    "type": "script",
+    "scope": "global",
+    "img": "icons/svg/move.svg",
+    "command": "const actor = canvas.tokens?.controlled?.[0]?.actor;\nif (!actor) return ui.notifications.warn(\"Select a controlled token first.\");\nawait game.laundry?.consumeCombatMove?.(actor, {warn: true});",
+    "ownership": {
+      "default": 2
+    },
+    "flags": {}
+  }
+]

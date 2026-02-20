@@ -17,6 +17,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run tests
+        run: node --test tests/*.test.mjs
+
+      - name: Run compendium QA
+        run: node scripts/qa_compendiums.mjs
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Rebuild packs
+        run: python3 scripts/rebuild_packs_from_json.py
+
+      - name: Ensure pack artifacts are up to date
+        run: git diff --exit-code -- packs
+
       - name: Validate versions
         run: |
           set -euo pipefail

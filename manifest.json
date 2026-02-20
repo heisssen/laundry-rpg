@@ -2,7 +2,7 @@
   "id": "laundry-rpg",
   "title": "The Laundry RPG",
   "description": "A system for The Laundry Roleplaying Game (Cubicle 7) in Foundry VTT.",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "compatibility": {
     "minimum": 12,
     "verified": 13
@@ -73,6 +73,13 @@
       "label": "Rules Dossier",
       "path": "packs/rules.db",
       "type": "JournalEntry",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "macros",
+      "label": "Laundry Macros",
+      "path": "packs/macros.db",
+      "type": "Macro",
       "system": "laundry-rpg"
     }
   ],
