@@ -55,7 +55,8 @@ export async function rollDice({
     targetSnapshot = null,
     attackMeta = null,
     prompt = true,
-    testType = "common"
+    testType = "common",
+    rollContext = null
 } = {}) {
     const baseConfig = {
         pool: Math.max(0, Number(pool) || 0),
@@ -108,11 +109,22 @@ export async function rollDice({
         targetSnapshot,
         attackMeta,
         isLuckTest,
-        preRollLuckUsed
+        preRollLuckUsed,
+        rollContext
     });
 }
 
 export function bindDiceChatControls(message, html) {
+    html.find(".roll-injury").off("click.laundry-roll-injury").on("click.laundry-roll-injury", async (ev) => {
+        ev.preventDefault();
+        await _rollInjuryFromButton(ev);
+    });
+
+    html.find(".roll-mishap").off("click.laundry-roll-mishap").on("click.laundry-roll-mishap", async (ev) => {
+        ev.preventDefault();
+        await _rollMishapFromButton(ev);
+    });
+
     const state = _getDiceState(message);
     if (!state) return;
     const focusEnabled = state.allowFocusControls !== false;
@@ -191,7 +203,8 @@ async function _executeRoll({
     targetSnapshot,
     attackMeta,
     isLuckTest,
-    preRollLuckUsed
+    preRollLuckUsed,
+    rollContext
 }) {
     const effectiveDn = Math.max(2, Math.min(6, (dn || 4) + (shift || 0)));
 
@@ -207,6 +220,12 @@ async function _executeRoll({
     }
 
     const actor = actorId ? game.actors?.get(actorId) : null;
+    const normalizedRollContext = _normalizeRollContext({
+        rollContext,
+        actor,
+        focusItemId,
+        flavor
+    });
     let focusAvailable = 0;
     if (!isLuckTest && actorId && focusItemId) {
         const focusItem = actor?.items?.get(focusItemId);
@@ -220,6 +239,8 @@ async function _executeRoll({
         actor,
         damageBonus
     });
+    const initialComplications = rawDice.filter(value => _clampDie(value) === 1).length;
+    const mishapTriggered = Boolean(normalizedRollContext.isMagic && initialComplications > 0);
 
     const state = {
         pool,
@@ -248,6 +269,11 @@ async function _executeRoll({
         actorId: actorId ?? null,
         focusItemId: !isLuckTest ? (focusItemId ?? null) : null,
         attackMeta: attackMeta ?? null,
+        rollContext: normalizedRollContext,
+        mishap: {
+            triggered: mishapTriggered,
+            initialComplications
+        },
         isLuckTest,
         preRollLuckUsed,
         teamLuck: await _getTeamLuck(),
@@ -335,6 +361,7 @@ function _renderDiceContent(state) {
 
     const attackMetaSection = _renderAttackMetaSection(state);
     const targetSection = _renderTargetSection(state);
+    const mishapSection = _renderMishapWarningSection(state, results);
     const damageSection = _renderDamageSection(state);
 
     const teamLuck = Math.max(0, Number(state.teamLuck ?? 0));
@@ -358,6 +385,7 @@ function _renderDiceContent(state) {
             <span class="crit-summary">${_escapeHtml(game.i18n.localize("LAUNDRY.Criticals"))}: ${criticals}</span>
             <span class="comp-summary">${_escapeHtml(game.i18n.localize("LAUNDRY.Complications"))}: ${complications}</span>
         </div>
+        ${mishapSection}
         ${focusSection}
         ${luckSection}
         <div class="dice-outcome ${outcome.cssClass}">
@@ -446,6 +474,17 @@ function _renderTargetSection(state) {
     const count = Math.max(1, Number(state.targetCount ?? 1) || 1);
     const label = count > 1 ? `${targetName} (+${count - 1} more)` : targetName;
     return `<div class="target-section"><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Target"))}:</strong> ${_escapeHtml(label)}</div>`;
+}
+
+function _renderMishapWarningSection(state, results) {
+    if (!_isMishapTriggered(state, results)) return "";
+    const sourceName = String(state.rollContext?.sourceName ?? "").trim();
+    const sourceBits = sourceName ? ` data-source-name="${_escapeHtml(sourceName)}"` : "";
+    return `
+        <div class="mishap-warning-section">
+            <div class="mishap-warning-text"><strong>⚠️ COMPUTATIONAL COMPLICATION / MISHAP TRIGGERED!</strong></div>
+            <button type="button" class="roll-mishap spend-focus"${sourceBits}>Roll Mishap</button>
+        </div>`;
 }
 
 function _renderDamageSection(state) {
@@ -687,6 +726,13 @@ async function _applyDamage(message) {
         from: currentToughness,
         to: newToughness
     }));
+
+    if (appliedDamage > 0 && currentToughness > 0 && newToughness <= 0) {
+        await _postCriticalWoundPrompt({
+            targetActor,
+            damageTaken: appliedDamage
+        });
+    }
 }
 
 function _resolveTargetActor(state) {
@@ -722,6 +768,112 @@ function _findAutoFocusDie(state) {
 
 function _countFailureDice(state) {
     return _buildResults(state).filter(r => !r.success).length;
+}
+
+function _isMishapTriggered(state, results = null) {
+    if (state?.isLuckTest) return false;
+    if (!state?.rollContext?.isMagic) return false;
+    if (state?.mishap?.triggered === true) return true;
+    const evaluated = Array.isArray(results) ? results : _buildResults(state);
+    return evaluated.some(result => result.complication);
+}
+
+function _normalizeRollContext({ rollContext, actor, focusItemId, flavor }) {
+    const sourceTypeRaw = String(rollContext?.sourceType ?? "").trim().toLowerCase();
+    const sourceName = String(rollContext?.sourceName ?? "").trim();
+    let isSpell = Boolean(rollContext?.isSpell || sourceTypeRaw === "spell");
+    let isMagic = Boolean(rollContext?.isMagic || isSpell);
+
+    const focusItem = actor && focusItemId ? actor.items?.get(focusItemId) : null;
+    const focusItemName = String(focusItem?.name ?? "").trim();
+    const focusItemIsMagicSkill = focusItem?.type === "skill"
+        && focusItemName.toLowerCase() === "magic";
+    if (!isMagic && focusItemIsMagicSkill) isMagic = true;
+    if (!isMagic && sourceName.toLowerCase() === "magic") isMagic = true;
+    if (!isMagic && /\bmagic\b/i.test(String(flavor ?? ""))) isMagic = true;
+    if (!isSpell && sourceTypeRaw === "spell") isSpell = true;
+
+    return {
+        sourceType: sourceTypeRaw || (isSpell ? "spell" : null),
+        sourceName: sourceName || focusItemName || "",
+        isSpell,
+        isMagic
+    };
+}
+
+async function _postCriticalWoundPrompt({ targetActor, damageTaken = 0 } = {}) {
+    if (!targetActor) return;
+    const safeName = _escapeHtml(targetActor.name ?? "Unknown");
+    const applied = Math.max(0, Math.trunc(Number(damageTaken) || 0));
+
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: targetActor }),
+        content: `
+            <div class="laundry-critical-wound-card">
+                <div class="critical-wound-title"><strong>CRITICAL WOUND: ${safeName}</strong></div>
+                <button type="button" class="roll-injury" data-damage-taken="${applied}" data-target-name="${safeName}">Roll Injury</button>
+            </div>`
+    });
+}
+
+async function _rollInjuryFromButton(ev) {
+    const button = ev?.currentTarget;
+    const damageTaken = Math.max(0, Math.trunc(Number(button?.dataset?.damageTaken ?? 0) || 0));
+    const targetName = String(button?.dataset?.targetName ?? "").trim();
+    const roll = new Roll(`1d6 + ${damageTaken}`);
+    await roll.evaluate();
+    const total = Math.max(0, Math.trunc(Number(roll.total ?? 0) || 0));
+    const outcome = _getInjuryOutcome(total);
+    const targetLabel = targetName ? ` for ${_escapeHtml(targetName)}` : "";
+
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker(),
+        content: `
+            <div class="laundry-injury-result-card">
+                <strong>INJURY RESULT${targetLabel}:</strong>
+                1d6 + ${damageTaken} = <strong>${total}</strong>
+                <span class="injury-outcome">(${_escapeHtml(outcome)})</span>
+            </div>`,
+        rolls: [roll],
+        sound: CONFIG.sounds.dice
+    });
+}
+
+function _getInjuryOutcome(total) {
+    const n = Math.max(0, Math.trunc(Number(total) || 0));
+    if (n <= 3) return "Stunned";
+    if (n <= 5) return "Bleeding";
+    return "Incapacitated / Lethal";
+}
+
+async function _rollMishapFromButton(ev) {
+    const button = ev?.currentTarget;
+    const sourceName = String(button?.dataset?.sourceName ?? "").trim();
+    const sourceLabel = sourceName ? ` (${_escapeHtml(sourceName)})` : "";
+    const roll = new Roll("1d6");
+    await roll.evaluate();
+    const total = Math.max(1, Math.trunc(Number(roll.total ?? 1) || 1));
+    const outcome = _getMishapOutcome(total);
+
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker(),
+        content: `
+            <div class="laundry-mishap-result-card">
+                <strong>MISHAP RESULT${sourceLabel}:</strong>
+                <strong>${total}</strong>
+                <span class="mishap-outcome">- ${_escapeHtml(outcome)}</span>
+            </div>`,
+        rolls: [roll],
+        sound: CONFIG.sounds.dice
+    });
+}
+
+function _getMishapOutcome(total) {
+    const n = Math.max(1, Math.trunc(Number(total) || 1));
+    if (n <= 2) return "Arcane Feedback: magical output destabilises; the caster is left Stunned.";
+    if (n <= 4) return "Signal Bleed: nearby electronics glitch and occult signatures spike.";
+    if (n === 5) return "Aetheric Backlash: the caster suffers immediate Bleeding trauma.";
+    return "Catastrophic Breach: severe anomaly manifests (Incapacitated/Lethal fallout).";
 }
 
 function _getPrimaryTargetSnapshot() {

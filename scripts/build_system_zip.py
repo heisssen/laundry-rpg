@@ -3,7 +3,9 @@ import os
 import zipfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-OUT = os.path.join(ROOT, "system.zip")
+OUT_SYSTEM = os.path.join(ROOT, "system.zip")
+OUT_LOCAL = os.path.join(ROOT, "laundry-rpg.zip")
+OUT_SIBLING = os.path.abspath(os.path.join(ROOT, "..", "laundry-rpg.zip"))
 
 # Keep archive paths root-level for direct Foundry package install.
 PREFIX = ""
@@ -48,15 +50,31 @@ def add_path(zf, path):
         zf.write(full, arc)
 
 
-def main():
-    if os.path.exists(OUT):
-        os.remove(OUT)
-
-    with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as zf:
+def write_archive(path):
+    parent = os.path.dirname(path)
+    if parent and not os.path.exists(parent):
+        os.makedirs(parent, exist_ok=True)
+    if os.path.exists(path):
+        os.remove(path)
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
         for item in INCLUDE:
             add_path(zf, item)
+    print(f"Wrote {path}")
 
-    print(f"Wrote {OUT}")
+
+def main():
+    # Emit both canonical release zip and local-update-friendly zips.
+    outputs = []
+    for candidate in (OUT_SYSTEM, OUT_LOCAL, OUT_SIBLING):
+        if candidate not in outputs:
+            outputs.append(candidate)
+
+    for output in outputs:
+        try:
+            write_archive(output)
+        except OSError as err:
+            # Do not fail the build if sibling destination is not writable.
+            print(f"Skipped {output}: {err}")
 
 
 if __name__ == "__main__":

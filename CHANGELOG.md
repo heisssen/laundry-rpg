@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.8.0 - 2026-02-20
+
+### Added
+- Injury automation on weapon damage application: when Toughness is reduced to 0, the system auto-posts a CRITICAL WOUND card with a Roll Injury button.
+- Injury roll flow from chat cards (`1d6 + damage taken`) with immediate Injury Table resolution (Stunned, Bleeding, Incapacitated/Lethal).
+- Magic mishap automation for Magic/Spell rolls: automatic mishap trigger detection on natural `1`s plus a prominent warning block and Mishap roll button.
+- Mishap table chat resolution (`1d6`) with structured mishap outcomes for fast adjudication during play.
+- Resting controls on actor sheets: `Take a Breather` (restore Adrenaline) and `Standard Rest` (restore Adrenaline and Toughness, plus rest notification in chat).
+- Core Laundry condition set override at init via `CONFIG.statusEffects` (Blinded, Prone, Stunned, Weakened) using Foundry core SVG icons.
+- Local package update quality-of-life in build tooling: zip builder now also produces `laundry-rpg.zip` for local update workflows.
+
 ## 1.6.0 - 2026-02-20
 
 ### Added

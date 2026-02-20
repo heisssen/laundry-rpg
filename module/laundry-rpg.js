@@ -67,6 +67,13 @@ const LAUNDRY = {
     ]
 };
 
+const LAUNDRY_STATUS_EFFECTS = [
+    { id: "blinded", name: "Blinded", img: "icons/svg/blind.svg" },
+    { id: "prone", name: "Prone", img: "icons/svg/falling.svg" },
+    { id: "stunned", name: "Stunned", img: "icons/svg/daze.svg" },
+    { id: "weakened", name: "Weakened", img: "icons/svg/downgrade.svg" }
+];
+
 Hooks.once("init", async function () {
     console.log("Laundry RPG | Initialising The Laundry RPG System");
 
@@ -91,6 +98,7 @@ Hooks.once("init", async function () {
         }
     };
     CONFIG.LAUNDRY = LAUNDRY;
+    CONFIG.statusEffects = LAUNDRY_STATUS_EFFECTS.map(effect => foundry.utils.deepClone(effect));
 
     CONFIG.Actor.documentClass = LaundryActor;
     CONFIG.Item.documentClass  = LaundryItem;

@@ -415,6 +415,46 @@
     color: var(--laundry-ink-muted);
 }
 
+.laundry-rpg .derived-block.rest-actions {
+    align-items: stretch;
+    justify-content: center;
+}
+
+.laundry-rpg .rest-action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.laundry-rpg .rest-action-buttons button {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.75);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
+.laundry-rpg .rest-action-buttons .take-breather {
+    border-color: var(--laundry-accent);
+    color: var(--laundry-accent);
+    background: rgba(47,74,93,0.12);
+}
+
+.laundry-rpg .rest-action-buttons .standard-rest {
+    border-color: var(--laundry-stamp);
+    color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.12);
+}
+
+.laundry-rpg .rest-action-buttons button:hover {
+    filter: brightness(0.95);
+}
+
 /* ── Ladder ─────────────────────────────────────────────────────────────── */
 .laundry-rpg .ladder-grid {
     display: grid;
@@ -1735,6 +1775,53 @@
 
 .laundry-dice-roll .damage-total {
     color: var(--laundry-ink);
+}
+
+.laundry-dice-roll .mishap-warning-section {
+    border: 1px solid #8b0000;
+    background: rgba(178, 31, 31, 0.14);
+    color: #8b0000;
+    margin: 6px 0;
+    padding: 6px;
+    text-align: center;
+}
+
+.laundry-dice-roll .mishap-warning-text {
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.laundry-critical-wound-card,
+.laundry-injury-result-card,
+.laundry-mishap-result-card {
+    border: 1px solid var(--laundry-line-dark);
+    background: var(--laundry-paper);
+    padding: 6px;
+    text-align: center;
+    font-family: var(--laundry-font, "Courier New", monospace);
+    font-size: 12px;
+}
+
+.laundry-critical-wound-card {
+    border-color: #8b0000;
+    background: rgba(178, 31, 31, 0.08);
+}
+
+.laundry-critical-wound-card .critical-wound-title {
+    color: #8b0000;
+    margin-bottom: 6px;
+}
+
+.laundry-critical-wound-card .roll-injury {
+    border: 1px solid #8b0000;
+    background: rgba(178, 31, 31, 0.14);
+    color: #8b0000;
+    font-family: var(--laundry-font, "Courier New", monospace);
+    font-size: 11px;
+    font-weight: bold;
+    padding: 3px 8px;
+    cursor: pointer;
 }
 
 /* ── Combat Spotlight ───────────────────────────────────────────────────── */

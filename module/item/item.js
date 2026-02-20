@@ -39,7 +39,13 @@ export class LaundryItem extends Item {
             pool,
             flavor: `${this.name} (${attrName.charAt(0).toUpperCase() + attrName.slice(1)} ${attrValue} + Training ${training})`,
             actorId: actor.id,
-            focusItemId: this.id
+            focusItemId: this.id,
+            rollContext: {
+                sourceType: "skill",
+                sourceName: this.name,
+                isMagic: String(this.name ?? "").trim().toLowerCase() === "magic",
+                isSpell: false
+            }
         });
     }
 
@@ -162,7 +168,13 @@ export class LaundryItem extends Item {
             complexity,
             flavor: `Cast ${this.name} (Magic — Level ${this.system.level ?? 1}, DN ${dn}:${complexity})`,
             actorId: actor.id,
-            focusItemId: magicSkill?.id
+            focusItemId: magicSkill?.id,
+            rollContext: {
+                sourceType: "spell",
+                sourceName: this.name,
+                isMagic: true,
+                isSpell: true
+            }
         });
     }
 

@@ -180,6 +180,8 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".inv-search").on("input", this._onInventorySearch.bind(this));
         html.find(".init-agent").click(this._onInitAgent.bind(this));
         html.find(".end-turn").click(this._onEndTurn.bind(this));
+        html.find(".take-breather").click(this._onTakeBreather.bind(this));
+        html.find(".standard-rest").click(this._onStandardRest.bind(this));
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
@@ -262,7 +264,13 @@ export class LaundryActorSheet extends ActorSheet {
                 pool: attrVal,
                 complexity: 1,
                 flavor: `${skillName} (${attribute.charAt(0).toUpperCase() + attribute.slice(1)} ${attrVal})`,
-                actorId: this.actor.id
+                actorId: this.actor.id,
+                rollContext: {
+                    sourceType: "skill",
+                    sourceName: skillName,
+                    isMagic: String(skillName ?? "").trim().toLowerCase() === "magic",
+                    isSpell: false
+                }
             });
         }
 
@@ -394,6 +402,41 @@ export class LaundryActorSheet extends ActorSheet {
         }
 
         await combat.nextTurn();
+    }
+
+    async _onTakeBreather(ev) {
+        ev.preventDefault();
+        const adrenalineMax = Math.max(
+            0,
+            Math.trunc(Number(this.actor.system?.derived?.adrenaline?.max) || 0)
+        );
+        await this.actor.update({
+            "system.derived.adrenaline.value": adrenalineMax
+        });
+    }
+
+    async _onStandardRest(ev) {
+        ev.preventDefault();
+        const adrenalineMax = Math.max(
+            0,
+            Math.trunc(Number(this.actor.system?.derived?.adrenaline?.max) || 0)
+        );
+        const toughnessMax = Math.max(
+            0,
+            Math.trunc(Number(this.actor.system?.derived?.toughness?.max) || 0)
+        );
+
+        await this.actor.update({
+            "system.derived.adrenaline.value": adrenalineMax,
+            "system.derived.toughness.value": toughnessMax,
+            "system.derived.toughness.damage": 0
+        });
+
+        const escapedName = foundry.utils.escapeHTML(this.actor.name ?? "Agent");
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+            content: `<p><strong>${escapedName}</strong> has completed a Standard Rest and recovered Toughness and Adrenaline.</p>`
+        });
     }
 
     async _onBioAutofill(ev) {
