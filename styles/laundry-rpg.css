@@ -608,6 +608,14 @@
     grid-template-columns: 1fr;
 }
 
+.laundry-rpg.sheet-npc-min .sheet-tabs .item {
+    font-size: 10px;
+}
+
+.laundry-rpg.sheet-npc-min .panel-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .laundry-rpg .npc-ops-controls {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,5 +1,5 @@
 import { LaundryActor } from "./actor/actor.js";
-import { LaundryActorSheet } from "./actor/actor-sheet.js";
+import { LaundryActorSheet, LaundryNpcSheet } from "./actor/actor-sheet.js";
 import { LaundryCharacterBuilder } from "./actor/character-builder.js";
 import { LaundryAutomationSettings } from "./apps/automation-settings.js";
 import { LaundryGMTracker } from "./apps/gm-tracker.js";
@@ -177,8 +177,14 @@ Hooks.once("init", async function () {
 
     Actors.unregisterSheet("core", ActorSheet);
     Actors.registerSheet("laundry-rpg", LaundryActorSheet, {
+        types: ["character"],
         makeDefault: true,
         label: "Laundry RPG Character Sheet"
+    });
+    Actors.registerSheet("laundry-rpg", LaundryNpcSheet, {
+        types: ["npc"],
+        makeDefault: true,
+        label: "Laundry RPG NPC Sheet"
     });
 
     Items.unregisterSheet("core", ItemSheet);
@@ -272,6 +278,7 @@ Hooks.on("laundryRpgRequestBusinessAsUsual", async (payload) => {
 async function preloadTemplates() {
     return loadTemplates([
         "systems/laundry-rpg/templates/actor/actor-sheet.html",
+        "systems/laundry-rpg/templates/actor/npc-sheet.html",
         "systems/laundry-rpg/templates/actor/character-builder.html",
         "systems/laundry-rpg/templates/item/item-sheet.html",
         "systems/laundry-rpg/templates/apps/attack-dialog.html",

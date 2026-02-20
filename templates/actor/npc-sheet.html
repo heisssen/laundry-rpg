@@ -1,0 +1,221 @@
+<form class="{{cssClass}} laundry-rpg sheet-agent sheet-npc-min" autocomplete="off">
+    <header class="sheet-header dossier-header">
+        <div class="header-left">
+            <img class="profile-img" src="{{actor.img}}" data-edit="img"
+                 title="{{actor.name}}" height="120" width="120" />
+            <div class="header-fields">
+                <h1 class="charname">
+                    <input name="name" type="text" value="{{actor.name}}"
+                           placeholder="{{localize 'LAUNDRY.ActorName'}}" />
+                </h1>
+
+                <div class="clearance-row">
+                    <span class="stamp">NPC</span>
+                    <input type="text" name="system.threat"
+                           value="{{system.threat}}"
+                           placeholder="Threat" class="dept-input" />
+                    <input type="text" name="system.npc.archetype"
+                           value="{{npcOps.archetype}}"
+                           placeholder="Archetype" class="assign-input" />
+                    {{#if combat.canEndTurn}}
+                    <button type="button" class="end-turn">{{localize "LAUNDRY.EndTurn"}}</button>
+                    {{/if}}
+                </div>
+
+                <div class="clearance-select-row">
+                    <label>Class:</label>
+                    <select name="system.npc.class">
+                        <option value="minion" {{#if (laundryEq npcOps.npcClass "minion")}}selected{{/if}}>Minion</option>
+                        <option value="elite" {{#if (laundryEq npcOps.npcClass "elite")}}selected{{/if}}>Elite</option>
+                        <option value="boss" {{#if (laundryEq npcOps.npcClass "boss")}}selected{{/if}}>Boss</option>
+                    </select>
+                    <label>Mode:</label>
+                    <select name="system.npc.mode">
+                        <option value="lite" {{#if (laundryEq npcOps.mode "lite")}}selected{{/if}}>Lite</option>
+                        <option value="full" {{#if (laundryEq npcOps.mode "full")}}selected{{/if}}>Full</option>
+                    </select>
+                    <label>Mob:</label>
+                    <input type="number" name="system.npc.mobSize" value="{{npcOps.mobSize}}" min="1" max="50" data-dtype="Number" />
+                </div>
+                <div class="clearance-select-row">
+                    <label><input type="checkbox" name="system.npc.fastDamage" {{checked npcOps.fastDamage}} /> Fast Damage</label>
+                    <label><input type="checkbox" name="system.npc.trackInjuries" {{checked npcOps.trackInjuries}} /> Track Injuries</label>
+                    <label><input type="checkbox" name="system.npc.defeated" {{checked npcOps.defeated}} /> Defeated</label>
+                    {{#if npcOps.defeated}}
+                    <button type="button" class="npc-reset-defeated">Reset</button>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+
+        <div class="header-attributes">
+            <div class="attr-block">
+                <span class="attr-label">{{localize "LAUNDRY.Body"}}</span>
+                <input type="number" name="system.attributes.body.value"
+                       value="{{system.attributes.body.value}}" data-dtype="Number" min="1" max="10" />
+            </div>
+            <div class="attr-block">
+                <span class="attr-label">{{localize "LAUNDRY.Mind"}}</span>
+                <input type="number" name="system.attributes.mind.value"
+                       value="{{system.attributes.mind.value}}" data-dtype="Number" min="1" max="10" />
+            </div>
+            <div class="attr-block">
+                <span class="attr-label">{{localize "LAUNDRY.Spirit"}}</span>
+                <input type="number" name="system.attributes.spirit.value"
+                       value="{{system.attributes.spirit.value}}" data-dtype="Number" min="1" max="10" />
+            </div>
+        </div>
+    </header>
+
+    <nav class="sheet-tabs tabs" data-group="primary">
+        <a class="item" data-tab="dossier">Overview</a>
+        <a class="item" data-tab="npc-actions">Actions</a>
+    </nav>
+
+    <section class="sheet-body">
+        <div class="tab dossier" data-group="primary" data-tab="dossier">
+            <div class="panel-grid npc-ops-grid">
+                <section class="panel">
+                    <h3 class="section-header stamp-red">Combat Snapshot</h3>
+                    <div class="combat-snapshot-grid">
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Toughness"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.toughness.value}} / {{combatSnapshot.toughness.max}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Adrenaline"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.adrenaline.value}} / {{combatSnapshot.adrenaline.max}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Armour"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.armour}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Initiative"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.initiative}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Melee"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.melee.value}} ({{combatSnapshot.melee.label}})</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Accuracy"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.accuracy.value}} ({{combatSnapshot.accuracy.label}})</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h3 class="section-header stamp-red">Conditions</h3>
+                    <div class="combat-status-grid">
+                        {{#each combatConditions as |condition|}}
+                        <button type="button"
+                                class="combat-status-toggle {{#if condition.active}}active{{/if}}"
+                                data-status-id="{{condition.id}}">
+                            <img src="{{condition.img}}" title="{{condition.name}}" width="18" height="18" />
+                            <span>{{condition.name}}</span>
+                        </button>
+                        {{/each}}
+                    </div>
+                    <p class="combat-note">{{combat.conditionSummary}}</p>
+                </section>
+
+                <section class="panel">
+                    <h3 class="section-header stamp-red">NPC Ops</h3>
+                    <div class="npc-preset-row">
+                        <select name="npcPreset">
+                            <option value="">Custom</option>
+                            {{#each npcOps.presets as |preset|}}
+                            <option value="{{preset.id}}" {{#if (laundryEq preset.id ../npcOps.archetype)}}selected{{/if}}>{{preset.name}}</option>
+                            {{/each}}
+                        </select>
+                        <button type="button" class="npc-preset-apply">Apply Preset</button>
+                    </div>
+                    <div class="combat-quick-actions">
+                        <button type="button" class="combat-roll-initiative">Roll Initiative</button>
+                        {{#if combat.canManageTurnEconomy}}
+                        <button type="button" class="combat-use-action">Use Action</button>
+                        <button type="button" class="combat-use-move">Use Move</button>
+                        <button type="button" class="combat-adrenaline-action">+Action (ADR)</button>
+                        {{/if}}
+                        {{#if combat.canOpenGmTracker}}
+                        <button type="button" class="combat-open-gm-tracker">Open GM Tracker</button>
+                        {{/if}}
+                    </div>
+                    {{#if combat.hasLoadout}}
+                    <ol class="items-list compact-list combat-loadout-list">
+                        {{#each combatLoadout.weapons as |item|}}
+                        <li class="item flexrow" data-item-id="{{item._id}}">
+                            <div class="item-image rollable" data-roll-type="item">
+                                <img src="{{item.img}}" title="{{item.name}}" width="20" height="20" />
+                            </div>
+                            <h4 class="item-name rollable" data-roll-type="item">{{item.name}}</h4>
+                            <div class="item-formula">DMG {{item.system.damage}}</div>
+                            <div class="item-formula">{{item.system.traits}}</div>
+                        </li>
+                        {{/each}}
+                    </ol>
+                    {{else}}
+                    <p class="combat-note">No equipped loadout.</p>
+                    {{/if}}
+                </section>
+            </div>
+        </div>
+
+        <div class="tab npc-actions" data-group="primary" data-tab="npc-actions">
+            <section class="panel">
+                <h3 class="section-header stamp-red">One-Line Actions</h3>
+                <ol class="items-list compact-list npc-actions-list">
+                    <li class="item flexrow item-header">
+                        <div class="npc-col npc-col-name">Name</div>
+                        <div class="npc-col npc-col-kind">Kind</div>
+                        <div class="npc-col npc-col-num">Pool</div>
+                        <div class="npc-col npc-col-num">DN</div>
+                        <div class="npc-col npc-col-num">Comp</div>
+                        <div class="npc-col npc-col-damage">Damage</div>
+                        <div class="npc-col npc-col-traits">Traits</div>
+                        <div class="npc-col npc-col-magic">Magic</div>
+                        <div class="npc-col npc-col-controls">Actions</div>
+                    </li>
+                    {{#each npcOps.quickActions as |action|}}
+                    <li class="item flexrow npc-action-row" data-action-index="{{action.index}}">
+                        <div class="npc-col npc-col-name">
+                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="name" type="text" value="{{action.name}}" />
+                        </div>
+                        <div class="npc-col npc-col-kind">
+                            <select class="npc-action-field" data-action-index="{{action.index}}" data-action-key="kind">
+                                {{#each @root.npcOps.actionKinds as |kind|}}
+                                <option value="{{kind.id}}" {{#if (laundryEq kind.id ../action.kind)}}selected{{/if}}>{{kind.name}}</option>
+                                {{/each}}
+                            </select>
+                        </div>
+                        <div class="npc-col npc-col-num">
+                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="pool" type="number" min="0" max="20" value="{{action.pool}}" data-dtype="Number" />
+                        </div>
+                        <div class="npc-col npc-col-num">
+                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="dn" type="number" min="2" max="6" value="{{action.dn}}" data-dtype="Number" />
+                        </div>
+                        <div class="npc-col npc-col-num">
+                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="complexity" type="number" min="1" max="10" value="{{action.complexity}}" data-dtype="Number" />
+                        </div>
+                        <div class="npc-col npc-col-damage">
+                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="damage" type="text" value="{{action.damage}}" />
+                        </div>
+                        <div class="npc-col npc-col-traits">
+                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="traits" type="text" value="{{action.traits}}" />
+                        </div>
+                        <div class="npc-col npc-col-magic">
+                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="isMagic" type="checkbox" {{checked action.isMagic}} />
+                        </div>
+                        <div class="npc-col npc-col-controls">
+                            <button type="button" class="npc-action-roll" data-action-index="{{action.index}}">Roll</button>
+                            <button type="button" class="npc-action-delete" data-action-index="{{action.index}}">Delete</button>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                <button type="button" class="npc-action-add">Add One-Line Action</button>
+            </section>
+        </div>
+    </section>
+</form>

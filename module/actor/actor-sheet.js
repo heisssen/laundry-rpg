@@ -1050,3 +1050,16 @@ export class LaundryActorSheet extends ActorSheet {
         ui.notifications.info(`Laundry RPG | Applied Assignment: ${assignmentData.name}`);
     }
 }
+
+export class LaundryNpcSheet extends LaundryActorSheet {
+
+    /** @override */
+    static get defaultOptions() {
+        return foundry.utils.mergeObject(super.defaultOptions, {
+            template: "systems/laundry-rpg/templates/actor/npc-sheet.html",
+            width: 620,
+            height: 700,
+            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "dossier" }]
+        });
+    }
+}
