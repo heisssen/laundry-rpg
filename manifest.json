@@ -2,7 +2,7 @@
   "id": "laundry-rpg",
   "title": "The Laundry RPG",
   "description": "A system for The Laundry Roleplaying Game (Cubicle 7) in Foundry VTT.",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "compatibility": {
     "minimum": 12,
     "verified": 13
@@ -59,6 +59,27 @@
       "label": "Armour",
       "path": "packs/armour.db",
       "type": "Item",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "gear",
+      "label": "Gear",
+      "path": "packs/gear.db",
+      "type": "Item",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "all-items",
+      "label": "All Items",
+      "path": "packs/all-items.db",
+      "type": "Item",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "enemies",
+      "label": "Enemies",
+      "path": "packs/enemies.db",
+      "type": "Actor",
       "system": "laundry-rpg"
     },
     {

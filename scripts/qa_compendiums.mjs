@@ -5,6 +5,8 @@ import process from "node:process";
 
 const ROOT = process.cwd();
 const FIX_MODE = process.argv.includes("--fix");
+const EXTRACTION_ROOT = path.join(ROOT, "sources", "extraction");
+const EXTRACTION_STAGES = ["reviewed", "normalized", "raw"];
 
 const SOURCES = {
     skills: "skills.json",
@@ -12,13 +14,23 @@ const SOURCES = {
     assignments: "assignments.json",
     weapons: "weapons.json",
     spells: "spells.json",
-    armour: "armour.json"
+    armour: "armour.json",
+    gear: "gear.json",
+    enemies: "enemies.json"
 };
 
 function readJson(filename) {
-    const fullPath = path.join(ROOT, filename);
+    const fullPath = resolveSourcePath(filename);
     const payload = fs.readFileSync(fullPath, "utf8");
     return JSON.parse(payload);
+}
+
+function resolveSourcePath(filename) {
+    for (const stage of EXTRACTION_STAGES) {
+        const stagedPath = path.join(EXTRACTION_ROOT, stage, filename);
+        if (fs.existsSync(stagedPath)) return stagedPath;
+    }
+    return path.join(ROOT, filename);
 }
 
 function writeJson(filename, value) {
@@ -83,6 +95,8 @@ function main() {
     const weapons = assertArray("weapons.json", readJson(SOURCES.weapons), errors);
     const spells = assertArray("spells.json", readJson(SOURCES.spells), errors);
     const armour = assertArray("armour.json", readJson(SOURCES.armour), errors);
+    const gear = assertArray("gear.json", readJson(SOURCES.gear), errors);
+    const enemies = assertArray("enemies.json", readJson(SOURCES.enemies), errors);
 
     const skillNames = new Set();
     for (const skill of skills) {
@@ -180,13 +194,63 @@ function main() {
         }
     }
 
+    for (const item of gear) {
+        const name = String(item?.name ?? "").trim() || "<unnamed gear>";
+        const qty = Number(item?.system?.quantity ?? 1);
+        const weight = Number(item?.system?.weight ?? 0);
+        const category = String(item?.system?.category ?? "").trim();
+        const tags = item?.system?.tags;
+        const sourcePage = String(item?.system?.requisition?.sourcePage ?? "").trim();
+        if (!Number.isFinite(qty) || qty < 0) {
+            errors.push(`Gear "${name}" has invalid quantity.`);
+        }
+        if (!Number.isFinite(weight) || weight < 0) {
+            errors.push(`Gear "${name}" has invalid weight.`);
+        }
+        if (!category) {
+            errors.push(`Gear "${name}" must define system.category.`);
+        }
+        if (!Array.isArray(tags) || !tags.length) {
+            errors.push(`Gear "${name}" must define system.tags.`);
+        }
+        if (!sourcePage) {
+            errors.push(`Gear "${name}" must define requisition.sourcePage.`);
+        }
+        if (String(item?.type ?? "").trim().toLowerCase() !== "gear") {
+            errors.push(`Gear entry "${name}" must have type \"gear\".`);
+        }
+    }
+
+    for (const enemy of enemies) {
+        const name = String(enemy?.name ?? "").trim() || "<unnamed enemy>";
+        const body = Number(enemy?.attributes?.body ?? 0);
+        const mind = Number(enemy?.attributes?.mind ?? 0);
+        const spirit = Number(enemy?.attributes?.spirit ?? 0);
+        const sourcePage = String(enemy?.sourcePage ?? "").trim();
+        const tags = enemy?.tags;
+        if (!Number.isFinite(body) || body < 1 || !Number.isFinite(mind) || mind < 1 || !Number.isFinite(spirit) || spirit < 1) {
+            errors.push(`Enemy "${name}" has invalid attribute values.`);
+        }
+        if (!Array.isArray(enemy?.quickActions)) {
+            errors.push(`Enemy "${name}" must declare quickActions array.`);
+        }
+        if (!sourcePage) {
+            errors.push(`Enemy "${name}" must define sourcePage.`);
+        }
+        if (!Array.isArray(tags) || !tags.length) {
+            errors.push(`Enemy "${name}" must define tags.`);
+        }
+    }
+
     const duplicateChecks = [
         ["skills.json", skills],
         ["talents.json", talents],
         ["assignments.json", assignments],
         ["weapons.json", weapons],
         ["spells.json", spells],
-        ["armour.json", armour]
+        ["armour.json", armour],
+        ["gear.json", gear],
+        ["enemies.json", enemies]
     ];
     for (const [filename, entries] of duplicateChecks) {
         const dupes = collectDuplicateNames(asArray(entries));

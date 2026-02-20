@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.18.0 - 2026-02-21
+
+### Added
+- Requisition processing now supports expanded compendium matching order (`gear`, `weapons`, `armour`, then `all-items`) for automated fulfillment with better fallback behavior.
+- Requisition preview now includes support-roll success forecasting (approval chance, expected successes, per-die odds, paperwork bonus impact).
+- Critical injury panel in `Requisition & Support` now separates physical vs psychological injuries and adds one-click healing actions (`Heal 1 Physical`, `Heal 1 Psychological`, `Heal Oldest`).
+- New extraction staging pipeline (`sources/extraction/raw -> normalized -> reviewed`) with `scripts/stage_extracted_sources.py` to clean and promote extracted book data.
+- Added shared automation math helpers in `module/utils/automation-math.mjs` and dedicated tests for requisition math, quantity grant math, injury cap handling, and rebuild determinism.
+
+### Changed
+- Critical injury effect application now deduplicates near-identical outcome effects via deterministic fingerprinting to prevent accidental double-application from chat controls.
+- Injury-track increment/decrement paths now use shared capped update logic for consistent behavior across injury and healing flows.
+- Compendium rebuild pipeline now reads staged reviewed sources first, enriches items/actors with categories, tags, search terms, source-page metadata, and improved enemy/gear icon mapping.
+- QA validation now enforces `sourcePage` and tags for extracted `gear` and `enemies` sources.
+
 ## 1.16.0 - 2026-02-20
 
 ### Added

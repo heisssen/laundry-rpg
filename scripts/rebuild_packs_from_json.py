@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 import json
 import hashlib
+import copy
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKS = ROOT / "packs"
+EXTRACTION_ROOT = ROOT / "sources" / "extraction"
+EXTRACTION_STAGES = ("reviewed", "normalized", "raw")
+SOURCE_PAGE_PATTERN = re.compile(r"\bp\.?\s*(\d+(?:\s*-\s*\d+)?)\b", re.IGNORECASE)
 
 SKILLS = [
     ("Academics", "mind"),
@@ -43,27 +48,141 @@ DEFAULT_ICON_BY_TYPE = {
     "spell": "systems/laundry-rpg/icons/generated/_defaults/spell.svg"
 }
 
+DEFAULT_CATEGORY_BY_TYPE = {
+    "skill": "Core Skills",
+    "talent": "Talents",
+    "assignment": "Assignments",
+    "weapon": "Weapons",
+    "armour": "Armour",
+    "gear": "Gear",
+    "spell": "Spells",
+}
+
+SKILL_ATTRIBUTE_BY_NAME = {name.casefold(): attr for name, attr in SKILLS}
+
 
 def _stable_id(item_type: str, name: str, size: int = 16) -> str:
     seed = f"{item_type}:{name}".encode("utf-8")
     return hashlib.sha1(seed).hexdigest()[:size]
 
 
+def _resolve_source_path(name: str) -> Path:
+    for stage in EXTRACTION_STAGES:
+        candidate = EXTRACTION_ROOT / stage / name
+        if candidate.exists():
+            return candidate
+    candidate = ROOT / name
+    if candidate.exists():
+        return candidate
+    raise FileNotFoundError(f"Source not found: {name}")
+
+
+def _extract_source_page(text: str, fallback: str = "") -> str:
+    match = SOURCE_PAGE_PATTERN.search(str(text or ""))
+    if match:
+        return f"p.{match.group(1).replace(' ', '')}"
+    return str(fallback or "").strip()
+
+
+def _normalize_tags(values, fallback=None) -> list[str]:
+    source_values = values if isinstance(values, list) else []
+    fallback_values = fallback if isinstance(fallback, list) else []
+    tags: list[str] = []
+    seen: set[str] = set()
+    for raw in [*source_values, *fallback_values]:
+        tag = str(raw or "").strip()
+        if not tag:
+            continue
+        key = tag.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        tags.append(tag)
+    return tags
+
+
+def _normalize_search_terms(values) -> list[str]:
+    source_values = values if isinstance(values, list) else []
+    terms: list[str] = []
+    seen: set[str] = set()
+    for raw in source_values:
+        term = str(raw or "").strip()
+        if not term:
+            continue
+        key = term.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        terms.append(term)
+    return terms
+
+
+def _gear_icon_for_category(category: str, fallback: str) -> str:
+    lowered = str(category or "").casefold()
+    if "spy" in lowered:
+        return "icons/svg/eye.svg"
+    if "occult" in lowered:
+        return "icons/svg/black-orb.svg"
+    return fallback
+
+
+def _enemy_icon(entry: dict) -> str:
+    npc_class = str(entry.get("npcClass") or "elite").strip().lower()
+    threat = str(entry.get("threat") or "minor").strip().lower()
+    if npc_class == "boss" or threat in {"extreme", "major"}:
+        return "icons/svg/skull.svg"
+    if npc_class == "minion" and threat == "minor":
+        return "icons/svg/mystery-man.svg"
+    return "icons/svg/target.svg"
+
+
+def _build_item_search_terms(item_type: str, item_name: str, system: dict) -> list[str]:
+    values = [
+        item_name,
+        item_type,
+        system.get("category"),
+        system.get("sourcePage"),
+        system.get("school"),
+        system.get("skill"),
+        system.get("range"),
+    ]
+    values.extend(system.get("tags", []))
+    requisition = system.get("requisition") if isinstance(system.get("requisition"), dict) else {}
+    values.extend([
+        requisition.get("source"),
+        requisition.get("sourcePage"),
+    ])
+    return _normalize_search_terms(values)
+
+
 def _normalize_item(item: dict) -> dict:
     item_type = item["type"]
     item_name = item["name"]
+    normalized_system = _normalize_system(item_type, item.get("system", {}))
     image = str(item.get("img") or "").strip() or DEFAULT_ICON_BY_TYPE.get(
         item_type,
         "systems/laundry-rpg/icons/generated/_defaults/gear.svg"
     )
+    if item_type == "gear":
+        image = _gear_icon_for_category(normalized_system.get("category"), image)
+    search_terms = _build_item_search_terms(item_type, item_name, normalized_system)
+    source_flags = item.get("flags") if isinstance(item.get("flags"), dict) else {}
+    flags = copy.deepcopy(source_flags)
+    laundry_flags = flags.get("laundry-rpg") if isinstance(flags.get("laundry-rpg"), dict) else {}
+    flags["laundry-rpg"] = {
+        **laundry_flags,
+        "category": normalized_system.get("category", DEFAULT_CATEGORY_BY_TYPE.get(item_type, item_type.title())),
+        "tags": normalized_system.get("tags", []),
+        "searchTerms": search_terms
+    }
     out = {
         "_id": item.get("_id") or _stable_id(item_type, item_name),
         "name": item_name,
         "type": item_type,
         "img": image,
-        "system": _normalize_system(item_type, item.get("system", {})),
+        "system": normalized_system,
         "effects": [],
-        "flags": {},
+        "flags": flags,
     }
     return out
 
@@ -75,7 +194,8 @@ def _write_jsonl(path: Path, docs: list[dict]) -> None:
 
 
 def _read_source(name: str) -> list[dict]:
-    with (ROOT / name).open("r", encoding="utf-8") as f:
+    source_path = _resolve_source_path(name)
+    with source_path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -121,6 +241,23 @@ def _normalize_system(item_type: str, system: dict) -> dict:
         out["protection"] = max(0, int(out.get("protection", 0) or 0))
         out["traits"] = str(out.get("traits") or "").strip()
         out["equipped"] = bool(out.get("equipped", False))
+    elif item_type == "gear":
+        out["description"] = str(out.get("description") or "").strip()
+        out["quantity"] = max(0, int(out.get("quantity", 1) or 1))
+        out["weight"] = max(0, int(out.get("weight", 0) or 0))
+        requisition = out.get("requisition") if isinstance(out.get("requisition"), dict) else {}
+        requisition["id"] = str(requisition.get("id") or "").strip()
+        requisition["dn"] = max(2, min(6, int(requisition.get("dn", 4) or 4)))
+        requisition["complexity"] = max(1, int(requisition.get("complexity", 1) or 1))
+        requisition["requirements"] = str(requisition.get("requirements") or "").strip()
+        requisition["source"] = str(requisition.get("source") or "").strip()
+        requisition["sourcePage"] = str(requisition.get("sourcePage") or "").strip() or _extract_source_page(
+            requisition["source"],
+            fallback=str(out.get("sourcePage") or "")
+        )
+        out["requisition"] = requisition
+        if requisition["sourcePage"]:
+            out["sourcePage"] = requisition["sourcePage"]
     elif item_type == "spell":
         out["description"] = str(out.get("description") or "").strip()
         out["level"] = max(1, int(out.get("level", 1) or 1))
@@ -131,6 +268,16 @@ def _normalize_system(item_type: str, system: dict) -> dict:
         out["range"] = str(out.get("range") or "").strip()
         out["duration"] = str(out.get("duration") or "").strip()
         out["school"] = str(out.get("school") or "").strip()
+        if not out.get("category") and out["school"]:
+            out["category"] = f"Spells // {out['school']}"
+
+    default_category = DEFAULT_CATEGORY_BY_TYPE.get(item_type, item_type.title())
+    out["category"] = str(out.get("category") or default_category).strip() or default_category
+    if "sourcePage" in out:
+        out["sourcePage"] = str(out.get("sourcePage") or "").strip()
+    tags = _normalize_tags(out.get("tags"), fallback=[item_type, out["category"]])
+    out["tags"] = tags
+    out["searchKeywords"] = _normalize_search_terms(out.get("searchKeywords") or [])
 
     return out
 
@@ -266,11 +413,197 @@ def build_skills() -> list[dict]:
 
 
 def build_spells() -> list[dict]:
-    path = ROOT / "spells.json"
-    if not path.exists():
+    try:
+        _resolve_source_path("spells.json")
+    except FileNotFoundError:
         return []
     data = _read_source("spells.json")
     return [_normalize_item(item) for item in data]
+
+
+def build_gear() -> list[dict]:
+    try:
+        _resolve_source_path("gear.json")
+    except FileNotFoundError:
+        return []
+    data = _read_source("gear.json")
+    return [_normalize_item(item) for item in data]
+
+
+def _normalize_enemy_action(action: dict | None = None) -> dict:
+    src = action if isinstance(action, dict) else {}
+    kind_raw = str(src.get("kind") or "attack").strip().lower()
+    kind = kind_raw if kind_raw in {"attack", "spell", "test"} else "attack"
+    return {
+        "id": _stable_id("npc-action", f"{src.get('name', 'Action')}:{kind}", size=12),
+        "name": str(src.get("name") or "Action").strip() or "Action",
+        "kind": kind,
+        "pool": max(0, int(src.get("pool", 0) or 0)),
+        "dn": max(2, min(6, int(src.get("dn", 4) or 4))),
+        "complexity": max(1, int(src.get("complexity", 1) or 1)),
+        "damage": str(src.get("damage") or "").strip(),
+        "traits": str(src.get("traits") or "").strip(),
+        "isMagic": bool(src.get("isMagic", False) or kind == "spell")
+    }
+
+
+def _build_enemy_skill_items(preset_id: str, skill_training: dict | None) -> list[dict]:
+    src = skill_training if isinstance(skill_training, dict) else {}
+    docs: list[dict] = []
+    for skill_name, raw_training in src.items():
+        name = str(skill_name or "").strip()
+        if not name:
+            continue
+        attribute = SKILL_ATTRIBUTE_BY_NAME.get(name.casefold(), "mind")
+        docs.append({
+            "_id": _stable_id("enemy-skill", f"{preset_id}:{name}"),
+            "name": name,
+            "type": "skill",
+            "img": DEFAULT_ICON_BY_TYPE["skill"],
+            "system": {
+                "description": "",
+                "attribute": attribute,
+                "training": max(0, int(raw_training or 0)),
+                "focus": 0
+            },
+            "effects": [],
+            "flags": {}
+        })
+    return docs
+
+
+def build_enemies() -> list[dict]:
+    try:
+        _resolve_source_path("enemies.json")
+    except FileNotFoundError:
+        return []
+    data = _read_source("enemies.json")
+    docs: list[dict] = []
+
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        preset_id = str(entry.get("id") or "").strip().lower()
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+        attrs = entry.get("attributes") if isinstance(entry.get("attributes"), dict) else {}
+        body = max(1, int(attrs.get("body", 1) or 1))
+        mind = max(1, int(attrs.get("mind", 1) or 1))
+        spirit = max(1, int(attrs.get("spirit", 1) or 1))
+        actions = entry.get("quickActions") if isinstance(entry.get("quickActions"), list) else []
+        source = str(entry.get("source") or "").strip()
+        source_page = str(entry.get("sourcePage") or "").strip() or _extract_source_page(source, fallback="system-preset")
+        category = str(entry.get("category") or "Bestiary").strip()
+        tags = _normalize_tags(entry.get("tags"), fallback=[
+            "enemy",
+            category,
+            str(entry.get("threat") or "minor").strip(),
+            str(entry.get("npcClass") or "elite").strip()
+        ])
+        search_terms = _normalize_search_terms([
+            name,
+            category,
+            source,
+            source_page,
+            *tags
+        ])
+
+        docs.append({
+            "_id": _stable_id("enemy", preset_id or name),
+            "name": name,
+            "type": "npc",
+            "img": _enemy_icon(entry),
+            "system": {
+                "attributes": {
+                    "body": {"value": body},
+                    "mind": {"value": mind},
+                    "spirit": {"value": spirit}
+                },
+                "category": category,
+                "tags": tags,
+                "sourcePage": source_page,
+                "kpi": [],
+                "derived": {
+                    "toughness": {"value": 0, "max": 0, "damage": 0},
+                    "injuries": {"value": 0, "max": 0},
+                    "adrenaline": {"value": 0, "max": 0},
+                    "melee": {"value": 0, "label": ""},
+                    "accuracy": {"value": 0, "label": ""},
+                    "defence": {"value": 0, "label": ""},
+                    "armour": {"value": 0},
+                    "initiative": {"value": 0},
+                    "naturalAwareness": {"value": 0}
+                },
+                "details": {
+                    "assignment": "",
+                    "department": "",
+                    "clearance": "UNCLASSIFIED",
+                    "profile": {
+                        "codename": "",
+                        "background": "",
+                        "coverIdentity": "",
+                        "shortGoal": "",
+                        "longGoal": "",
+                        "notableIncident": "",
+                        "personalNotes": ""
+                    },
+                    "xp": {"value": 0, "unspent": 0}
+                },
+                "threat": str(entry.get("threat") or "minor"),
+                "npc": {
+                    "mode": str(entry.get("mode") or "lite"),
+                    "class": str(entry.get("npcClass") or "elite"),
+                    "mobSize": max(1, int(entry.get("mobSize", 1) or 1)),
+                    "trackInjuries": bool(entry.get("trackInjuries", False)),
+                    "fastDamage": bool(entry.get("fastDamage", True)),
+                    "archetype": preset_id,
+                    "defeated": False,
+                    "quickActions": [_normalize_enemy_action(action) for action in actions]
+                }
+            },
+            "items": _build_enemy_skill_items(preset_id or name, entry.get("skillTraining")),
+            "effects": [],
+            "folder": None,
+            "sort": 0,
+            "ownership": {"default": 2},
+            "flags": {
+                "laundry-rpg": {
+                    "npcPresetId": preset_id,
+                    "source": source,
+                    "sourcePage": source_page,
+                    "category": category,
+                    "tags": tags,
+                    "searchTerms": search_terms
+                }
+            },
+            "prototypeToken": {
+                "name": name,
+                "actorLink": False,
+                "disposition": -1,
+                "displayName": 20,
+                "displayBars": 20
+            }
+        })
+
+    return docs
+
+
+def build_all_items(item_collections: list[list[dict]]) -> list[dict]:
+    docs: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for collection in item_collections:
+        for item in collection:
+            item_type = str(item.get("type") or "").strip().lower()
+            item_name = str(item.get("name") or "").strip()
+            if not item_type or not item_name:
+                continue
+            key = (item_type, item_name.casefold())
+            if key in seen:
+                continue
+            seen.add(key)
+            docs.append(copy.deepcopy(item))
+    return docs
 
 
 def build_rules_journal() -> list[dict]:
@@ -356,13 +689,34 @@ def main() -> None:
     talents_data = _read_source("talents.json")
     _validate_assignments(assignments_data, talents_data)
 
+    assignments = build_assignments(assignments_data)
+    talents = build_talents(talents_data)
+    weapons = build_weapons()
+    armour = build_armour()
+    skills = build_skills()
+    spells = build_spells()
+    gear = build_gear()
+    enemies = build_enemies()
+    all_items = build_all_items([
+        skills,
+        talents,
+        assignments,
+        weapons,
+        armour,
+        spells,
+        gear
+    ])
+
     outputs = {
-        "assignments.db": build_assignments(assignments_data),
-        "talents.db": build_talents(talents_data),
-        "weapons.db": build_weapons(),
-        "armour.db": build_armour(),
-        "skills.db": build_skills(),
-        "spells.db": build_spells(),
+        "assignments.db": assignments,
+        "talents.db": talents,
+        "weapons.db": weapons,
+        "armour.db": armour,
+        "skills.db": skills,
+        "spells.db": spells,
+        "gear.db": gear,
+        "all-items.db": all_items,
+        "enemies.db": enemies,
         "rules.db": build_rules_journal(),
         "macros.db": build_macros(),
     }

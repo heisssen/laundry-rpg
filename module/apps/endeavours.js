@@ -119,6 +119,7 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
         this._departmentName = "";
         this._factionName = "";
         this._travelAbroad = false;
+        this._actionsAbortController = null;
     }
 
     async _prepareContext(_options) {
@@ -194,50 +195,57 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
     _activateActions(rootElement = null) {
         const root = rootElement ?? _resolveApplicationRoot(this);
         if (!root) return;
-        if (root.dataset?.laundryEndeavoursBound === "true") return;
-        if (root.dataset) root.dataset.laundryEndeavoursBound = "true";
+        this._actionsAbortController?.abort();
+        this._actionsAbortController = new AbortController();
+        const listenerOptions = { signal: this._actionsAbortController.signal };
 
         root.querySelector('[name="endeavourId"]')?.addEventListener("change", async (ev) => {
             this._selectedEndeavour = String(ev.currentTarget?.value ?? "").trim();
             this._selectedApproach = "";
             await _rerenderApp(this);
-        });
+        }, listenerOptions);
 
         root.querySelector('[name="skillName"]')?.addEventListener("change", (ev) => {
             this._selectedSkill = String(ev.currentTarget?.value ?? "").trim();
-        });
+        }, listenerOptions);
 
         root.querySelector('[name="trainingStat"]')?.addEventListener("change", (ev) => {
             const next = String(ev.currentTarget?.value ?? "training").trim().toLowerCase();
             this._trainingStat = next === "focus" ? "focus" : "training";
-        });
+        }, listenerOptions);
 
         root.querySelector('[name="approachId"]')?.addEventListener("change", (ev) => {
             this._selectedApproach = String(ev.currentTarget?.value ?? "").trim();
-        });
+        }, listenerOptions);
 
         root.querySelector('[name="targetActorId"]')?.addEventListener("change", (ev) => {
             this._selectedTargetActorId = String(ev.currentTarget?.value ?? "").trim();
-        });
+        }, listenerOptions);
 
         root.querySelector('[name="departmentName"]')?.addEventListener("input", (ev) => {
             this._departmentName = String(ev.currentTarget?.value ?? "").trim();
-        });
+        }, listenerOptions);
 
         root.querySelector('[name="factionName"]')?.addEventListener("input", (ev) => {
             this._factionName = String(ev.currentTarget?.value ?? "").trim();
-        });
+        }, listenerOptions);
 
         root.querySelector('[name="travelAbroad"]')?.addEventListener("change", (ev) => {
             this._travelAbroad = Boolean(ev.currentTarget?.checked);
-        });
+        }, listenerOptions);
 
         root.querySelectorAll('[data-action="submit-endeavour"]').forEach(button => {
             button.addEventListener("click", async (ev) => {
                 ev.preventDefault();
                 await this._resolveSelectedEndeavour();
-            });
+            }, listenerOptions);
         });
+    }
+
+    async close(options = {}) {
+        this._actionsAbortController?.abort();
+        this._actionsAbortController = null;
+        return super.close(options);
     }
 
     async _resolveSelectedEndeavour() {
@@ -1113,12 +1121,23 @@ async function _healInjurySpaces(actor, spaces = 1) {
 }
 
 async function _removeOneInjuryEffect(actor) {
+    const legacyInjuryPattern = /\b(injury|wound|phobia|shocked|confused|dread|reality denial|traumatised|hallucinations|broken mind|broken arm|broken leg|brain injury|internal injury|head wound|leg wound|arm wound)\b/i;
     const effects = Array.from(actor?.effects ?? [])
         .filter(effect => {
             const outcomeFlag = effect.getFlag?.("laundry-rpg", "outcomeEffect") ?? {};
             if (String(outcomeFlag?.type ?? "").toLowerCase() === "injury") return true;
-            const name = String(effect.name ?? "").toLowerCase();
-            return /\binjury\b|\bwound\b/.test(name);
+            const effectName = String(effect.name ?? "");
+            const outcomeText = String(outcomeFlag?.outcomeText ?? "");
+            const combined = `${effectName} ${outcomeText}`.trim();
+            if (legacyInjuryPattern.test(combined)) return true;
+
+            return Array.isArray(effect?.changes)
+                && effect.changes.some(change =>
+                    String(change?.key ?? "")
+                        .trim()
+                        .toLowerCase()
+                        .startsWith("flags.laundry-rpg.modifiers.difficulty.")
+                );
         })
         .sort((a, b) => {
             const atA = Number(a.getFlag?.("laundry-rpg", "outcomeEffect")?.appliedAt ?? 0) || 0;
@@ -1218,4 +1237,3 @@ async function _rerenderApp(app) {
         await app.render(true);
     }
 }
-

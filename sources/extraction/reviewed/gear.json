@@ -1,0 +1,752 @@
+[
+  {
+    "name": "Banishment Round",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 3:2. Silvered anti-entity round with banishment effect. Requirements: Certification (COWEU level 1+). Source: Operative's Handbook p.128.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "banishment-round",
+        "dn": 3,
+        "complexity": 2,
+        "requirements": "Certification (COWEU level 1+)",
+        "source": "Operative's Handbook p.128",
+        "sourcePage": "p.128"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Banishment Round",
+        "Occult Gear",
+        "p.128",
+        "Operative's Handbook p.128"
+      ]
+    }
+  },
+  {
+    "name": "Basilisk Gun",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. Extremely lethal gorgonism-effect weapon. Requirements: Certification (COWEU level 2+). Source: Operative's Handbook p.129.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "basilisk-gun",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "Certification (COWEU level 2+)",
+        "source": "Operative's Handbook p.129",
+        "sourcePage": "p.129"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Basilisk Gun",
+        "Occult Gear",
+        "p.129",
+        "Operative's Handbook p.129"
+      ]
+    }
+  },
+  {
+    "name": "Concealed Weapon",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. Makes warrant-unseen weapon carriage possible. Requirements: Certification (COWEU level 1+). Source: Operative's Handbook p.129.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "concealed-weapon-enchantment",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "Certification (COWEU level 1+)",
+        "source": "Operative's Handbook p.129",
+        "sourcePage": "p.129"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Concealed Weapon",
+        "Occult Gear",
+        "p.129",
+        "Operative's Handbook p.129"
+      ]
+    }
+  },
+  {
+    "name": "Enhanced Smart Car",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. Warded smart vehicle with occult countermeasures. Requirements: Driving licence. Source: Operative's Handbook p.129.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "enhanced-smart-car",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "Driving licence",
+        "source": "Operative's Handbook p.129",
+        "sourcePage": "p.129"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Enhanced Smart Car",
+        "Occult Gear",
+        "p.129",
+        "Operative's Handbook p.129"
+      ]
+    }
+  },
+  {
+    "name": "Erich Zann Violin",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 6:3. Highly restricted catastrophic magical instrument. Requirements: Certification (COWEU level 3+), Presence Training (2), Virtuoso. Source: Operative's Handbook p.130.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "erich-zann-violin",
+        "dn": 6,
+        "complexity": 3,
+        "requirements": "Certification (COWEU level 3+), Presence Training (2), Virtuoso",
+        "source": "Operative's Handbook p.130",
+        "sourcePage": "p.130"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Erich Zann Violin",
+        "Occult Gear",
+        "p.130",
+        "Operative's Handbook p.130"
+      ]
+    }
+  },
+  {
+    "name": "Gravedust Rig",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. Communications platform for dead-entity contact. Requirements: Certification (Introduction to Applied Occult Computing+). Source: Operative's Handbook p.130.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "gravedust-rig",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "Certification (Introduction to Applied Occult Computing+)",
+        "source": "Operative's Handbook p.130",
+        "sourcePage": "p.130"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Gravedust Rig",
+        "Occult Gear",
+        "p.130",
+        "Operative's Handbook p.130"
+      ]
+    }
+  },
+  {
+    "name": "Hand of Glory (Class 1/4)",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. Special-request Hand of Glory variants. Requirements: Certification (IAOC or Basic Stealth & Evasion). Source: Operative's Handbook p.130-131.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "hand-of-glory-class-1-4",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "Certification (IAOC or Basic Stealth & Evasion)",
+        "source": "Operative's Handbook p.130-131",
+        "sourcePage": "p.130-131"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Hand of Glory (Class 1/4)",
+        "Occult Gear",
+        "p.130-131",
+        "Operative's Handbook p.130-131"
+      ]
+    }
+  },
+  {
+    "name": "Hand of Glory (Class 2-3)",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:2. Unnoticeability relic for standard operational use. Requirements: Certification (IAOC or Basic Stealth & Evasion). Source: Operative's Handbook p.130-131.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "hand-of-glory-class-2-3",
+        "dn": 4,
+        "complexity": 2,
+        "requirements": "Certification (IAOC or Basic Stealth & Evasion)",
+        "source": "Operative's Handbook p.130-131",
+        "sourcePage": "p.130-131"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Hand of Glory (Class 2-3)",
+        "Occult Gear",
+        "p.130-131",
+        "Operative's Handbook p.130-131"
+      ]
+    }
+  },
+  {
+    "name": "Necronomiphone",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:2. Occult app-enabled computational casting platform. Requirements: Certification (Introduction to Applied Occult Computing). Source: Operative's Handbook p.131.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "necronomiphone",
+        "dn": 4,
+        "complexity": 2,
+        "requirements": "Certification (Introduction to Applied Occult Computing)",
+        "source": "Operative's Handbook p.131",
+        "sourcePage": "p.131"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Necronomiphone",
+        "Occult Gear",
+        "p.131",
+        "Operative's Handbook p.131"
+      ]
+    }
+  },
+  {
+    "name": "Personal Wards (Class 1-2)",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 3:2. Wearable defensive wards (lower classes). Source: Operative's Handbook p.132.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "personal-wards-class-1-2",
+        "dn": 3,
+        "complexity": 2,
+        "requirements": "",
+        "source": "Operative's Handbook p.132",
+        "sourcePage": "p.132"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Personal Wards (Class 1-2)",
+        "Occult Gear",
+        "p.132",
+        "Operative's Handbook p.132"
+      ]
+    }
+  },
+  {
+    "name": "Personal Wards (Class 3)",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:2. Field-grade wearable defensive ward. Source: Operative's Handbook p.132.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "personal-wards-class-3",
+        "dn": 4,
+        "complexity": 2,
+        "requirements": "",
+        "source": "Operative's Handbook p.132",
+        "sourcePage": "p.132"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Personal Wards (Class 3)",
+        "Occult Gear",
+        "p.132",
+        "Operative's Handbook p.132"
+      ]
+    }
+  },
+  {
+    "name": "Personal Wards (Class 4)",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. High-risk mission ward package. Source: Operative's Handbook p.132.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "personal-wards-class-4",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "",
+        "source": "Operative's Handbook p.132",
+        "sourcePage": "p.132"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Personal Wards (Class 4)",
+        "Occult Gear",
+        "p.132",
+        "Operative's Handbook p.132"
+      ]
+    }
+  },
+  {
+    "name": "Thaumometer",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 3:2. Portable thaumic energy detection instrument. Requirements: Certification (Introduction to Applied Occult Computing). Source: Operative's Handbook p.132.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "thaumometer",
+        "dn": 3,
+        "complexity": 2,
+        "requirements": "Certification (Introduction to Applied Occult Computing)",
+        "source": "Operative's Handbook p.132",
+        "sourcePage": "p.132"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Thaumometer",
+        "Occult Gear",
+        "p.132",
+        "Operative's Handbook p.132"
+      ]
+    }
+  },
+  {
+    "name": "Tillinghast Resonator",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. Perception-shift device for invisible occult phenomena. Requirements: Certification (Practical Occultism). Source: Operative's Handbook p.132.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "tillinghast-resonator",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "Certification (Practical Occultism)",
+        "source": "Operative's Handbook p.132",
+        "sourcePage": "p.132"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Tillinghast Resonator",
+        "Occult Gear",
+        "p.132",
+        "Operative's Handbook p.132"
+      ]
+    }
+  },
+  {
+    "name": "Warding Tape (Class 3)",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:2. Field ward-seal tape (class 3). Source: Operative's Handbook p.132.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "warding-tape-class-3",
+        "dn": 4,
+        "complexity": 2,
+        "requirements": "",
+        "source": "Operative's Handbook p.132",
+        "sourcePage": "p.132"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Warding Tape (Class 3)",
+        "Occult Gear",
+        "p.132",
+        "Operative's Handbook p.132"
+      ]
+    }
+  },
+  {
+    "name": "Warding Tape (Class 4)",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:2. Field ward-seal tape (class 4). Source: Operative's Handbook p.132.",
+      "category": "Occult Gear",
+      "requisition": {
+        "id": "warding-tape-class-4",
+        "dn": 5,
+        "complexity": 2,
+        "requirements": "",
+        "source": "Operative's Handbook p.132",
+        "sourcePage": "p.132"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Occult Gear"
+      ],
+      "searchKeywords": [
+        "Warding Tape (Class 4)",
+        "Occult Gear",
+        "p.132",
+        "Operative's Handbook p.132"
+      ]
+    }
+  },
+  {
+    "name": "3-W Laser",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:1. Utility laser for sabotage and precision damage. Requirements: Certification (COWE level 1+). Source: Operative's Handbook p.128.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "three-w-laser",
+        "dn": 5,
+        "complexity": 1,
+        "requirements": "Certification (COWE level 1+)",
+        "source": "Operative's Handbook p.128",
+        "sourcePage": "p.128"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "3-W Laser",
+        "Spy Gear",
+        "p.128",
+        "Operative's Handbook p.128"
+      ]
+    }
+  },
+  {
+    "name": "Fibre Optic Probe",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:1. Door/vent visual probe for covert recon. Source: Operative's Handbook p.126.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "fibre-optic-probe",
+        "dn": 4,
+        "complexity": 1,
+        "requirements": "",
+        "source": "Operative's Handbook p.126",
+        "sourcePage": "p.126"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "Fibre Optic Probe",
+        "Spy Gear",
+        "p.126",
+        "Operative's Handbook p.126"
+      ]
+    }
+  },
+  {
+    "name": "Keystroke Logger",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 3:1. Hardware keystroke capture device. Source: Operative's Handbook p.126.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "keystroke-logger",
+        "dn": 3,
+        "complexity": 1,
+        "requirements": "",
+        "source": "Operative's Handbook p.126",
+        "sourcePage": "p.126"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "Keystroke Logger",
+        "Spy Gear",
+        "p.126",
+        "Operative's Handbook p.126"
+      ]
+    }
+  },
+  {
+    "name": "Laser Microphone",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:1. Remote audio capture via reflective surfaces. Source: Operative's Handbook p.126-127.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "laser-microphone",
+        "dn": 4,
+        "complexity": 1,
+        "requirements": "",
+        "source": "Operative's Handbook p.126-127",
+        "sourcePage": "p.126-127"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "Laser Microphone",
+        "Spy Gear",
+        "p.126-127",
+        "Operative's Handbook p.126-127"
+      ]
+    }
+  },
+  {
+    "name": "Locator Bugs",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:1. Track-and-listen covert marker bugs. Source: Operative's Handbook p.127.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "locator-bugs",
+        "dn": 4,
+        "complexity": 1,
+        "requirements": "",
+        "source": "Operative's Handbook p.127",
+        "sourcePage": "p.127"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "Locator Bugs",
+        "Spy Gear",
+        "p.127",
+        "Operative's Handbook p.127"
+      ]
+    }
+  },
+  {
+    "name": "Microdrone",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:1. Miniature recon drone with AV and link relay. Requirements: Certification (Advanced Surveillance). Source: Operative's Handbook p.127.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "microdrone",
+        "dn": 5,
+        "complexity": 1,
+        "requirements": "Certification (Advanced Surveillance)",
+        "source": "Operative's Handbook p.127",
+        "sourcePage": "p.127"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "Microdrone",
+        "Spy Gear",
+        "p.127",
+        "Operative's Handbook p.127"
+      ]
+    }
+  },
+  {
+    "name": "Nausea Flash",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 4:1. Disorientation/poison-style strobe device. Requirements: Certification (COWE or COWEU level 1+). Source: Operative's Handbook p.128.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "nausea-flash",
+        "dn": 4,
+        "complexity": 1,
+        "requirements": "Certification (COWE or COWEU level 1+)",
+        "source": "Operative's Handbook p.128",
+        "sourcePage": "p.128"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "Nausea Flash",
+        "Spy Gear",
+        "p.128",
+        "Operative's Handbook p.128"
+      ]
+    }
+  },
+  {
+    "name": "Smart Card",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 3:1. Hotel lock override card for covert entry. Source: Operative's Handbook p.128.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "smart-card",
+        "dn": 3,
+        "complexity": 1,
+        "requirements": "",
+        "source": "Operative's Handbook p.128",
+        "sourcePage": "p.128"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "Smart Card",
+        "Spy Gear",
+        "p.128",
+        "Operative's Handbook p.128"
+      ]
+    }
+  },
+  {
+    "name": "T-Ray Scanner",
+    "type": "gear",
+    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "system": {
+      "quantity": 1,
+      "weight": 0,
+      "description": "Requisition DN 5:1. Through-wall/hidden-object scanner. Source: Operative's Handbook p.128.",
+      "category": "Spy Gear",
+      "requisition": {
+        "id": "t-ray-scanner",
+        "dn": 5,
+        "complexity": 1,
+        "requirements": "",
+        "source": "Operative's Handbook p.128",
+        "sourcePage": "p.128"
+      },
+      "tags": [
+        "gear",
+        "requisition",
+        "Spy Gear"
+      ],
+      "searchKeywords": [
+        "T-Ray Scanner",
+        "Spy Gear",
+        "p.128",
+        "Operative's Handbook p.128"
+      ]
+    }
+  }
+]

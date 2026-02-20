@@ -7,6 +7,10 @@
  * - Focus applied to rolled dice (+1 per point).
  * - Team Luck usage and Luck Tests.
  */
+import {
+    buildOutcomeFingerprint,
+    computeInjuryTrackUpdate
+} from "./utils/automation-math.mjs";
 
 const TEAM_LUCK_SETTING = "teamLuck";
 const TEAM_LUCK_MAX_SETTING = "teamLuckMax";
@@ -1698,7 +1702,24 @@ async function _postCriticalWoundPrompt({ targetActor, damageTaken = 0 } = {}) {
         content: `
             <div class="laundry-critical-wound-card">
                 <div class="critical-wound-title"><strong>CRITICAL WOUND: ${safeName}</strong></div>
-                <button type="button" class="roll-injury" data-damage-taken="${applied}" data-target-name="${safeName}" data-target-actor-id="${targetActor.id}">Roll Injury</button>
+                <div class="critical-wound-actions">
+                    <button
+                        type="button"
+                        class="roll-injury"
+                        data-injury-type="physical"
+                        data-damage-taken="${applied}"
+                        data-target-name="${safeName}"
+                        data-target-actor-id="${targetActor.id}"
+                    >Roll Physical Injury</button>
+                    <button
+                        type="button"
+                        class="roll-injury"
+                        data-injury-type="psychological"
+                        data-damage-taken="${applied}"
+                        data-target-name="${safeName}"
+                        data-target-actor-id="${targetActor.id}"
+                    >Roll Psychological Injury</button>
+                </div>
             </div>`
     });
 }
@@ -1726,6 +1747,8 @@ async function _rollInjuryFromButton(ev) {
     const targetActorId = String(button?.dataset?.targetActorId ?? "").trim();
     const targetActor = targetActorId ? game.actors?.get(targetActorId) ?? null : null;
     const injuryType = String(button?.dataset?.injuryType ?? "physical").trim().toLowerCase();
+    const injuryLabel = injuryType.startsWith("psy") ? "Psychological Injury" : "Physical Injury";
+    const injuryTrack = await _markCriticalInjuryOnTrack(targetActor);
     const roll = new Roll(`1d6 + ${damageTaken}`);
     await roll.evaluate();
     const total = Math.max(0, Math.trunc(Number(roll.total ?? 0) || 0));
@@ -1786,16 +1809,42 @@ async function _rollInjuryFromButton(ev) {
         content: `
             <div class="laundry-injury-result-card">
                 <strong>INJURY RESULT${targetLabel}:</strong>
+                <div class="injury-outcome">${_escapeHtml(injuryLabel)}</div>
                 1d6 + ${damageTaken} = <strong>${total}</strong>
                 <span class="injury-outcome">(${_escapeHtml(outcome)})</span>
                 ${resolved?.tableName ? `<div class="injury-outcome">Table: ${_escapeHtml(resolved.tableName)}</div>` : ""}
                 ${statusId ? `<div class="injury-outcome">Condition: ${_escapeHtml(statusId)}</div>` : ""}
+                ${injuryTrack ? `<div class="injury-outcome">Injury Track: ${injuryTrack.before} -> ${injuryTrack.after}${injuryTrack.atCap ? " (MAX)" : ""}</div>` : ""}
                 ${modifierChanges.length ? `<div class="injury-outcome">${_escapeHtml(_formatDifficultyModifierSummary(modifierChanges))}</div>` : ""}
                 ${applyButton}
             </div>`,
         rolls: [roll],
         sound: CONFIG.sounds.dice
     });
+}
+
+async function _markCriticalInjuryOnTrack(actor) {
+    if (!actor) return null;
+    const isNpc = actor.type === "npc";
+    const canTrack = actor.type === "character"
+        || (isNpc && Boolean(actor.system?.npc?.trackInjuries));
+    if (!canTrack) return null;
+
+    const state = computeInjuryTrackUpdate({
+        current: Number(actor.system?.derived?.injuries?.value ?? 0),
+        max: Number(actor.system?.derived?.injuries?.max ?? 0),
+        delta: 1
+    });
+    if (state.max <= 0) return null;
+    if (state.changed) {
+        await actor.update({ "system.derived.injuries.value": state.after });
+    }
+    return {
+        before: state.before,
+        after: state.after,
+        max: state.max,
+        atCap: state.atCap
+    };
 }
 
 function _getInjuryOutcome(total) {
@@ -2097,7 +2146,7 @@ async function _applyOutcomeEffectFromButton(ev) {
         ? PSYCHOLOGICAL_EFFECT_ICON
         : PHYSICAL_EFFECT_ICON;
 
-    await _createOutcomeActiveEffect({
+    const effectResult = await _createOutcomeActiveEffect({
         actor,
         effectName,
         icon,
@@ -2109,6 +2158,7 @@ async function _applyOutcomeEffectFromButton(ev) {
         tableName,
         modifierChanges
     });
+    const duplicateEffect = Boolean(effectResult?.duplicate);
 
     let statusApplied = false;
     if (statusId) {
@@ -2125,12 +2175,15 @@ async function _applyOutcomeEffectFromButton(ev) {
         ? `Status: ${statusId}.`
         : (statusId ? `Status marker requested: ${statusId}.` : "No status marker.");
     const extra = modifierSummary ? ` ${modifierSummary}` : "";
-    ui.notifications.info(`${actor.name}: applied ${effectName}. ${statusSummary}${extra}`);
+    const applySummary = duplicateEffect
+        ? `already has ${effectName}; skipped duplicate effect.`
+        : `applied ${effectName}.`;
+    ui.notifications.info(`${actor.name}: ${applySummary} ${statusSummary}${extra}`);
 
     button.dataset.applied = "true";
     button.disabled = true;
     button.classList.add("is-applied");
-    button.textContent = "Effect Applied";
+    button.textContent = duplicateEffect ? "Already Active" : "Effect Applied";
 }
 
 async function _createOutcomeActiveEffect({
@@ -2151,6 +2204,48 @@ async function _createOutcomeActiveEffect({
     const safeChanges = _sanitizeModifierChanges(modifierChanges);
     const safeDuration = Math.max(0, Math.trunc(Number(durationRounds) || 0));
     const safeStatusId = _normalizeOutcomeStatusId(statusId, outcomeText, effectType);
+    const safeSource = String(sourceTag ?? "").trim() || "chat-outcome";
+    const safeTableName = String(tableName ?? "").trim();
+    const safeOutcomeText = String(outcomeText ?? "").trim();
+    const normalizedType = String(effectType ?? "").trim().toLowerCase() || "outcome";
+    const fingerprint = buildOutcomeFingerprint({
+        effectType: normalizedType,
+        effectName: safeName,
+        outcomeText: safeOutcomeText,
+        statusId: safeStatusId,
+        sourceTag: safeSource,
+        tableName: safeTableName,
+        modifierChanges: safeChanges
+    });
+    const now = Date.now();
+    const duplicate = Array.from(actor.effects ?? []).find(effect => {
+        const flag = effect.getFlag?.("laundry-rpg", "outcomeEffect") ?? {};
+        const existingFingerprint = String(flag?.fingerprint ?? "").trim();
+        if (existingFingerprint && existingFingerprint === fingerprint) {
+            const existingAt = Math.max(0, Math.trunc(Number(flag?.appliedAt) || 0));
+            return !existingAt || (now - existingAt) <= 30_000;
+        }
+
+        const existingType = String(flag?.type ?? "").trim().toLowerCase();
+        const existingSource = String(flag?.source ?? "").trim();
+        const existingName = String(effect?.name ?? "").trim().toLowerCase();
+        const existingOutcome = String(flag?.outcomeText ?? "").trim().toLowerCase();
+        const existingStatus = String(flag?.statusId ?? "").trim().toLowerCase();
+        const existingAt = Math.max(0, Math.trunc(Number(flag?.appliedAt) || 0));
+        const isRecent = existingAt > 0 && (now - existingAt) <= 30_000;
+        if (!isRecent) return false;
+        return existingType === normalizedType
+            && existingSource === safeSource
+            && existingName === safeName.toLowerCase()
+            && existingOutcome === safeOutcomeText.toLowerCase()
+            && existingStatus === safeStatusId.toLowerCase();
+    }) ?? null;
+    if (duplicate) {
+        return {
+            effect: duplicate,
+            duplicate: true
+        };
+    }
 
     const effectData = {
         name: safeName,
@@ -2161,11 +2256,12 @@ async function _createOutcomeActiveEffect({
         flags: {
             "laundry-rpg": {
                 outcomeEffect: {
-                    type: String(effectType ?? "").trim().toLowerCase() || "outcome",
+                    type: normalizedType,
                     statusId: safeStatusId,
-                    source: String(sourceTag ?? "").trim() || "chat-outcome",
-                    tableName: String(tableName ?? "").trim(),
-                    outcomeText: String(outcomeText ?? "").trim(),
+                    source: safeSource,
+                    tableName: safeTableName,
+                    outcomeText: safeOutcomeText,
+                    fingerprint,
                     appliedBy: game.user?.id ?? null,
                     appliedAt: Date.now()
                 }
@@ -2183,7 +2279,10 @@ async function _createOutcomeActiveEffect({
     }
 
     const created = await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
-    return created?.[0] ?? null;
+    return {
+        effect: created?.[0] ?? null,
+        duplicate: false
+    };
 }
 
 async function _applyStatusEffectToActor(actor, statusId, { durationRounds = 0, sourceTag = "chat-outcome" } = {}) {

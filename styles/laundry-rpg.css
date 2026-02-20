@@ -2824,6 +2824,13 @@
     margin-bottom: 6px;
 }
 
+.laundry-critical-wound-card .critical-wound-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 .laundry-critical-wound-card .roll-injury {
     border: 1px solid #8b0000;
     background: rgba(178, 31, 31, 0.14);
@@ -3060,6 +3067,84 @@
     padding: 0.45rem 0.55rem;
 }
 
+.laundry-support-request-app .laundry-requisition-builder {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.laundry-support-request-app .laundry-requisition-add-row {
+    display: grid;
+    grid-template-columns: 1fr 90px auto;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.laundry-support-request-app .laundry-requisition-lines {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.laundry-support-request-app .laundry-requisition-line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.4rem;
+    align-items: center;
+    border: 1px solid #a29379;
+    background: rgba(255, 255, 255, 0.38);
+    border-radius: 3px;
+    padding: 0.3rem 0.4rem;
+}
+
+.laundry-support-request-app .laundry-requisition-line-main {
+    display: grid;
+    gap: 0.12rem;
+}
+
+.laundry-support-request-app .laundry-requisition-line-main span {
+    font-size: 0.78rem;
+    color: #675a45;
+}
+
+.laundry-support-request-app .laundry-requisition-line-controls {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.laundry-support-request-app .laundry-requisition-line-controls input[type="number"] {
+    width: 74px;
+}
+
+.laundry-support-request-app .laundry-support-bundle-list,
+.laundry-support-request-app .laundry-support-critical-list {
+    margin-top: 0.2rem;
+    border-top: 1px dashed rgba(95, 84, 64, 0.45);
+    padding-top: 0.25rem;
+}
+
+.laundry-support-request-app .laundry-support-forecast {
+    margin-top: 0.2rem;
+    border-top: 1px dashed rgba(95, 84, 64, 0.45);
+    padding-top: 0.25rem;
+}
+
+.laundry-support-request-app .laundry-critical-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.laundry-support-request-app .laundry-critical-column {
+    border: 1px solid rgba(138, 125, 100, 0.55);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 0.25rem 0.35rem;
+}
+
+.laundry-support-request-app .laundry-critical-heal-actions {
+    margin-top: 0.35rem;
+}
+
 .laundry-rpg .laundry-checkbox-line {
     display: inline-flex;
     align-items: center;
@@ -3082,6 +3167,22 @@
     }
 
     .laundry-rpg .bio-profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-support-request-app .laundry-requisition-add-row {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-support-request-app .laundry-requisition-line {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-support-request-app .laundry-requisition-line-controls {
+        justify-content: flex-start;
+    }
+
+    .laundry-support-request-app .laundry-critical-columns {
         grid-template-columns: 1fr;
     }
 

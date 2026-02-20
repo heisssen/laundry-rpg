@@ -1,0 +1,902 @@
+[
+  {
+    "id": "anning-black-shoggoth",
+    "name": "ANNING BLACK (Shoggoth)",
+    "category": "Bestiary // Autonome",
+    "source": "Supervisor's Guide p.150",
+    "npcClass": "boss",
+    "mode": "lite",
+    "threat": "extreme",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 7,
+      "mind": 4,
+      "spirit": 7
+    },
+    "skillTraining": {
+      "Dexterity": 2,
+      "Fortitude": 2,
+      "Survival": 2,
+      "Close Combat": 3
+    },
+    "quickActions": [
+      {
+        "name": "Crush",
+        "kind": "attack",
+        "pool": 10,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "7d6+1",
+        "traits": "Crushing, Restraining",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "p.150",
+    "tags": [
+      "enemy",
+      "Bestiary // Autonome",
+      "extreme",
+      "boss"
+    ]
+  },
+  {
+    "id": "anning-blue-skull",
+    "name": "ANNING BLUE SKULL (Elder Thing)",
+    "category": "Bestiary // Autonome",
+    "source": "Supervisor's Guide p.149",
+    "npcClass": "boss",
+    "mode": "lite",
+    "threat": "extreme",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 5,
+      "mind": 7,
+      "spirit": 4
+    },
+    "skillTraining": {
+      "Awareness": 2,
+      "Dexterity": 4,
+      "Fortitude": 2,
+      "Occult": 1,
+      "Reflexes": 2,
+      "Science": 3,
+      "Survival": 2,
+      "Technology": 3,
+      "Close Combat": 2,
+      "Ranged": 3
+    },
+    "quickActions": [
+      {
+        "name": "Tentacles",
+        "kind": "attack",
+        "pool": 7,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "5d6+1",
+        "traits": "Restraining",
+        "isMagic": false
+      },
+      {
+        "name": "Molecular Disturbance Ray",
+        "kind": "spell",
+        "pool": 10,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "5d6+2",
+        "traits": "Range (Medium), Weakened (on hit)",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "p.149",
+    "tags": [
+      "enemy",
+      "Bestiary // Autonome",
+      "extreme",
+      "boss"
+    ]
+  },
+  {
+    "id": "deep-one-type-i",
+    "name": "BLUE HADES (Type I)",
+    "category": "Bestiary // Autonome",
+    "source": "Supervisor's Guide p.144",
+    "npcClass": "boss",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 3,
+      "mind": 2,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Awareness": 1,
+      "Athletics": 2,
+      "Close Combat": 2,
+      "Fortitude": 1,
+      "Might": 1,
+      "Reflexes": 2,
+      "Science": 1,
+      "Stealth": 2,
+      "Survival": 2,
+      "Ranged": 1
+    },
+    "quickActions": [
+      {
+        "name": "Claws",
+        "kind": "attack",
+        "pool": 7,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "5d6+2",
+        "traits": "Piercing, Slashing",
+        "isMagic": false
+      },
+      {
+        "name": "Vitrification Rod",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "3d6+1",
+        "traits": "Range (Medium), Stunning",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "p.144",
+    "tags": [
+      "enemy",
+      "Bestiary // Autonome",
+      "major",
+      "boss"
+    ]
+  },
+  {
+    "id": "deep-one-type-ii",
+    "name": "BLUE HADES (Type II)",
+    "category": "Bestiary // Autonome",
+    "source": "Supervisor's Guide p.144",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 2,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Athletics": 1,
+      "Close Combat": 1,
+      "Ranged": 1,
+      "Reflexes": 2,
+      "Survival": 2
+    },
+    "quickActions": [
+      {
+        "name": "Fists",
+        "kind": "attack",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "1d6+1",
+        "traits": "Ineffective",
+        "isMagic": false
+      },
+      {
+        "name": "Vitrification Rod",
+        "kind": "attack",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "1d6+1",
+        "traits": "Range (Short), Brutal, Loud, Two-Handed",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "p.144",
+    "tags": [
+      "enemy",
+      "Bestiary // Autonome",
+      "moderate",
+      "elite"
+    ]
+  },
+  {
+    "id": "deep-one-type-iii",
+    "name": "BLUE HADES (Type III)",
+    "category": "Bestiary // Autonome",
+    "source": "Supervisor's Guide p.145",
+    "npcClass": "boss",
+    "mode": "lite",
+    "threat": "extreme",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 5,
+      "mind": 4,
+      "spirit": 5
+    },
+    "skillTraining": {
+      "Awareness": 2,
+      "Athletics": 1,
+      "Close Combat": 2,
+      "Fortitude": 2,
+      "Might": 1,
+      "Reflexes": 3,
+      "Science": 2,
+      "Stealth": 1,
+      "Survival": 1,
+      "Ranged": 2
+    },
+    "quickActions": [
+      {
+        "name": "Claws",
+        "kind": "attack",
+        "pool": 9,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "7d6+2",
+        "traits": "Piercing, Slashing",
+        "isMagic": false
+      },
+      {
+        "name": "Vitrification Cube",
+        "kind": "attack",
+        "pool": 7,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "5d6+1",
+        "traits": "Range (Medium), Blast (2), Stunning",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "p.145",
+    "tags": [
+      "enemy",
+      "Bestiary // Autonome",
+      "extreme",
+      "boss"
+    ]
+  },
+  {
+    "id": "deep-seven-cthonian",
+    "name": "DEEP SEVEN (Cthonian)",
+    "category": "Bestiary // Autonome",
+    "source": "Supervisor's Guide p.147",
+    "npcClass": "boss",
+    "mode": "lite",
+    "threat": "extreme",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 7,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Athletics": 2,
+      "Close Combat": 3,
+      "Fortitude": 1,
+      "Might": 2,
+      "Resolve": 1,
+      "Survival": 2
+    },
+    "quickActions": [
+      {
+        "name": "Cthonian Tentacles",
+        "kind": "attack",
+        "pool": 10,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "8d6+3",
+        "traits": "Restraining, Weakened (on hit)",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "p.147",
+    "tags": [
+      "enemy",
+      "Bestiary // Autonome",
+      "extreme",
+      "boss"
+    ]
+  },
+  {
+    "id": "ghost-psychic-echo",
+    "name": "Ghost (Psychic Echo)",
+    "category": "Bestiary // Exonome",
+    "source": "Supervisor's Guide p.133-134",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 1,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Close Combat": 1,
+      "Resolve": 1,
+      "Stealth": 1
+    },
+    "quickActions": [
+      {
+        "name": "Repetitive Assault",
+        "kind": "attack",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6+1",
+        "traits": "Psychological",
+        "isMagic": true
+      },
+      {
+        "name": "Telepathic Assault",
+        "kind": "spell",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6+1",
+        "traits": "Range (Medium), Psychological",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "p.133-134",
+    "tags": [
+      "enemy",
+      "Bestiary // Exonome",
+      "minor",
+      "elite"
+    ]
+  },
+  {
+    "id": "poltergeist",
+    "name": "Poltergeist (Psychic Echo)",
+    "category": "Bestiary // Exonome",
+    "source": "Supervisor's Guide p.133",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 2,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Awareness": 1,
+      "Reflexes": 2,
+      "Stealth": 1,
+      "Close Combat": 2,
+      "Ranged": 2,
+      "Fortitude": 1
+    },
+    "quickActions": [
+      {
+        "name": "Telekinetic Punch",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6+1",
+        "traits": "Close, Knockdown",
+        "isMagic": true
+      },
+      {
+        "name": "Telekinetic Throw",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6+2",
+        "traits": "Range (Medium), Improvised",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "p.133",
+    "tags": [
+      "enemy",
+      "Bestiary // Exonome",
+      "moderate",
+      "elite"
+    ]
+  },
+  {
+    "id": "succubus",
+    "name": "Succubus",
+    "category": "Bestiary // Exonome",
+    "source": "Supervisor's Guide p.139",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 1,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Awareness": 1,
+      "Resolve": 1,
+      "Stealth": 1,
+      "Fast Talk": 2,
+      "Presence": 2,
+      "Survival": 2,
+      "Ranged": 1
+    },
+    "quickActions": [
+      {
+        "name": "Telepathic Stab",
+        "kind": "spell",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "1d6+1",
+        "traits": "Close, Psychological",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "p.139",
+    "tags": [
+      "enemy",
+      "Bestiary // Exonome",
+      "major",
+      "elite"
+    ]
+  },
+  {
+    "id": "zombie-rhr",
+    "name": "Zombie (RHR Unit)",
+    "category": "Bestiary // Exonome",
+    "source": "Supervisor's Guide p.138",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 3,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 1,
+      "spirit": 1
+    },
+    "skillTraining": {
+      "Close Combat": 1,
+      "Fortitude": 1,
+      "Might": 1
+    },
+    "quickActions": [
+      {
+        "name": "Zombie Bite",
+        "kind": "attack",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "3d6+1",
+        "traits": "Close, Piercing",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "p.138",
+    "tags": [
+      "enemy",
+      "Bestiary // Exonome",
+      "minor",
+      "minion"
+    ]
+  },
+  {
+    "id": "mundane-large",
+    "name": "Large Mundane Creature",
+    "category": "Bestiary // Mundane",
+    "source": "Supervisor's Guide p.131",
+    "npcClass": "boss",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 4,
+      "mind": 1,
+      "spirit": 1
+    },
+    "skillTraining": {
+      "Athletics": 2,
+      "Awareness": 2,
+      "Might": 2,
+      "Survival": 1,
+      "Close Combat": 2,
+      "Reflexes": 1
+    },
+    "quickActions": [
+      {
+        "name": "Bite or Maul",
+        "kind": "attack",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "4d6+1",
+        "traits": "Close, Crushing, Piercing",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "p.131",
+    "tags": [
+      "enemy",
+      "Bestiary // Mundane",
+      "major",
+      "boss"
+    ]
+  },
+  {
+    "id": "mundane-medium",
+    "name": "Medium Mundane Creature",
+    "category": "Bestiary // Mundane",
+    "source": "Supervisor's Guide p.131",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 3,
+      "mind": 1,
+      "spirit": 1
+    },
+    "skillTraining": {
+      "Athletics": 1,
+      "Awareness": 2,
+      "Might": 1,
+      "Stealth": 1,
+      "Survival": 1,
+      "Close Combat": 2
+    },
+    "quickActions": [
+      {
+        "name": "Bite or Maul",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "3d6+1",
+        "traits": "Close, Piercing",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "p.131",
+    "tags": [
+      "enemy",
+      "Bestiary // Mundane",
+      "moderate",
+      "elite"
+    ]
+  },
+  {
+    "id": "mundane-small",
+    "name": "Small Mundane Creature",
+    "category": "Bestiary // Mundane",
+    "source": "Supervisor's Guide p.130",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 2,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 1,
+      "spirit": 1
+    },
+    "skillTraining": {
+      "Athletics": 1,
+      "Awareness": 2,
+      "Stealth": 2,
+      "Survival": 1,
+      "Close Combat": 1,
+      "Reflexes": 2
+    },
+    "quickActions": [
+      {
+        "name": "Bite or Maul",
+        "kind": "attack",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6+1",
+        "traits": "Close, Piercing",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "p.130",
+    "tags": [
+      "enemy",
+      "Bestiary // Mundane",
+      "minor",
+      "minion"
+    ]
+  },
+  {
+    "id": "aberration",
+    "name": "Aberration",
+    "category": "Laundry Ops",
+    "source": "System preset",
+    "npcClass": "boss",
+    "mode": "lite",
+    "threat": "extreme",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 5,
+      "mind": 2,
+      "spirit": 4
+    },
+    "skillTraining": {
+      "Close Combat": 3,
+      "Fortitude": 3,
+      "Reflexes": 2,
+      "Awareness": 2,
+      "Resolve": 2
+    },
+    "quickActions": [
+      {
+        "name": "Rending Limbs",
+        "kind": "attack",
+        "pool": 8,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "3d6",
+        "traits": "Crushing, Piercing",
+        "isMagic": false
+      },
+      {
+        "name": "Psychic Shriek",
+        "kind": "spell",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 2,
+        "damage": "2d6",
+        "traits": "Area",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "system-preset",
+    "tags": [
+      "enemy",
+      "Laundry Ops",
+      "extreme",
+      "boss"
+    ]
+  },
+  {
+    "id": "cultist",
+    "name": "Cultist Cell",
+    "category": "Laundry Ops",
+    "source": "System preset",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 4,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Close Combat": 1,
+      "Awareness": 1,
+      "Occult": 1,
+      "Magic": 1,
+      "Reflexes": 1
+    },
+    "quickActions": [
+      {
+        "name": "Knife Rush",
+        "kind": "attack",
+        "pool": 3,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "1d6",
+        "traits": "Concealable",
+        "isMagic": false
+      },
+      {
+        "name": "Chanted Hex",
+        "kind": "spell",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "1d6",
+        "traits": "",
+        "isMagic": true
+      }
+    ],
+    "sourcePage": "system-preset",
+    "tags": [
+      "enemy",
+      "Laundry Ops",
+      "minor",
+      "minion"
+    ]
+  },
+  {
+    "id": "field-agent",
+    "name": "Hostile Field Agent",
+    "category": "Laundry Ops",
+    "source": "System preset",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 1,
+    "fastDamage": false,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 3,
+      "mind": 3,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Ranged": 2,
+      "Close Combat": 2,
+      "Reflexes": 2,
+      "Awareness": 2,
+      "Resolve": 1
+    },
+    "quickActions": [
+      {
+        "name": "Pistol Shot",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6",
+        "traits": "Piercing",
+        "isMagic": false
+      },
+      {
+        "name": "Tactical Strike",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "1d6+1",
+        "traits": "Crushing",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "system-preset",
+    "tags": [
+      "enemy",
+      "Laundry Ops",
+      "major",
+      "elite"
+    ]
+  },
+  {
+    "id": "civilian",
+    "name": "Panicked Civilian",
+    "category": "Laundry Ops",
+    "source": "System preset",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 3,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 1,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Athletics": 0,
+      "Awareness": 1,
+      "Fast Talk": 1,
+      "Resolve": 0
+    },
+    "quickActions": [
+      {
+        "name": "Flee in Panic",
+        "kind": "test",
+        "pool": 3,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "",
+        "isMagic": false
+      },
+      {
+        "name": "Distracted Plea",
+        "kind": "test",
+        "pool": 3,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "system-preset",
+    "tags": [
+      "enemy",
+      "Laundry Ops",
+      "minor",
+      "minion"
+    ]
+  },
+  {
+    "id": "security",
+    "name": "Security Team",
+    "category": "Laundry Ops",
+    "source": "System preset",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 2,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 3,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Ranged": 2,
+      "Close Combat": 1,
+      "Reflexes": 2,
+      "Awareness": 1,
+      "Fortitude": 1
+    },
+    "quickActions": [
+      {
+        "name": "Sidearm Burst",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6",
+        "traits": "Piercing, Reload",
+        "isMagic": false
+      },
+      {
+        "name": "Suppression Fire",
+        "kind": "attack",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 2,
+        "damage": "2d6",
+        "traits": "Suppressive",
+        "isMagic": false
+      }
+    ],
+    "sourcePage": "system-preset",
+    "tags": [
+      "enemy",
+      "Laundry Ops",
+      "moderate",
+      "elite"
+    ]
+  }
+]
