@@ -1,5 +1,23 @@
 import { rollDice } from "../dice.js";
 import { LaundryCharacterBuilder } from "./character-builder.js";
+import {
+    KPI_HORIZONS,
+    KPI_PRIORITIES,
+    KPI_STATUSES,
+    createNewKpi,
+    normalizeKpiEntries,
+    summarizeKpiEntries
+} from "../utils/kpi.js";
+import {
+    describeTalentPrerequisiteResult,
+    evaluateTalentPrerequisites
+} from "../utils/talent-prerequisites.js";
+
+const KPI_STATUS_CSS = {
+    open: "kpi-open",
+    completed: "kpi-completed",
+    failed: "kpi-failed"
+};
 
 export class LaundryActorSheet extends ActorSheet {
 
@@ -31,7 +49,26 @@ export class LaundryActorSheet extends ActorSheet {
 
         // Sort items by type for convenience
         context.skills     = items.filter(i => i.type === "skill");
-        context.talents    = items.filter(i => i.type === "talent");
+        context.talents    = items
+            .filter(i => i.type === "talent")
+            .map(item => {
+                const prereq = evaluateTalentPrerequisites(this.actor, item);
+                const status = prereq.status;
+                const statusLabel = status === "unmet"
+                    ? game.i18n.localize("LAUNDRY.PrereqUnmet")
+                    : (status === "review"
+                        ? game.i18n.localize("LAUNDRY.PrereqReview")
+                        : game.i18n.localize("LAUNDRY.PrereqMet"));
+                return {
+                    ...item,
+                    prereqStatus: status,
+                    prereqStatusLabel: statusLabel,
+                    prereqSummary: describeTalentPrerequisiteResult(prereq),
+                    prereqUnmet: prereq.unmet,
+                    prereqManual: prereq.manual,
+                    prereqCss: `talent-prereq-${status}`
+                };
+            });
         context.gear       = items
             .filter(i => ["gear", "weapon", "armour"].includes(i.type))
             .sort((a, b) => a.name.localeCompare(b.name));
@@ -39,22 +76,34 @@ export class LaundryActorSheet extends ActorSheet {
         context.weapons    = items.filter(i => i.type === "weapon");
         context.armour     = items.filter(i => i.type === "armour");
         context.miscGear   = items.filter(i => i.type === "gear");
-        const rawKpi = Array.isArray(actorData.kpi) ? actorData.kpi : [];
-        context.kpiEntries = rawKpi.map((entry, index) => {
-            const text = typeof entry === "string"
-                ? entry
-                : String(entry?.text ?? "");
-            const status = typeof entry === "object"
-                ? String(entry?.status ?? "open")
-                : "open";
-            return {
-                index,
-                text,
-                completed: status === "completed",
-                failed: status === "failed",
-                resolved: status === "completed" || status === "failed"
-            };
-        });
+        const normalizedKpi = normalizeKpiEntries(actorData.kpi);
+        const kpiSummary = summarizeKpiEntries(normalizedKpi);
+        context.kpiSummary = kpiSummary;
+        context.kpiOptions = {
+            horizons: KPI_HORIZONS.map(option => ({
+                key: option.key,
+                label: game.i18n.localize(option.labelKey)
+            })),
+            priorities: KPI_PRIORITIES.map(option => ({
+                key: option.key,
+                label: game.i18n.localize(option.labelKey)
+            })),
+            statuses: KPI_STATUSES.map(option => ({
+                key: option.key,
+                label: game.i18n.localize(option.labelKey)
+            }))
+        };
+        context.kpiGroups = KPI_HORIZONS.map(group => ({
+            key: group.key,
+            label: game.i18n.localize(group.labelKey),
+            entries: normalizedKpi
+                .filter(entry => entry.horizon === group.key)
+                .map(entry => ({
+                    ...entry,
+                    statusCss: KPI_STATUS_CSS[entry.status] ?? "kpi-open",
+                    resolved: entry.status === "completed" || entry.status === "failed"
+                }))
+        }));
 
         const skillItemsByName = new Map(context.skills.map(s => [s.name, s]));
         const skillDefs = CONFIG.LAUNDRY.skills ?? [];
@@ -131,10 +180,10 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".inv-search").on("input", this._onInventorySearch.bind(this));
         html.find(".init-agent").click(this._onInitAgent.bind(this));
         html.find(".end-turn").click(this._onEndTurn.bind(this));
+        html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
-        html.find(".kpi-text-input").change(this._onKpiTextChange.bind(this));
-        html.find(".kpi-status-toggle").change(this._onKpiStatusToggle.bind(this));
+        html.on("change", ".kpi-field", (ev) => this._onKpiFieldChange(ev));
 
         // Item editing
         html.find(".item-edit").click(ev => {
@@ -347,10 +396,45 @@ export class LaundryActorSheet extends ActorSheet {
         await combat.nextTurn();
     }
 
+    async _onBioAutofill(ev) {
+        ev.preventDefault();
+        const profile = this.actor.system?.details?.profile ?? {};
+        const actorName = this.actor.name ?? "Unnamed Agent";
+        const assignment = String(this.actor.system?.details?.assignment ?? "").trim();
+        const lines = [];
+
+        const codename = String(profile.codename ?? "").trim();
+        lines.push(codename ? `${actorName} (${codename}) serves with The Laundry.` : `${actorName} serves with The Laundry.`);
+
+        const background = String(profile.background ?? "").trim();
+        const coverIdentity = String(profile.coverIdentity ?? "").trim();
+        const shortGoal = String(profile.shortGoal ?? "").trim();
+        const longGoal = String(profile.longGoal ?? "").trim();
+        const notableIncident = String(profile.notableIncident ?? "").trim();
+        const notes = String(profile.personalNotes ?? "").trim();
+
+        if (assignment) lines.push(`Current assignment: ${assignment}.`);
+        if (background) lines.push(`Background: ${background}.`);
+        if (coverIdentity) lines.push(`Cover identity: ${coverIdentity}.`);
+        if (shortGoal) lines.push(`Short-term objective: ${shortGoal}.`);
+        if (longGoal) lines.push(`Long-term objective: ${longGoal}.`);
+        if (notableIncident) lines.push(`Notable incident: ${notableIncident}.`);
+        if (notes) lines.push(`Additional notes: ${notes}.`);
+
+        const html = lines
+            .map(line => `<p>${foundry.utils.escapeHTML(line)}</p>`)
+            .join("");
+        await this.actor.update({ "system.biography": html });
+    }
+
     async _onKpiAdd(ev) {
         ev.preventDefault();
+        const requested = String(ev.currentTarget?.dataset?.kpiHorizon ?? "short");
+        const horizon = KPI_HORIZONS.some(option => option.key === requested)
+            ? requested
+            : "short";
         const kpis = this._getActorKpis();
-        kpis.push({ text: "", status: "open" });
+        kpis.push(createNewKpi(horizon));
         await this.actor.update({ "system.kpi": kpis });
     }
 
@@ -364,39 +448,76 @@ export class LaundryActorSheet extends ActorSheet {
         await this.actor.update({ "system.kpi": kpis });
     }
 
-    async _onKpiTextChange(ev) {
+    async _onKpiFieldChange(ev) {
         const index = Number(ev.currentTarget.dataset.kpiIndex);
+        const key = String(ev.currentTarget.dataset.kpiKey ?? "");
         if (!Number.isInteger(index) || index < 0) return;
         const kpis = this._getActorKpis();
         if (!kpis[index]) return;
-        kpis[index].text = String(ev.currentTarget.value ?? "");
-        await this.actor.update({ "system.kpi": kpis });
-    }
 
-    async _onKpiStatusToggle(ev) {
-        const input = ev.currentTarget;
-        const index = Number(input.dataset.kpiIndex);
-        const status = String(input.dataset.kpiStatus ?? "");
-        if (!Number.isInteger(index) || index < 0) return;
-        if (!["completed", "failed"].includes(status)) return;
+        switch (key) {
+            case "text":
+                kpis[index].text = String(ev.currentTarget.value ?? "");
+                break;
+            case "owner":
+                kpis[index].owner = String(ev.currentTarget.value ?? "");
+                break;
+            case "horizon": {
+                const value = String(ev.currentTarget.value ?? "");
+                if (KPI_HORIZONS.some(option => option.key === value)) {
+                    kpis[index].horizon = value;
+                }
+                break;
+            }
+            case "priority": {
+                const value = String(ev.currentTarget.value ?? "");
+                if (KPI_PRIORITIES.some(option => option.key === value)) {
+                    kpis[index].priority = value;
+                }
+                break;
+            }
+            case "status": {
+                const value = String(ev.currentTarget.value ?? "");
+                if (KPI_STATUSES.some(option => option.key === value)) {
+                    kpis[index].status = value;
+                    if (value === "completed") kpis[index].progress = 100;
+                }
+                break;
+            }
+            case "progress": {
+                const value = Number(ev.currentTarget.value ?? 0);
+                const progress = Number.isFinite(value)
+                    ? Math.max(0, Math.min(100, Math.trunc(value)))
+                    : 0;
+                kpis[index].progress = progress;
+                if (progress >= 100 && kpis[index].status === "open") {
+                    kpis[index].status = "completed";
+                }
+                break;
+            }
+            case "dueDate": {
+                const value = String(ev.currentTarget.value ?? "").trim();
+                kpis[index].dueDate = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+                break;
+            }
+            default:
+                return;
+        }
 
-        const kpis = this._getActorKpis();
-        if (!kpis[index]) return;
-
-        const checked = Boolean(input.checked);
-        kpis[index].status = checked ? status : "open";
         await this.actor.update({ "system.kpi": kpis });
     }
 
     _getActorKpis() {
-        const current = Array.isArray(this.actor.system?.kpi) ? this.actor.system.kpi : [];
-        return current.map(entry => {
-            if (typeof entry === "string") return { text: entry, status: "open" };
-            return {
-                text: String(entry?.text ?? ""),
-                status: ["completed", "failed"].includes(entry?.status) ? entry.status : "open"
-            };
-        });
+        return normalizeKpiEntries(this.actor.system?.kpi).map(entry => ({
+            id: entry.id,
+            text: entry.text,
+            status: entry.status,
+            horizon: entry.horizon,
+            priority: entry.priority,
+            dueDate: entry.dueDate,
+            progress: entry.progress,
+            owner: entry.owner
+        }));
     }
 
     // ─── Drag & Drop: Assignment ───────────────────────────────────────────────
@@ -410,6 +531,28 @@ export class LaundryActorSheet extends ActorSheet {
 
         if (itemData.type === "assignment") {
             return this._applyAssignment(itemData);
+        }
+
+        if (itemData.type === "talent") {
+            const prereq = evaluateTalentPrerequisites(this.actor, itemData);
+            if (!prereq.enforceMet) {
+                const details = describeTalentPrerequisiteResult(prereq);
+                if (!game.user?.isGM) {
+                    ui.notifications.warn(game.i18n.format("LAUNDRY.TalentPrereqBlocked", {
+                        talent: itemData.name
+                    }));
+                    ui.notifications.warn(details);
+                    return false;
+                }
+
+                const override = await Dialog.confirm({
+                    title: game.i18n.localize("LAUNDRY.TalentPrereqOverrideTitle"),
+                    content: `<p>${game.i18n.format("LAUNDRY.TalentPrereqOverrideBody", {
+                        talent: itemData.name
+                    })}</p><p>${details}</p>`
+                });
+                if (!override) return false;
+            }
         }
 
         return super._onDropItem(event, data);

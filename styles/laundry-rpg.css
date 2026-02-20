@@ -318,6 +318,50 @@
     margin: 4px 0 8px;
 }
 
+.laundry-rpg .bio-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.laundry-rpg .bio-profile-grid label,
+.laundry-rpg .bio-profile-notes {
+    display: grid;
+    gap: 2px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .bio-profile-grid input,
+.laundry-rpg .bio-profile-notes textarea {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.7);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    padding: 3px 5px;
+}
+
+.laundry-rpg .bio-autofill {
+    border: 1px solid var(--laundry-stamp);
+    background: rgba(178,31,31,0.08);
+    color: var(--laundry-stamp);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 3px 8px;
+    margin: 4px 0 8px;
+    cursor: pointer;
+}
+
+.laundry-rpg .bio-autofill:hover {
+    background: rgba(178,31,31,0.16);
+}
+
 /* ── Derived Stats ──────────────────────────────────────────────────────── */
 .laundry-rpg .derived-grid {
     display: grid;
@@ -693,6 +737,20 @@
     justify-content: flex-end;
 }
 
+.laundry-rpg .builder-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+    gap: 10px;
+}
+
+.laundry-rpg .builder-main-column,
+.laundry-rpg .builder-side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
 .laundry-rpg .builder-selection-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -758,6 +816,14 @@
     line-height: 1.2;
 }
 
+.laundry-rpg .builder-choice-option-talent {
+    justify-content: space-between;
+}
+
+.laundry-rpg .builder-choice-option .builder-choice-title {
+    flex: 1;
+}
+
 .laundry-rpg .builder-choice-empty {
     margin: 0;
     font-size: 11px;
@@ -766,6 +832,35 @@
 
 .laundry-rpg .skill-allocation-group {
     border-style: double;
+}
+
+.laundry-rpg .skill-preset-row {
+    display: grid;
+    grid-template-columns: auto minmax(140px, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.laundry-rpg .skill-preset-row label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .skill-preset-row select,
+.laundry-rpg .skill-preset-row button {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    padding: 2px 4px;
+}
+
+.laundry-rpg .skill-preset-row button:hover {
+    border-color: var(--laundry-stamp);
+    color: var(--laundry-stamp);
 }
 
 .laundry-rpg .skill-allocation-list {
@@ -923,11 +1018,75 @@
     letter-spacing: 0.08em;
 }
 
+.laundry-rpg .bio-draft-group {
+    border-style: double;
+}
+
+.laundry-rpg .bio-draft-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.laundry-rpg .bio-draft-grid label,
+.laundry-rpg .bio-draft-notes,
+.laundry-rpg .bio-draft-preview-wrap {
+    display: grid;
+    gap: 3px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .bio-draft-grid input,
+.laundry-rpg .bio-draft-notes textarea,
+.laundry-rpg .bio-draft-preview-wrap textarea {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    padding: 3px 5px;
+}
+
+.laundry-rpg .bio-draft-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.laundry-rpg .bio-draft-actions button {
+    border: 1px solid var(--laundry-stamp);
+    background: rgba(178,31,31,0.08);
+    color: var(--laundry-stamp);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.laundry-rpg .bio-draft-actions label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--laundry-ink-muted);
+}
+
 .laundry-rpg .kpi-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 8px;
+}
+
+.laundry-rpg .kpi-head-main {
+    margin-bottom: 6px;
 }
 
 .laundry-rpg .kpi-add {
@@ -953,14 +1112,58 @@
     gap: 5px;
 }
 
+.laundry-rpg .kpi-summary-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0 0 8px;
+}
+
+.laundry-rpg .kpi-summary-chip {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.45);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--laundry-ink-muted);
+    padding: 2px 6px;
+}
+
+.laundry-rpg .kpi-group {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.3);
+    padding: 6px;
+    margin-bottom: 8px;
+}
+
+.laundry-rpg .kpi-group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.laundry-rpg .kpi-group-head h4 {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-stamp);
+}
+
 .laundry-rpg .kpi-row {
     display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    align-items: center;
+    grid-template-columns: minmax(180px, 1fr) minmax(280px, 1.6fr) auto;
+    align-items: start;
     gap: 8px;
     border: 1px solid var(--laundry-line);
     background: rgba(255,255,255,0.45);
     padding: 6px;
+}
+
+.laundry-rpg .kpi-main {
+    display: grid;
+    gap: 6px;
 }
 
 .laundry-rpg .kpi-text-input {
@@ -972,18 +1175,48 @@
     padding: 3px 5px;
 }
 
-.laundry-rpg .kpi-status {
+.laundry-rpg .kpi-owner-input {
+    width: 100%;
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    font-family: var(--laundry-font);
     font-size: 10px;
+    padding: 3px 5px;
+}
+
+.laundry-rpg .kpi-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 6px;
+}
+
+.laundry-rpg .kpi-meta label {
+    display: grid;
+    gap: 2px;
+    font-size: 9px;
     color: var(--laundry-ink-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+}
+
+.laundry-rpg .kpi-meta select,
+.laundry-rpg .kpi-meta input {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    padding: 2px 4px;
+}
+
+.laundry-rpg .kpi-progress-input {
+    text-align: center;
 }
 
 .laundry-rpg .kpi-row.kpi-completed .kpi-text-input,
-.laundry-rpg .kpi-row.kpi-failed .kpi-text-input {
+.laundry-rpg .kpi-row.kpi-failed .kpi-text-input,
+.laundry-rpg .kpi-row.kpi-completed .kpi-owner-input,
+.laundry-rpg .kpi-row.kpi-failed .kpi-owner-input {
     text-decoration: line-through;
     color: #6a5c48;
 }
@@ -994,6 +1227,48 @@
 
 .laundry-rpg .kpi-row.kpi-failed {
     border-color: #9a4b2c;
+}
+
+.laundry-rpg .talent-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.laundry-rpg .talent-requirements {
+    font-size: 10px;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .talent-prereq-line {
+    display: flex;
+    align-items: center;
+}
+
+.laundry-rpg .talent-prereq-badge {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border: 1px solid var(--laundry-line-dark);
+    padding: 1px 5px;
+    background: rgba(255,255,255,0.6);
+}
+
+.laundry-rpg .talent-prereq-met {
+    color: #1f5f35;
+    border-color: #1f5f35;
+}
+
+.laundry-rpg .talent-prereq-unmet {
+    color: #8b0000;
+    border-color: #8b0000;
+    background: rgba(139,0,0,0.08);
+}
+
+.laundry-rpg .talent-prereq-review {
+    color: #7d5d1f;
+    border-color: #7d5d1f;
+    background: rgba(125,93,31,0.08);
 }
 
 .laundry-rpg.gm-tracker .window-content {
@@ -1054,8 +1329,59 @@
     color: var(--laundry-stamp);
 }
 
+.laundry-rpg .gm-pc-board {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.laundry-rpg .gm-pc-row {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.45);
+    padding: 6px;
+    display: grid;
+    gap: 6px;
+}
+
+.laundry-rpg .gm-pc-name {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-stamp);
+}
+
+.laundry-rpg .gm-pc-resources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.laundry-rpg .gm-pc-stat {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--laundry-ink-muted);
+    border: 1px solid var(--laundry-line);
+    padding: 1px 4px;
+}
+
+.laundry-rpg .gm-pc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
 @media (max-width: 680px) {
+    .laundry-rpg .builder-layout {
+        grid-template-columns: 1fr;
+    }
+
     .laundry-rpg .builder-selection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .bio-draft-grid {
         grid-template-columns: 1fr;
     }
 
@@ -1443,6 +1769,14 @@
     .laundry-rpg .kpi-row {
         grid-template-columns: 1fr;
         align-items: start;
+    }
+
+    .laundry-rpg .kpi-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .bio-profile-grid {
+        grid-template-columns: 1fr;
     }
 
     .laundry-rpg .dossier-header {

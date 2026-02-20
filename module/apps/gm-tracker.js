@@ -1,4 +1,5 @@
 import { rollDice } from "../dice.js";
+import { normalizeKpiEntries, summarizeKpiEntries } from "../utils/kpi.js";
 
 export class LaundryGMTracker extends Application {
 
@@ -20,11 +21,29 @@ export class LaundryGMTracker extends Application {
         const threatLevel = Number(game.settings.get("laundry-rpg", "threatLevel")) || 0;
         const target = _getPrimaryTargetToken();
         const actor = target?.actor ?? null;
+        const pcs = _getPlayerCharacters().map(pc => {
+            const adrenalineValue = Math.max(0, Math.trunc(Number(pc.system?.derived?.adrenaline?.value) || 0));
+            const adrenalineMax = Math.max(0, Math.trunc(Number(pc.system?.derived?.adrenaline?.max) || 0));
+            const injuriesValue = Math.max(0, Math.trunc(Number(pc.system?.derived?.injuries?.value) || 0));
+            const injuriesMax = Math.max(0, Math.trunc(Number(pc.system?.derived?.injuries?.max) || 0));
+            const kpiSummary = summarizeKpiEntries(normalizeKpiEntries(pc.system?.kpi));
+            return {
+                id: pc.id,
+                name: pc.name,
+                adrenalineValue,
+                adrenalineMax,
+                injuriesValue,
+                injuriesMax,
+                kpiOpen: kpiSummary.open
+            };
+        });
         return {
             ...data,
             threatLevel: Math.max(0, Math.min(10, Math.trunc(threatLevel))),
             targetName: actor?.name ?? target?.name ?? game.i18n.localize("LAUNDRY.AttackNoTarget"),
-            hasTarget: Boolean(actor)
+            hasTarget: Boolean(actor),
+            pcs,
+            hasPcs: pcs.length > 0
         };
     }
 
@@ -46,6 +65,13 @@ export class LaundryGMTracker extends Application {
         html.find(".set-threat").on("click", (ev) => this._onSubmit(ev));
         html.find(".award-luck").on("click", (ev) => this._onAwardLuck(ev));
         html.find(".request-bau").on("click", (ev) => this._onRequestBau(ev));
+        html.find(".max-adrenaline").on("click", (ev) => this._onMaxAdrenaline(ev));
+        html.find(".pc-adjust").on("click", (ev) => this._onPcAdjust(ev));
+        html.find(".pc-bau").on("click", (ev) => this._onBauForPc(ev));
+        html.find(".pc-open-sheet").on("click", (ev) => this._onOpenDossier(ev));
+        html.find(".pc-kpi-ping").on("click", (ev) => this._onKpiPing(ev));
+        html.find(".open-rules").on("click", (ev) => this._onOpenCompendium(ev, "laundry-rpg.rules"));
+        html.find(".open-spells").on("click", (ev) => this._onOpenCompendium(ev, "laundry-rpg.spells"));
     }
 
     async _onSubmit(ev) {
@@ -93,7 +119,10 @@ export class LaundryGMTracker extends Application {
             ui.notifications.warn(game.i18n.localize("LAUNDRY.SelectTargetForBAU"));
             return;
         }
+        await this._requestBauForActor(actor);
+    }
 
+    async _requestBauForActor(actor) {
         Hooks.callAll("laundryRpgRequestBusinessAsUsual", {
             actorId: actor.id,
             actorName: actor.name,
@@ -107,6 +136,98 @@ export class LaundryGMTracker extends Application {
             whisper,
             content: game.i18n.format("LAUNDRY.BAURequestSent", { name: actor.name })
         });
+    }
+
+    async _onMaxAdrenaline(ev) {
+        ev.preventDefault();
+        const pcs = _getPlayerCharacters();
+        if (!pcs.length) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.NoPlayerCharacters"));
+            return;
+        }
+
+        let changed = 0;
+        for (const actor of pcs) {
+            const current = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value) || 0));
+            const max = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.max) || 0));
+            if (current === max) continue;
+            await actor.update({ "system.derived.adrenaline.value": max });
+            changed += 1;
+        }
+
+        ui.notifications.info(game.i18n.format("LAUNDRY.AdrenalineMaxedAll", { count: changed }));
+        this.render(false);
+    }
+
+    async _onPcAdjust(ev) {
+        ev.preventDefault();
+        const button = ev.currentTarget;
+        const actorId = String(button.dataset.actorId ?? "");
+        const resource = String(button.dataset.resource ?? "");
+        const delta = Math.trunc(Number(button.dataset.delta) || 0);
+        if (!actorId || !delta) return;
+
+        const actor = game.actors?.get(actorId);
+        if (!actor) return;
+
+        if (resource === "adrenaline") {
+            const value = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value) || 0));
+            const max = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.max) || 0));
+            const next = Math.max(0, Math.min(max, value + delta));
+            if (next !== value) await actor.update({ "system.derived.adrenaline.value": next });
+        } else if (resource === "injuries") {
+            const value = Math.max(0, Math.trunc(Number(actor.system?.derived?.injuries?.value) || 0));
+            const max = Math.max(0, Math.trunc(Number(actor.system?.derived?.injuries?.max) || 0));
+            const next = Math.max(0, Math.min(max, value + delta));
+            if (next !== value) await actor.update({ "system.derived.injuries.value": next });
+        }
+
+        this.render(false);
+    }
+
+    async _onBauForPc(ev) {
+        ev.preventDefault();
+        const actorId = String(ev.currentTarget.dataset.actorId ?? "");
+        if (!actorId) return;
+        const actor = game.actors?.get(actorId);
+        if (!actor) return;
+        await this._requestBauForActor(actor);
+    }
+
+    async _onOpenDossier(ev) {
+        ev.preventDefault();
+        const actorId = String(ev.currentTarget.dataset.actorId ?? "");
+        if (!actorId) return;
+        const actor = game.actors?.get(actorId);
+        actor?.sheet?.render(true);
+    }
+
+    async _onKpiPing(ev) {
+        ev.preventDefault();
+        const actorId = String(ev.currentTarget.dataset.actorId ?? "");
+        if (!actorId) return;
+        const actor = game.actors?.get(actorId);
+        if (!actor) return;
+
+        const kpiSummary = summarizeKpiEntries(normalizeKpiEntries(actor.system?.kpi));
+        const owners = _getActorOwners(actor).map(user => user.id);
+        if (!owners.length) return;
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker(),
+            whisper: owners,
+            content: `${game.i18n.format("LAUNDRY.KPIPingSent", { name: actor.name })} (${game.i18n.localize("LAUNDRY.KPIStatusOpen")}: ${kpiSummary.open})`
+        });
+        ui.notifications.info(game.i18n.format("LAUNDRY.KPIPingSent", { name: actor.name }));
+    }
+
+    _onOpenCompendium(ev, packId) {
+        ev.preventDefault();
+        const pack = game.packs.get(packId);
+        if (!pack) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.CompendiumUnavailable"));
+            return;
+        }
+        pack.render(true);
     }
 
     static async handleBusinessAsUsualRequest({ actorId, actorName, sourceUserId } = {}) {
@@ -155,4 +276,10 @@ function _getActorOwners(actor) {
         && !user.isGM
         && actor.testUserPermission(user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)
     );
+}
+
+function _getPlayerCharacters() {
+    return game.actors
+        .filter(actor => actor.type === "character" && actor.hasPlayerOwner)
+        .sort((a, b) => a.name.localeCompare(b.name));
 }

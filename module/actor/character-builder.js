@@ -1,8 +1,14 @@
+import {
+    describeTalentPrerequisiteResult,
+    evaluateTalentPrerequisites
+} from "../utils/talent-prerequisites.js";
+
 export class LaundryCharacterBuilder extends Application {
     constructor(actor, options = {}) {
         super(options);
         this.actor = actor;
         this._assignmentById = new Map();
+        this._talentByName = new Map();
     }
 
     static get defaultOptions() {
@@ -11,15 +17,18 @@ export class LaundryCharacterBuilder extends Application {
             classes: ["laundry-rpg", "character-builder", "laundry-dialog"],
             template: "systems/laundry-rpg/templates/actor/character-builder.html",
             title: "Form 2B: Agent Requisition",
-            width: 640,
-            height: "auto"
+            width: 960,
+            height: 860,
+            resizable: true
         });
     }
 
     async getData() {
         const pack = game.packs.get("laundry-rpg.assignments");
+        const talentsPack = game.packs.get("laundry-rpg.talents");
         let assignments = [];
         this._assignmentById = new Map();
+        this._talentByName = new Map();
 
         if (pack) {
             const docs = await pack.getDocuments();
@@ -32,10 +41,33 @@ export class LaundryCharacterBuilder extends Application {
             }
         }
 
+        if (talentsPack) {
+            const talentDocs = await talentsPack.getDocuments();
+            for (const doc of talentDocs) {
+                const key = String(doc?.name ?? "").trim().toLowerCase();
+                if (!key) continue;
+                this._talentByName.set(key, {
+                    name: doc.name,
+                    requirements: String(doc.system?.requirements ?? "")
+                });
+            }
+        }
+
+        const profile = _normalizeProfileDraft(this.actor?.system?.details?.profile);
+        const existingBiography = _stripHtml(this.actor?.system?.biography ?? "");
+        if (!profile.preview) {
+            profile.preview = existingBiography || _buildBiographyDraftText({
+                actorName: this.actor?.name ?? "Agent",
+                assignmentName: "",
+                profile
+            });
+        }
+
         return {
             assignments,
             hasAssignments: assignments.length > 0,
-            actorName: this.actor?.name ?? "Agent"
+            actorName: this.actor?.name ?? "Agent",
+            profile
         };
     }
 
@@ -45,6 +77,7 @@ export class LaundryCharacterBuilder extends Application {
         html.find(".builder-confirm").on("click", (ev) => this._onSubmit(ev));
         html.find("form").on("keydown", (ev) => {
             if (ev.key !== "Enter") return;
+            if (ev.target?.tagName === "TEXTAREA") return;
             ev.preventDefault();
             this._onSubmit(ev);
         });
@@ -54,6 +87,8 @@ export class LaundryCharacterBuilder extends Application {
         });
         html.on("change", ".builder-choice-input", (ev) => this._onChoiceChanged(ev.currentTarget));
         html.on("change", ".skill-allocation-input", (ev) => this._onSkillAllocationChanged(ev.currentTarget));
+        html.find(".apply-skill-preset").on("click", (ev) => this._onApplySkillPreset(ev));
+        html.find(".builder-generate-bio").on("click", (ev) => this._onGenerateBiographyDraft(ev));
 
         const select = html.find("#assignment-select")[0];
         if (select) this._renderAssignmentDetails(select.value);
@@ -85,6 +120,10 @@ export class LaundryCharacterBuilder extends Application {
             _readCheckedValues(form, "talent").filter(name => assignmentData.optionalTalents.includes(name))
         );
         const skillAllocations = this._readSkillAllocations(form, assignmentData);
+        const profileDraft = this._readProfileDraft(form);
+        const biographyDraft = String(form.querySelector('[name="bioPreview"]')?.value ?? "").trim();
+        const applyBiography = Boolean(form.querySelector('[name="applyBiography"]')?.checked);
+        const overwriteBiography = Boolean(form.querySelector('[name="overwriteBiography"]')?.checked);
         const xpBudget = Number(assignmentData.skillXpBudget ?? 12);
         const usedXp = _calculateSkillXpUsage(skillAllocations, assignmentData);
         if (usedXp > xpBudget) {
@@ -130,7 +169,11 @@ export class LaundryCharacterBuilder extends Application {
         await applyAssignmentToActor(this.actor, assignment, {
             chosenSkills,
             chosenTalents,
-            skillAllocations
+            skillAllocations,
+            profileDraft,
+            biographyDraft,
+            applyBiography,
+            overwriteBiography
         });
         this.close();
     }
@@ -164,6 +207,7 @@ export class LaundryCharacterBuilder extends Application {
             this._renderChoiceList("talent", [], 0, game.i18n.localize("LAUNDRY.SelectAssignmentFirst"));
             this._updateChoiceCounters({ skillChoiceCount: 0, talentChoiceCount: 0 });
             this._renderSkillAllocation(null);
+            this._updateBiographyDraftFromSelection({ force: false });
             return;
         }
 
@@ -191,6 +235,7 @@ export class LaundryCharacterBuilder extends Application {
         );
         this._updateChoiceCounters(assignment);
         this._renderSkillAllocation(assignment);
+        this._updateBiographyDraftFromSelection({ force: false });
     }
 
     _renderChoiceList(kind, options, choiceCount, emptyMessage) {
@@ -211,12 +256,37 @@ export class LaundryCharacterBuilder extends Application {
             ? game.i18n.format("LAUNDRY.ChooseN", { count: choiceCount })
             : game.i18n.localize("LAUNDRY.ChooseAny");
 
-        listEl.innerHTML = options.map(name => (
-            `<label class="builder-choice-option">
+        listEl.innerHTML = options.map(name => {
+            if (kind !== "talent") {
+                return `<label class="builder-choice-option">
+                    <input class="builder-choice-input" type="checkbox" data-choice-kind="${kind}" value="${_escapeHtml(name)}" />
+                    <span>${_escapeHtml(name)}</span>
+                </label>`;
+            }
+
+            const talentMeta = this._talentByName.get(String(name).toLowerCase()) ?? {
+                name,
+                requirements: ""
+            };
+            const prereq = evaluateTalentPrerequisites(this.actor, {
+                name: talentMeta.name,
+                type: "talent",
+                system: {
+                    requirements: talentMeta.requirements
+                }
+            });
+            const statusLabel = prereq.status === "unmet"
+                ? game.i18n.localize("LAUNDRY.PrereqUnmetLabel")
+                : (prereq.status === "review"
+                    ? game.i18n.localize("LAUNDRY.PrereqReviewLabel")
+                    : game.i18n.localize("LAUNDRY.PrereqMetLabel"));
+            const badgeClass = `talent-prereq-badge talent-prereq-${prereq.status}`;
+            return `<label class="builder-choice-option builder-choice-option-talent" title="${_escapeHtml(describeTalentPrerequisiteResult(prereq))}">
                 <input class="builder-choice-input" type="checkbox" data-choice-kind="${kind}" value="${_escapeHtml(name)}" />
-                <span>${_escapeHtml(name)}</span>
-            </label>`
-        )).join("");
+                <span class="builder-choice-title">${_escapeHtml(name)}</span>
+                <span class="${badgeClass}">${_escapeHtml(statusLabel)}</span>
+            </label>`;
+        }).join("");
     }
 
     _onChoiceChanged(inputEl) {
@@ -248,6 +318,167 @@ export class LaundryCharacterBuilder extends Application {
 
         this._updateChoiceCounters(assignment);
         if (kind === "skill") this._renderSkillAllocation(assignment);
+    }
+
+    _onApplySkillPreset(ev) {
+        ev.preventDefault();
+        const assignment = this._getSelectedAssignment();
+        if (!assignment) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.SelectAssignmentFirst"));
+            return;
+        }
+
+        const root = this.element?.[0];
+        const form = root?.querySelector("form");
+        if (!form) return;
+
+        const mode = String(form.querySelector(".skill-preset-select")?.value ?? "manual");
+        if (mode === "manual") return;
+
+        const rows = Array.from(form.querySelectorAll(".skill-allocation-row"));
+        if (!rows.length) return;
+
+        for (const row of rows) {
+            const baseTraining = Number(row.dataset.baseTraining ?? 0);
+            const baseFocus = Number(row.dataset.baseFocus ?? 0);
+            const trainingInput = row.querySelector('input[data-track="training"]');
+            const focusInput = row.querySelector('input[data-track="focus"]');
+            if (trainingInput) trainingInput.value = String(_clampLevel(baseTraining, baseTraining, 4));
+            if (focusInput) focusInput.value = String(_clampLevel(baseFocus, baseFocus, 4));
+        }
+
+        const orderedTracks = this._buildSkillPresetTracks(rows, mode);
+        const budget = Math.max(0, Number(assignment.skillXpBudget ?? 12));
+        let used = _calculateSkillXpUsage(this._readSkillAllocations(form, assignment), assignment);
+
+        let changed = false;
+        let guard = 0;
+        while (used < budget && guard < 220) {
+            guard += 1;
+            let progressed = false;
+
+            for (const input of orderedTracks) {
+                const min = Number(input.min ?? 0);
+                const max = Number(input.max ?? 4);
+                const current = _clampLevel(input.value, min, max);
+                if (current >= max) continue;
+
+                input.value = String(current + 1);
+                const nextUsed = _calculateSkillXpUsage(this._readSkillAllocations(form, assignment), assignment);
+                if (nextUsed <= budget) {
+                    used = nextUsed;
+                    changed = true;
+                    progressed = true;
+                } else {
+                    input.value = String(current);
+                }
+
+                if (used >= budget) break;
+            }
+
+            if (!progressed) break;
+        }
+
+        this._updateSkillXpCounter(assignment);
+        if (changed) {
+            ui.notifications.info(game.i18n.localize("LAUNDRY.SkillPresetApplied"));
+        }
+    }
+
+    _buildSkillPresetTracks(rows, mode) {
+        const withMeta = rows.map((row, index) => {
+            const skillName = String(row.dataset.skillName ?? "");
+            const lowered = skillName.toLowerCase();
+            const core = Number(row.dataset.baseTraining ?? 0) > 0;
+            let priority = index + 1;
+
+            if (mode === "focused") {
+                const combatOrder = [
+                    "close combat",
+                    "ranged",
+                    "awareness",
+                    "reflexes",
+                    "athletics",
+                    "stealth"
+                ];
+                const ix = combatOrder.indexOf(lowered);
+                priority = ix >= 0 ? ix : (core ? 20 + index : 40 + index);
+            } else if (mode === "bureau") {
+                const bureauOrder = [
+                    "bureaucracy",
+                    "academics",
+                    "computers",
+                    "science",
+                    "occult",
+                    "awareness",
+                    "reflexes"
+                ];
+                const ix = bureauOrder.indexOf(lowered);
+                priority = ix >= 0 ? ix : (core ? 20 + index : 40 + index);
+            } else {
+                priority = core ? index : 30 + index;
+            }
+
+            return {
+                row,
+                priority
+            };
+        }).sort((a, b) => a.priority - b.priority);
+
+        if (mode === "balanced") {
+            const training = withMeta
+                .map(meta => meta.row.querySelector('input[data-track="training"]'))
+                .filter(Boolean);
+            const focus = withMeta
+                .map(meta => meta.row.querySelector('input[data-track="focus"]'))
+                .filter(Boolean);
+            return training.concat(focus);
+        }
+
+        const tracks = [];
+        for (const meta of withMeta) {
+            const training = meta.row.querySelector('input[data-track="training"]');
+            const focus = meta.row.querySelector('input[data-track="focus"]');
+            if (training) tracks.push(training);
+            if (focus) tracks.push(focus);
+        }
+        return tracks;
+    }
+
+    _onGenerateBiographyDraft(ev) {
+        ev.preventDefault();
+        this._updateBiographyDraftFromSelection({ force: true });
+    }
+
+    _updateBiographyDraftFromSelection({ force = false } = {}) {
+        const root = this.element?.[0];
+        const form = root?.querySelector("form");
+        if (!form) return;
+
+        const preview = form.querySelector('[name="bioPreview"]');
+        if (!preview) return;
+        if (!force && String(preview.value ?? "").trim()) return;
+
+        const assignment = this._getSelectedAssignment();
+        const profile = this._readProfileDraft(form);
+        preview.value = _buildBiographyDraftText({
+            actorName: this.actor?.name ?? "Agent",
+            assignmentName: assignment?.name ?? "",
+            profile
+        });
+    }
+
+    _readProfileDraft(form) {
+        return _normalizeProfileDraft({
+            codename: form?.querySelector('[name="bioCodename"]')?.value,
+            background: form?.querySelector('[name="bioBackground"]')?.value,
+            coverIdentity: form?.querySelector('[name="bioCoverIdentity"]')?.value,
+            shortGoal: form?.querySelector('[name="bioShortGoal"]')?.value,
+            longGoal: form?.querySelector('[name="bioLongGoal"]')?.value,
+            notableIncident: form?.querySelector('[name="bioNotableIncident"]')?.value,
+            personalNotes: form?.querySelector('[name="bioNotes"]')?.value,
+            preview: form?.querySelector('[name="bioPreview"]')?.value
+        });
     }
 
     _updateChoiceCounters(assignment) {
@@ -459,6 +690,10 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     const sys = assignment.system ?? {};
     const attributes = sys.attributes ?? {};
     const parsed = _parseAssignmentSystem(sys);
+    const profileDraft = _normalizeProfileDraft(selected.profileDraft);
+    const applyBiography = Boolean(selected.applyBiography);
+    const overwriteBiography = Boolean(selected.overwriteBiography);
+    const biographyDraft = String(selected.biographyDraft ?? "").trim();
 
     const selectedSkills = _uniqueList(Array.isArray(selected.chosenSkills) ? selected.chosenSkills : [])
         .filter(name => parsed.optionalSkills.some(opt => opt.toLowerCase() === name.toLowerCase()));
@@ -473,13 +708,35 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     const skillsToAdd = _uniqueList(skillPool.concat(allocatedSkillNames));
     const talentsToAdd = _uniqueList(parsed.coreTalents.concat(selectedTalents));
     const desiredSkillLevels = _buildDesiredSkillLevels(skillsToAdd, parsed, skillAllocations);
-
-    await actor.update({
+    const actorUpdate = {
         "system.attributes.body.value": attributes.body ?? 1,
         "system.attributes.mind.value": attributes.mind ?? 1,
         "system.attributes.spirit.value": attributes.spirit ?? 1,
-        "system.details.assignment": assignment.name ?? ""
-    });
+        "system.details.assignment": assignment.name ?? "",
+        "system.details.profile": {
+            codename: profileDraft.codename,
+            background: profileDraft.background,
+            coverIdentity: profileDraft.coverIdentity,
+            shortGoal: profileDraft.shortGoal,
+            longGoal: profileDraft.longGoal,
+            notableIncident: profileDraft.notableIncident,
+            personalNotes: profileDraft.personalNotes
+        }
+    };
+
+    if (applyBiography) {
+        const currentBio = String(actor.system?.biography ?? "").trim();
+        if (overwriteBiography || !currentBio) {
+            const draftText = biographyDraft || _buildBiographyDraftText({
+                actorName: actor.name,
+                assignmentName: assignment.name ?? "",
+                profile: profileDraft
+            });
+            actorUpdate["system.biography"] = _biographyTextToHtml(draftText);
+        }
+    }
+
+    await actor.update(actorUpdate);
 
     const skills = await _fetchCompendiumItems(
         "laundry-rpg.skills",
@@ -502,7 +759,7 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     const existingByTypeAndName = new Map(
         actor.items.map(item => [`${item.type}:${item.name.toLowerCase()}`, item])
     );
-    const pending = [];
+    const skillCreates = [];
     const skillUpdates = [];
 
     for (const skillData of skills) {
@@ -536,18 +793,45 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
             continue;
         }
 
-        pending.push(cloned);
+        skillCreates.push(cloned);
     }
 
-    for (const item of talents.concat(equipment)) {
+    if (skillCreates.length) {
+        const createdSkills = await actor.createEmbeddedDocuments("Item", skillCreates);
+        for (const created of createdSkills ?? []) {
+            existingByTypeAndName.set(`skill:${created.name.toLowerCase()}`, created);
+        }
+    }
+    if (skillUpdates.length) {
+        await actor.updateEmbeddedDocuments("Item", skillUpdates);
+    }
+
+    const nonSkillPending = [];
+    const skippedTalents = [];
+
+    for (const talentItem of talents) {
+        if (!talentItem) continue;
+        const key = `${talentItem.type}:${talentItem.name.toLowerCase()}`;
+        if (existingByTypeAndName.has(key)) continue;
+
+        const prereq = evaluateTalentPrerequisites(actor, talentItem);
+        if (!prereq.enforceMet) {
+            skippedTalents.push(`${talentItem.name}: ${describeTalentPrerequisiteResult(prereq)}`);
+            continue;
+        }
+
+        nonSkillPending.push(talentItem);
+    }
+
+    for (const item of equipment) {
         if (!item) continue;
         const key = `${item.type}:${item.name.toLowerCase()}`;
         if (existingByTypeAndName.has(key)) continue;
-        pending.push(item);
+        nonSkillPending.push(item);
     }
 
     const dedupe = new Set();
-    const toCreate = pending.filter(item => {
+    const toCreate = nonSkillPending.filter(item => {
         const key = `${item.type}:${item.name.toLowerCase()}`;
         if (dedupe.has(key)) return false;
         dedupe.add(key);
@@ -557,8 +841,13 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     if (toCreate.length) {
         await actor.createEmbeddedDocuments("Item", toCreate);
     }
-    if (skillUpdates.length) {
-        await actor.updateEmbeddedDocuments("Item", skillUpdates);
+    if (skippedTalents.length) {
+        const details = skippedTalents.slice(0, 3).join(" | ");
+        ui.notifications.warn(game.i18n.format("LAUNDRY.TalentPrereqSkipped", {
+            count: skippedTalents.length,
+            details
+        }));
+        console.warn("Laundry RPG | Skipped talents due to unmet prerequisites:", skippedTalents);
     }
 
     ui.notifications.info(game.i18n.format("LAUNDRY.AgentInitialized", { assignment: assignment.name }));
@@ -862,4 +1151,62 @@ function _findCompendiumMatch(index, name) {
 
 function _stripHtml(value) {
     return String(value ?? "").replace(/(<([^>]+)>)/gi, "").trim();
+}
+
+function _normalizeProfileDraft(input) {
+    const source = input && typeof input === "object" ? input : {};
+    return {
+        codename: String(source.codename ?? "").trim(),
+        background: String(source.background ?? "").trim(),
+        coverIdentity: String(source.coverIdentity ?? "").trim(),
+        shortGoal: String(source.shortGoal ?? "").trim(),
+        longGoal: String(source.longGoal ?? "").trim(),
+        notableIncident: String(source.notableIncident ?? "").trim(),
+        personalNotes: String(source.personalNotes ?? "").trim(),
+        preview: String(source.preview ?? "").trim()
+    };
+}
+
+function _buildBiographyDraftText({ actorName = "", assignmentName = "", profile = {} } = {}) {
+    const safeProfile = _normalizeProfileDraft(profile);
+    const lines = [];
+    const displayName = actorName || "Unnamed Agent";
+    const codename = safeProfile.codename
+        ? `${displayName} (${safeProfile.codename})`
+        : displayName;
+
+    lines.push(`${codename} serves with The Laundry.`);
+    if (assignmentName) {
+        lines.push(`Current assignment: ${assignmentName}.`);
+    }
+    if (safeProfile.background) {
+        lines.push(`Background: ${safeProfile.background}.`);
+    }
+    if (safeProfile.coverIdentity) {
+        lines.push(`Cover identity: ${safeProfile.coverIdentity}.`);
+    }
+    if (safeProfile.shortGoal) {
+        lines.push(`Short-term objective: ${safeProfile.shortGoal}.`);
+    }
+    if (safeProfile.longGoal) {
+        lines.push(`Long-term objective: ${safeProfile.longGoal}.`);
+    }
+    if (safeProfile.notableIncident) {
+        lines.push(`Notable incident: ${safeProfile.notableIncident}.`);
+    }
+    if (safeProfile.personalNotes) {
+        lines.push(`Additional notes: ${safeProfile.personalNotes}.`);
+    }
+    if (!lines.length) return "";
+    return lines.join("\n");
+}
+
+function _biographyTextToHtml(text) {
+    const normalized = String(text ?? "").trim();
+    if (!normalized) return "";
+    const safe = _escapeHtml(normalized);
+    return safe
+        .split(/\n{2,}/)
+        .map(block => `<p>${block.replace(/\n/g, "<br />")}</p>`)
+        .join("");
 }

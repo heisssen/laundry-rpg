@@ -16,9 +16,40 @@
     <section class="gm-tracker-block">
         <h3>{{localize "LAUNDRY.GMQuickActions"}}</h3>
         <button type="button" class="award-luck">{{localize "LAUNDRY.AwardLuckAll"}}</button>
+        <button type="button" class="max-adrenaline">{{localize "LAUNDRY.MaxAdrenalineAll"}}</button>
         <button type="button" class="request-bau" {{#unless hasTarget}}disabled{{/unless}}>
             {{localize "LAUNDRY.RequestBAU"}}
         </button>
+        <button type="button" class="open-rules">{{localize "LAUNDRY.OpenRulesDossier"}}</button>
+        <button type="button" class="open-spells">{{localize "LAUNDRY.OpenSpellsCompendium"}}</button>
         <p class="notes">{{localize "LAUNDRY.Target"}}: <strong>{{targetName}}</strong></p>
+    </section>
+
+    <section class="gm-tracker-block">
+        <h3>{{localize "LAUNDRY.PCResourceBoard"}}</h3>
+        {{#if hasPcs}}
+        <div class="gm-pc-board">
+            {{#each pcs as |pc|}}
+            <div class="gm-pc-row" data-actor-id="{{pc.id}}">
+                <div class="gm-pc-name">{{pc.name}}</div>
+                <div class="gm-pc-resources">
+                    <span class="gm-pc-stat">ADR {{pc.adrenalineValue}}/{{pc.adrenalineMax}}</span>
+                    <button type="button" class="pc-adjust" data-actor-id="{{pc.id}}" data-resource="adrenaline" data-delta="-1">-ADR</button>
+                    <button type="button" class="pc-adjust" data-actor-id="{{pc.id}}" data-resource="adrenaline" data-delta="1">+ADR</button>
+                    <span class="gm-pc-stat">INJ {{pc.injuriesValue}}/{{pc.injuriesMax}}</span>
+                    <button type="button" class="pc-adjust" data-actor-id="{{pc.id}}" data-resource="injuries" data-delta="-1">-INJ</button>
+                    <button type="button" class="pc-adjust" data-actor-id="{{pc.id}}" data-resource="injuries" data-delta="1">+INJ</button>
+                </div>
+                <div class="gm-pc-actions">
+                    <button type="button" class="pc-bau" data-actor-id="{{pc.id}}">BAU</button>
+                    <button type="button" class="pc-kpi-ping" data-actor-id="{{pc.id}}">{{localize "LAUNDRY.KPIPing"}} ({{pc.kpiOpen}})</button>
+                    <button type="button" class="pc-open-sheet" data-actor-id="{{pc.id}}">{{localize "LAUNDRY.OpenDossier"}}</button>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+        {{else}}
+        <p class="notes">{{localize "LAUNDRY.NoPlayerCharacters"}}</p>
+        {{/if}}
     </section>
 </form>

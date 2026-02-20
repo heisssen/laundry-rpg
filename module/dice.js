@@ -372,10 +372,29 @@ function _renderDiceContent(state) {
 function _buildOutcome(state, results) {
     const successes = results.filter(r => r.success).length;
     const complexity = Math.max(1, Number(state.complexity ?? 1) || 1);
+    const margin = successes - complexity;
+
+    if (margin < 0) {
+        return {
+            label: game.i18n.localize("LAUNDRY.Failure"),
+            cssClass: "outcome-failure",
+            successes,
+            complexity
+        };
+    }
+
+    if (margin === 0) {
+        return {
+            label: game.i18n.localize("LAUNDRY.MarginalSuccess"),
+            cssClass: "outcome-marginal",
+            successes,
+            complexity
+        };
+    }
 
     return {
-        label: successes >= complexity ? game.i18n.localize("LAUNDRY.Success") : game.i18n.localize("LAUNDRY.Failure"),
-        cssClass: successes >= complexity ? "outcome-success" : "outcome-failure",
+        label: game.i18n.localize("LAUNDRY.Success"),
+        cssClass: "outcome-success",
         successes,
         complexity
     };

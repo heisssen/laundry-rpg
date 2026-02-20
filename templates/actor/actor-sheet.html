@@ -151,6 +151,37 @@
 
                 <section class="panel dossier-bio">
                     <h3 class="section-header stamp-red">Biography</h3>
+                    <div class="bio-profile-grid">
+                        <label>
+                            {{localize "LAUNDRY.BioCodename"}}
+                            <input type="text" name="system.details.profile.codename" value="{{system.details.profile.codename}}" />
+                        </label>
+                        <label>
+                            {{localize "LAUNDRY.BioBackground"}}
+                            <input type="text" name="system.details.profile.background" value="{{system.details.profile.background}}" />
+                        </label>
+                        <label>
+                            {{localize "LAUNDRY.BioCoverIdentity"}}
+                            <input type="text" name="system.details.profile.coverIdentity" value="{{system.details.profile.coverIdentity}}" />
+                        </label>
+                        <label>
+                            {{localize "LAUNDRY.BioNotableIncident"}}
+                            <input type="text" name="system.details.profile.notableIncident" value="{{system.details.profile.notableIncident}}" />
+                        </label>
+                        <label>
+                            {{localize "LAUNDRY.BioShortGoal"}}
+                            <input type="text" name="system.details.profile.shortGoal" value="{{system.details.profile.shortGoal}}" />
+                        </label>
+                        <label>
+                            {{localize "LAUNDRY.BioLongGoal"}}
+                            <input type="text" name="system.details.profile.longGoal" value="{{system.details.profile.longGoal}}" />
+                        </label>
+                    </div>
+                    <label class="bio-profile-notes">
+                        {{localize "LAUNDRY.BioNotes"}}
+                        <textarea name="system.details.profile.personalNotes" rows="2">{{system.details.profile.personalNotes}}</textarea>
+                    </label>
+                    <button type="button" class="bio-autofill">{{localize "LAUNDRY.BioAutofill"}}</button>
                     {{editor system.biography target="system.biography" button=true owner=owner editable=editable}}
                 </section>
             </div>
@@ -234,7 +265,14 @@
                             <img src="{{item.img}}" title="{{item.name}}" width="20" height="20" />
                         </div>
                         <h4 class="item-name">{{item.name}}</h4>
-                        <div class="item-detail">{{item.system.requirements}}</div>
+                        <div class="item-detail talent-detail">
+                            <div class="talent-requirements"><strong>{{localize "LAUNDRY.Requirements"}}:</strong> {{item.system.requirements}}</div>
+                            <div class="talent-prereq-line">
+                                <span class="talent-prereq-badge {{item.prereqCss}}" title="{{item.prereqSummary}}">
+                                    {{item.prereqStatusLabel}}
+                                </span>
+                            </div>
+                        </div>
                         <div class="item-controls">
                             <a class="item-control item-edit" title="{{localize 'LAUNDRY.Edit'}}"><i class="fas fa-edit"></i></a>
                             <a class="item-control item-delete" title="{{localize 'LAUNDRY.Delete'}}"><i class="fas fa-trash"></i></a>
@@ -302,29 +340,83 @@
 
         <div class="tab kpis" data-group="primary" data-tab="kpis">
             <section class="panel">
-                <div class="kpi-head">
+                <div class="kpi-head kpi-head-main">
                     <h3 class="section-header stamp-red">{{localize "LAUNDRY.KPIs"}}</h3>
-                    <button type="button" class="kpi-add">{{localize "LAUNDRY.AddKPI"}}</button>
                 </div>
-                <p class="builder-choice-hint">{{localize "LAUNDRY.KPIHint"}}</p>
-                <ol class="items-list compact-list kpi-list">
-                    {{#each kpiEntries as |kpi|}}
-                    <li class="item flexrow kpi-row {{#if kpi.completed}}kpi-completed{{/if}} {{#if kpi.failed}}kpi-failed{{/if}}" data-kpi-index="{{kpi.index}}">
-                        <input type="text" class="kpi-text-input" data-kpi-index="{{kpi.index}}" value="{{kpi.text}}" placeholder="{{localize 'LAUNDRY.KPIPlaceholder'}}" />
-                        <label class="kpi-status">
-                            <input type="checkbox" class="kpi-status-toggle" data-kpi-index="{{kpi.index}}" data-kpi-status="completed" {{#if kpi.completed}}checked{{/if}} />
-                            {{localize "LAUNDRY.Completed"}}
-                        </label>
-                        <label class="kpi-status">
-                            <input type="checkbox" class="kpi-status-toggle" data-kpi-index="{{kpi.index}}" data-kpi-status="failed" {{#if kpi.failed}}checked{{/if}} />
-                            {{localize "LAUNDRY.Failed"}}
-                        </label>
-                        <a class="item-control kpi-delete" data-kpi-index="{{kpi.index}}" title="{{localize 'LAUNDRY.Delete'}}">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </li>
-                    {{/each}}
-                </ol>
+                <div class="kpi-summary-row">
+                    <span class="kpi-summary-chip">{{localize "LAUNDRY.KPIStatusOpen"}}: <strong>{{kpiSummary.open}}</strong></span>
+                    <span class="kpi-summary-chip">{{localize "LAUNDRY.KPIStatusCompleted"}}: <strong>{{kpiSummary.completed}}</strong></span>
+                    <span class="kpi-summary-chip">{{localize "LAUNDRY.KPIStatusFailed"}}: <strong>{{kpiSummary.failed}}</strong></span>
+                </div>
+                {{#each kpiGroups as |group|}}
+                <div class="kpi-group">
+                    <div class="kpi-group-head">
+                        <h4>{{group.label}}</h4>
+                        <button type="button" class="kpi-add" data-kpi-horizon="{{group.key}}">{{localize "LAUNDRY.AddKPI"}}</button>
+                    </div>
+                    <ol class="items-list compact-list kpi-list">
+                        {{#each group.entries as |kpi|}}
+                        <li class="item flexrow kpi-row {{kpi.statusCss}}" data-kpi-index="{{kpi.index}}">
+                            <div class="kpi-main">
+                                <input
+                                    type="text"
+                                    class="kpi-field kpi-text-input"
+                                    data-kpi-index="{{kpi.index}}"
+                                    data-kpi-key="text"
+                                    value="{{kpi.text}}"
+                                    placeholder="{{localize 'LAUNDRY.KPIPlaceholder'}}"
+                                />
+                                <input
+                                    type="text"
+                                    class="kpi-field kpi-owner-input"
+                                    data-kpi-index="{{kpi.index}}"
+                                    data-kpi-key="owner"
+                                    value="{{kpi.owner}}"
+                                    placeholder="{{localize 'LAUNDRY.KPIOwner'}}"
+                                />
+                            </div>
+                            <div class="kpi-meta">
+                                <label>
+                                    {{localize "LAUNDRY.KPIStatus"}}
+                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="status">
+                                        {{#each @root.kpiOptions.statuses as |option|}}
+                                        <option value="{{option.key}}" {{#if (laundryEq option.key ../status)}}selected{{/if}}>{{option.label}}</option>
+                                        {{/each}}
+                                    </select>
+                                </label>
+                                <label>
+                                    {{localize "LAUNDRY.KPIPriority"}}
+                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="priority">
+                                        {{#each @root.kpiOptions.priorities as |option|}}
+                                        <option value="{{option.key}}" {{#if (laundryEq option.key ../priority)}}selected{{/if}}>{{option.label}}</option>
+                                        {{/each}}
+                                    </select>
+                                </label>
+                                <label>
+                                    {{localize "LAUNDRY.KPIDueDate"}}
+                                    <input type="date" class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="dueDate" value="{{kpi.dueDate}}" />
+                                </label>
+                                <label>
+                                    {{localize "LAUNDRY.KPIProgress"}}
+                                    <input type="number" min="0" max="100" class="kpi-field kpi-progress-input" data-kpi-index="{{kpi.index}}" data-kpi-key="progress" value="{{kpi.progress}}" />
+                                </label>
+                                <label>
+                                    {{localize "LAUNDRY.KPIType"}}
+                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="horizon">
+                                        {{#each @root.kpiOptions.horizons as |option|}}
+                                        <option value="{{option.key}}" {{#if (laundryEq option.key ../horizon)}}selected{{/if}}>{{option.label}}</option>
+                                        {{/each}}
+                                    </select>
+                                </label>
+                            </div>
+                            <a class="item-control kpi-delete" data-kpi-index="{{kpi.index}}" title="{{localize 'LAUNDRY.Delete'}}">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </li>
+                        {{/each}}
+                    </ol>
+                </div>
+                {{/each}}
             </section>
         </div>
 

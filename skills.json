@@ -1,0 +1,146 @@
+[
+  {
+    "name": "Academics",
+    "type": "skill",
+    "img": "icons/sundries/books/book-open-blue.webp",
+    "system": { "description": "<p>Research, scholarship, and formal study.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Athletics",
+    "type": "skill",
+    "img": "icons/skills/movement/figure-running-gray.webp",
+    "system": { "description": "<p>Running, climbing, and physical exertion.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Awareness",
+    "type": "skill",
+    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "system": { "description": "<p>Perception, situational awareness, and noticing detail.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Bureaucracy",
+    "type": "skill",
+    "img": "icons/sundries/documents/document-sealed-red-white.webp",
+    "system": { "description": "<p>Forms, policy, and institutional procedure.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Close Combat",
+    "type": "skill",
+    "img": "icons/skills/melee/strike-sword-blood-red.webp",
+    "system": { "description": "<p>Melee fighting, brawling, and close-quarters weapon use.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Computers",
+    "type": "skill",
+    "img": "icons/sundries/books/book-digital.webp",
+    "system": { "description": "<p>Programming, digital operations, and computer security.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Dexterity",
+    "type": "skill",
+    "img": "icons/skills/trades/hand-blue-steel.webp",
+    "system": { "description": "<p>Manual precision, sleight of hand, and fine control.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Engineering",
+    "type": "skill",
+    "img": "icons/tools/hand/wrench-metal-silver.webp",
+    "system": { "description": "<p>Mechanical systems, repairs, and technical builds.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Fast Talk",
+    "type": "skill",
+    "img": "icons/skills/social/diplomacy-handshake.webp",
+    "system": { "description": "<p>Bluffing, persuasion, and social maneuvering.</p>", "attribute": "spirit", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Fortitude",
+    "type": "skill",
+    "img": "icons/skills/wounds/injury-arm-bandaged.webp",
+    "system": { "description": "<p>Stamina, pain tolerance, and bodily resilience.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Intuition",
+    "type": "skill",
+    "img": "icons/magic/perception/orb-crystal-ball-scrying.webp",
+    "system": { "description": "<p>Instinct, insight, and reading a situation quickly.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Magic",
+    "type": "skill",
+    "img": "icons/magic/symbols/runes-star-blue.webp",
+    "system": { "description": "<p>Occult practice, ritual technique, and spell control.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Medicine",
+    "type": "skill",
+    "img": "icons/skills/wounds/anatomy-organ-heart-red.webp",
+    "system": { "description": "<p>Triage, diagnosis, and emergency treatment.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Might",
+    "type": "skill",
+    "img": "icons/skills/strength/arm-flex-biceps-blue.webp",
+    "system": { "description": "<p>Raw strength, lifting, and overpowering force.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Occult",
+    "type": "skill",
+    "img": "icons/magic/symbols/pentagram-hex.webp",
+    "system": { "description": "<p>Esoteric lore, entities, and supernatural phenomena.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Presence",
+    "type": "skill",
+    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "system": { "description": "<p>Commanding attention, confidence, and force of personality.</p>", "attribute": "spirit", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Ranged",
+    "type": "skill",
+    "img": "icons/skills/targeting/crosshair-pointed-orange.webp",
+    "system": { "description": "<p>Firearms, ranged weapons, and precision at distance.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Reflexes",
+    "type": "skill",
+    "img": "icons/skills/movement/arrow-upward-blue.webp",
+    "system": { "description": "<p>Reaction time, dodging, and rapid motor response.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Resolve",
+    "type": "skill",
+    "img": "icons/skills/toxins/symbol-poison-drop-skull-green.webp",
+    "system": { "description": "<p>Mental endurance, willpower, and emotional control.</p>", "attribute": "spirit", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Science",
+    "type": "skill",
+    "img": "icons/tools/laboratory/flask-round-blue-red.webp",
+    "system": { "description": "<p>Scientific method, experimentation, and analysis.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Stealth",
+    "type": "skill",
+    "img": "icons/skills/movement/figure-stealth-gray.webp",
+    "system": { "description": "<p>Concealment, infiltration, and moving unseen.</p>", "attribute": "body", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Survival",
+    "type": "skill",
+    "img": "icons/environment/wilderness/campfire.webp",
+    "system": { "description": "<p>Navigation, fieldcraft, and harsh-environment living.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Technology",
+    "type": "skill",
+    "img": "icons/tools/smithing/metal-triangle.webp",
+    "system": { "description": "<p>Applied tech, operational systems, and hardware use.</p>", "attribute": "mind", "training": 0, "focus": 0 }
+  },
+  {
+    "name": "Zeal",
+    "type": "skill",
+    "img": "icons/magic/light/explosion-star-glow-blue.webp",
+    "system": { "description": "<p>Conviction, fervor, and unshakable commitment.</p>", "attribute": "spirit", "training": 0, "focus": 0 }
+  }
+]

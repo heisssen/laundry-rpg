@@ -9,66 +9,128 @@
     </header>
 
     {{#if hasAssignments}}
-    <div class="builder-field">
-        <label for="assignment-select">{{localize "LAUNDRY.Assignment"}}</label>
-        <select name="assignment" id="assignment-select" required>
-            <option value="">{{localize "LAUNDRY.SelectAssignment"}}</option>
-            {{#each assignments as |assignment|}}
-            <option value="{{assignment.id}}">
-                {{assignment.name}} (B{{assignment.attributes.body}} / M{{assignment.attributes.mind}} / S{{assignment.attributes.spirit}})
-            </option>
-            {{/each}}
-        </select>
-    </div>
-
-    <div class="builder-selection-grid">
-        <section class="builder-choice-group">
-            <div class="builder-choice-head">
-                <h3>{{localize "LAUNDRY.OptionalSkills"}}</h3>
-                <span class="builder-choice-counter skill-choice-counter">0 selected</span>
+    <div class="builder-layout">
+        <section class="builder-main-column">
+            <div class="builder-field">
+                <label for="assignment-select">{{localize "LAUNDRY.Assignment"}}</label>
+                <select name="assignment" id="assignment-select" required>
+                    <option value="">{{localize "LAUNDRY.SelectAssignment"}}</option>
+                    {{#each assignments as |assignment|}}
+                    <option value="{{assignment.id}}">
+                        {{assignment.name}} (B{{assignment.attributes.body}} / M{{assignment.attributes.mind}} / S{{assignment.attributes.spirit}})
+                    </option>
+                    {{/each}}
+                </select>
             </div>
-            <p class="builder-choice-hint skill-choice-hint">{{localize "LAUNDRY.SelectAssignmentForSkills"}}</p>
-            <div class="builder-choice-list skill-choices">
-                <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
+
+            <div class="builder-preview">
+                <h3>{{localize "LAUNDRY.AssignmentPreview"}}</h3>
+                <p class="preview-description">{{localize "LAUNDRY.SelectAssignmentDetails"}}</p>
+                <div class="preview-attributes">
+                    <span>{{localize "LAUNDRY.Body"}}: <strong class="preview-body">-</strong></span>
+                    <span>{{localize "LAUNDRY.Mind"}}: <strong class="preview-mind">-</strong></span>
+                    <span>{{localize "LAUNDRY.Spirit"}}: <strong class="preview-spirit">-</strong></span>
+                </div>
+                <div class="preview-row"><span>{{localize "LAUNDRY.CoreSkills"}}:</span> <span class="preview-core-skills">-</span></div>
+                <div class="preview-row"><span>{{localize "LAUNDRY.OptionalSkills"}}:</span> <span class="preview-optional-skills">-</span></div>
+                <div class="preview-row"><span>{{localize "LAUNDRY.CoreTalent"}}:</span> <span class="preview-core-talents">-</span></div>
+                <div class="preview-row"><span>{{localize "LAUNDRY.OptionalTalents"}}:</span> <span class="preview-optional-talents">-</span></div>
+                <div class="preview-row"><span>{{localize "LAUNDRY.Equipment"}}:</span> <span class="preview-equipment">-</span></div>
+            </div>
+
+            <div class="builder-selection-grid">
+                <section class="builder-choice-group">
+                    <div class="builder-choice-head">
+                        <h3>{{localize "LAUNDRY.OptionalSkills"}}</h3>
+                        <span class="builder-choice-counter skill-choice-counter">0 selected</span>
+                    </div>
+                    <p class="builder-choice-hint skill-choice-hint">{{localize "LAUNDRY.SelectAssignmentForSkills"}}</p>
+                    <div class="builder-choice-list skill-choices">
+                        <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
+                    </div>
+                </section>
+
+                <section class="builder-choice-group">
+                    <div class="builder-choice-head">
+                        <h3>{{localize "LAUNDRY.OptionalTalents"}}</h3>
+                        <span class="builder-choice-counter talent-choice-counter">0 selected</span>
+                    </div>
+                    <p class="builder-choice-hint talent-choice-hint">{{localize "LAUNDRY.SelectAssignmentForTalents"}}</p>
+                    <div class="builder-choice-list talent-choices">
+                        <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
+                    </div>
+                </section>
             </div>
         </section>
 
-        <section class="builder-choice-group">
-            <div class="builder-choice-head">
-                <h3>{{localize "LAUNDRY.OptionalTalents"}}</h3>
-                <span class="builder-choice-counter talent-choice-counter">0 selected</span>
-            </div>
-            <p class="builder-choice-hint talent-choice-hint">{{localize "LAUNDRY.SelectAssignmentForTalents"}}</p>
-            <div class="builder-choice-list talent-choices">
-                <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
-            </div>
+        <section class="builder-side-column">
+            <section class="builder-choice-group skill-allocation-group">
+                <div class="builder-choice-head">
+                    <h3>{{localize "LAUNDRY.SkillAllocation"}}</h3>
+                    <span class="builder-choice-counter skill-xp-counter">{{localize "LAUNDRY.SkillXpCounter" used=0 max=0}}</span>
+                </div>
+                <p class="builder-choice-hint">{{localize "LAUNDRY.SkillAllocationHint"}}</p>
+                <div class="skill-preset-row">
+                    <label for="skill-preset-select">{{localize "LAUNDRY.SkillPreset"}}</label>
+                    <select id="skill-preset-select" class="skill-preset-select">
+                        <option value="manual">{{localize "LAUNDRY.SkillPresetManual"}}</option>
+                        <option value="balanced">{{localize "LAUNDRY.SkillPresetBalanced"}}</option>
+                        <option value="focused">{{localize "LAUNDRY.SkillPresetFocused"}}</option>
+                        <option value="bureau">{{localize "LAUNDRY.SkillPresetBureau"}}</option>
+                    </select>
+                    <button type="button" class="apply-skill-preset">{{localize "LAUNDRY.ApplyPreset"}}</button>
+                </div>
+                <div class="skill-allocation-list">
+                    <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
+                </div>
+            </section>
+
+            <section class="builder-choice-group bio-draft-group">
+                <div class="builder-choice-head">
+                    <h3>{{localize "LAUNDRY.BioDraftTitle"}}</h3>
+                </div>
+                <p class="builder-choice-hint">{{localize "LAUNDRY.BioDraftHint"}}</p>
+                <div class="bio-draft-grid">
+                    <label>
+                        {{localize "LAUNDRY.BioCodename"}}
+                        <input type="text" name="bioCodename" value="{{profile.codename}}" />
+                    </label>
+                    <label>
+                        {{localize "LAUNDRY.BioBackground"}}
+                        <input type="text" name="bioBackground" value="{{profile.background}}" />
+                    </label>
+                    <label>
+                        {{localize "LAUNDRY.BioCoverIdentity"}}
+                        <input type="text" name="bioCoverIdentity" value="{{profile.coverIdentity}}" />
+                    </label>
+                    <label>
+                        {{localize "LAUNDRY.BioNotableIncident"}}
+                        <input type="text" name="bioNotableIncident" value="{{profile.notableIncident}}" />
+                    </label>
+                    <label>
+                        {{localize "LAUNDRY.BioShortGoal"}}
+                        <input type="text" name="bioShortGoal" value="{{profile.shortGoal}}" />
+                    </label>
+                    <label>
+                        {{localize "LAUNDRY.BioLongGoal"}}
+                        <input type="text" name="bioLongGoal" value="{{profile.longGoal}}" />
+                    </label>
+                </div>
+                <label class="bio-draft-notes">
+                    {{localize "LAUNDRY.BioNotes"}}
+                    <textarea name="bioNotes" rows="3">{{profile.personalNotes}}</textarea>
+                </label>
+                <div class="bio-draft-actions">
+                    <button type="button" class="builder-generate-bio">{{localize "LAUNDRY.BioGenerate"}}</button>
+                    <label><input type="checkbox" name="applyBiography" checked /> {{localize "LAUNDRY.BioApplyToSheet"}}</label>
+                    <label><input type="checkbox" name="overwriteBiography" /> {{localize "LAUNDRY.BioOverwrite"}}</label>
+                </div>
+                <label class="bio-draft-preview-wrap">
+                    {{localize "LAUNDRY.BioPreview"}}
+                    <textarea name="bioPreview" rows="8">{{profile.preview}}</textarea>
+                </label>
+            </section>
         </section>
-    </div>
-
-    <section class="builder-choice-group skill-allocation-group">
-        <div class="builder-choice-head">
-            <h3>{{localize "LAUNDRY.SkillAllocation"}}</h3>
-            <span class="builder-choice-counter skill-xp-counter">{{localize "LAUNDRY.SkillXpCounter" used=0 max=0}}</span>
-        </div>
-        <p class="builder-choice-hint">{{localize "LAUNDRY.SkillAllocationHint"}}</p>
-        <div class="skill-allocation-list">
-            <p class="builder-choice-empty">{{localize "LAUNDRY.SelectAssignmentFirst"}}</p>
-        </div>
-    </section>
-
-    <div class="builder-preview">
-        <h3>{{localize "LAUNDRY.AssignmentPreview"}}</h3>
-        <p class="preview-description">{{localize "LAUNDRY.SelectAssignmentDetails"}}</p>
-        <div class="preview-attributes">
-            <span>{{localize "LAUNDRY.Body"}}: <strong class="preview-body">-</strong></span>
-            <span>{{localize "LAUNDRY.Mind"}}: <strong class="preview-mind">-</strong></span>
-            <span>{{localize "LAUNDRY.Spirit"}}: <strong class="preview-spirit">-</strong></span>
-        </div>
-        <div class="preview-row"><span>{{localize "LAUNDRY.CoreSkills"}}:</span> <span class="preview-core-skills">-</span></div>
-        <div class="preview-row"><span>{{localize "LAUNDRY.OptionalSkills"}}:</span> <span class="preview-optional-skills">-</span></div>
-        <div class="preview-row"><span>{{localize "LAUNDRY.CoreTalent"}}:</span> <span class="preview-core-talents">-</span></div>
-        <div class="preview-row"><span>{{localize "LAUNDRY.OptionalTalents"}}:</span> <span class="preview-optional-talents">-</span></div>
-        <div class="preview-row"><span>{{localize "LAUNDRY.Equipment"}}:</span> <span class="preview-equipment">-</span></div>
     </div>
 
     <div class="builder-actions">

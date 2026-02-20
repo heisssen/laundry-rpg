@@ -33,6 +33,16 @@ SKILLS = [
     ("Zeal", "spirit"),
 ]
 
+DEFAULT_ICON_BY_TYPE = {
+    "skill": "icons/svg/book.svg",
+    "talent": "icons/svg/aura.svg",
+    "assignment": "icons/sundries/documents/document-sealed-red-white.webp",
+    "weapon": "icons/weapons/swords/sword-steel.webp",
+    "armour": "icons/equipment/chest/breastplate-layered-steel-black.webp",
+    "gear": "icons/svg/item-bag.svg",
+    "spell": "icons/svg/explosion.svg"
+}
+
 
 def _stable_id(item_type: str, name: str, size: int = 16) -> str:
     seed = f"{item_type}:{name}".encode("utf-8")
@@ -42,12 +52,13 @@ def _stable_id(item_type: str, name: str, size: int = 16) -> str:
 def _normalize_item(item: dict) -> dict:
     item_type = item["type"]
     item_name = item["name"]
+    image = str(item.get("img") or "").strip() or DEFAULT_ICON_BY_TYPE.get(item_type, "icons/svg/item-bag.svg")
     out = {
         "_id": item.get("_id") or _stable_id(item_type, item_name),
         "name": item_name,
         "type": item_type,
-        "img": item.get("img", "icons/svg/item-bag.svg"),
-        "system": item.get("system", {}),
+        "img": image,
+        "system": _normalize_system(item_type, item.get("system", {})),
         "effects": [],
         "flags": {},
     }
@@ -63,6 +74,59 @@ def _write_jsonl(path: Path, docs: list[dict]) -> None:
 def _read_source(name: str) -> list[dict]:
     with (ROOT / name).open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _normalize_system(item_type: str, system: dict) -> dict:
+    src = system if isinstance(system, dict) else {}
+    out = json.loads(json.dumps(src))
+
+    if item_type == "skill":
+        out["attribute"] = str(out.get("attribute") or "mind").lower()
+        if out["attribute"] not in {"body", "mind", "spirit"}:
+            out["attribute"] = "mind"
+        out["training"] = max(0, int(out.get("training", 0) or 0))
+        out["focus"] = max(0, int(out.get("focus", 0) or 0))
+        out["description"] = str(out.get("description") or "").strip()
+    elif item_type == "talent":
+        out["requirements"] = str(out.get("requirements") or "None").strip() or "None"
+        out["description"] = str(out.get("description") or "").strip()
+    elif item_type == "assignment":
+        attrs = out.get("attributes", {}) if isinstance(out.get("attributes"), dict) else {}
+        raw_skill_xp = out.get("skillXP", 12)
+        raw_talent_choices = out.get("talentChoices", 2)
+        out["attributes"] = {
+            "body": int(attrs.get("body", 1) or 1),
+            "mind": int(attrs.get("mind", 1) or 1),
+            "spirit": int(attrs.get("spirit", 1) or 1)
+        }
+        out["skillXP"] = max(0, int(12 if raw_skill_xp in (None, "") else raw_skill_xp))
+        out["talentChoices"] = max(0, int(2 if raw_talent_choices in (None, "") else raw_talent_choices))
+        for key in ("description", "coreSkills", "coreSkill", "skillOptions", "coreTalent", "talents", "equipment"):
+            out[key] = str(out.get(key) or "").strip()
+    elif item_type == "weapon":
+        out["description"] = str(out.get("description") or "").strip()
+        out["damage"] = str(out.get("damage") or "1d6").strip()
+        out["range"] = str(out.get("range") or "Close").strip()
+        out["skill"] = str(out.get("skill") or "Close Combat").strip()
+        out["traits"] = str(out.get("traits") or "").strip()
+        out["equipped"] = bool(out.get("equipped", False))
+    elif item_type == "armour":
+        out["description"] = str(out.get("description") or "").strip()
+        out["protection"] = max(0, int(out.get("protection", 0) or 0))
+        out["traits"] = str(out.get("traits") or "").strip()
+        out["equipped"] = bool(out.get("equipped", False))
+    elif item_type == "spell":
+        out["description"] = str(out.get("description") or "").strip()
+        out["level"] = max(1, int(out.get("level", 1) or 1))
+        out["castingTime"] = str(out.get("castingTime") or "").strip()
+        out["dn"] = max(2, min(6, int(out.get("dn", 4) or 4)))
+        out["complexity"] = max(1, int(out.get("complexity", out["level"]) or out["level"]))
+        out["target"] = str(out.get("target") or "").strip()
+        out["range"] = str(out.get("range") or "").strip()
+        out["duration"] = str(out.get("duration") or "").strip()
+        out["school"] = str(out.get("school") or "").strip()
+
+    return out
 
 
 def _parse_csv(value) -> list[str]:
@@ -169,6 +233,11 @@ def build_armour() -> list[dict]:
 
 
 def build_skills() -> list[dict]:
+    skills_path = ROOT / "skills.json"
+    if skills_path.exists():
+        data = _read_source("skills.json")
+        return [_normalize_item(item) for item in data]
+
     docs = []
     for name, attribute in SKILLS:
         docs.append(
@@ -176,7 +245,7 @@ def build_skills() -> list[dict]:
                 "_id": _stable_id("skill", name),
                 "name": name,
                 "type": "skill",
-                "img": "icons/svg/book.svg",
+                "img": DEFAULT_ICON_BY_TYPE["skill"],
                 "system": {
                     "description": "",
                     "attribute": attribute,
@@ -187,6 +256,61 @@ def build_skills() -> list[dict]:
                 "flags": {},
             }
         )
+    return docs
+
+
+def build_spells() -> list[dict]:
+    path = ROOT / "spells.json"
+    if not path.exists():
+        return []
+    data = _read_source("spells.json")
+    return [_normalize_item(item) for item in data]
+
+
+def build_rules_journal() -> list[dict]:
+    path = ROOT / "gm.json"
+    if not path.exists():
+        return []
+
+    data = _read_source("gm.json")
+    if not isinstance(data, list):
+        return []
+
+    docs: list[dict] = []
+    for idx, entry in enumerate(data):
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+        content = str(entry.get("content") or "").strip()
+        page_id = _stable_id("rule-page", name)
+        docs.append({
+            "_id": _stable_id("rule", name),
+            "name": name,
+            "pages": [
+                {
+                    "_id": page_id,
+                    "name": name,
+                    "type": "text",
+                    "text": {
+                        "format": 1,
+                        "content": content
+                    },
+                    "title": {
+                        "show": True,
+                        "level": 1
+                    },
+                    "sort": 0,
+                    "flags": {}
+                }
+            ],
+            "folder": None,
+            "sort": idx * 1000,
+            "ownership": {"default": 2},
+            "flags": {}
+        })
+
     return docs
 
 
@@ -202,6 +326,8 @@ def main() -> None:
         "weapons.db": build_weapons(),
         "armour.db": build_armour(),
         "skills.db": build_skills(),
+        "spells.db": build_spells(),
+        "rules.db": build_rules_journal(),
     }
 
     for filename, docs in outputs.items():

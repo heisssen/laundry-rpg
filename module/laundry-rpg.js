@@ -97,7 +97,9 @@ Hooks.once("init", async function () {
     CONFIG.Combat.initiative = foundry.utils.mergeObject(
         CONFIG.Combat.initiative ?? {},
         {
-            formula: "@system.derived.initiative.value",
+            // v12/v13 roll data resolves actor system fields at root by default.
+            // Using @derived... avoids undefined -> 0 rolls.
+            formula: "@derived.initiative.value",
             decimals: 0
         },
         { inplace: false, overwrite: true }
@@ -129,6 +131,7 @@ Hooks.once("init", async function () {
 });
 
 Hooks.once("ready", async function () {
+    await cacheTalentNameIndex();
     if (!game.user.isGM) return;
     try {
         await migrateWorld();
@@ -234,6 +237,20 @@ async function initializeTeamLuckDefaults() {
     if (clampedCurrent !== current) {
         await game.settings.set("laundry-rpg", "teamLuck", clampedCurrent);
     }
+}
+
+async function cacheTalentNameIndex() {
+    const pack = game.packs.get("laundry-rpg.talents");
+    if (!pack) {
+        game.laundry.talentNames = new Set();
+        return;
+    }
+    const index = await pack.getIndex();
+    game.laundry.talentNames = new Set(
+        index
+            .map(entry => String(entry?.name ?? "").trim().toLowerCase())
+            .filter(Boolean)
+    );
 }
 
 function decorateCombatTracker(html) {

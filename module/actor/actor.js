@@ -48,6 +48,8 @@ export class LaundryActor extends Actor {
         const rangedTraining = this._getSkillTraining("Ranged");
         const reflexesTraining = this._getSkillTraining("Reflexes");
         const awarenessTraining = this._getSkillTraining("Awareness");
+        const conditionedToFightCount = this._getTalentCount("Conditioned to Fight");
+        const combatReadyCount = this._getTalentCount("Combat Ready");
 
         // Toughness tracks current value via persisted damage while deriving max from attributes.
         const rawToughnessDamage = Number(sys.derived.toughness.damage ?? 0);
@@ -77,7 +79,13 @@ export class LaundryActor extends Actor {
         const meleeValue = body + closeCombatTraining;
         const accuracyValue = mind + rangedTraining;
         const defenceValue = body + reflexesTraining;
-        const initiativeValue = mind + awarenessTraining + reflexesTraining;
+        const initiativeBaseAttribute = conditionedToFightCount > 0
+            ? Math.max(mind, body)
+            : mind;
+        const initiativeValue = initiativeBaseAttribute
+            + awarenessTraining
+            + reflexesTraining
+            + (combatReadyCount * 2);
         const naturalAwarenessValue = Math.ceil((mind + awarenessTraining) / 2);
         const armourValue = this.items
             .filter(i => i.type === "armour" && i.system?.equipped === true)
@@ -200,13 +208,24 @@ export class LaundryActor extends Actor {
 
     /** @override */
     getRollData() {
-        const data = super.getRollData();
+        const data = foundry.utils.deepClone(super.getRollData() ?? {});
+        const system = foundry.utils.deepClone(this.system ?? {});
+        data.system = system;
+        data.derived = foundry.utils.deepClone(system.derived ?? {});
         return data;
     }
 
     _getSkillTraining(skillName) {
         const skill = this.items.find(i => i.type === "skill" && i.name === skillName);
         return Number(skill?.system?.training ?? 0);
+    }
+
+    _getTalentCount(talentName) {
+        const wanted = String(talentName ?? "").trim().toLowerCase();
+        if (!wanted) return 0;
+        return this.items.filter(i =>
+            i.type === "talent" && String(i.name ?? "").trim().toLowerCase() === wanted
+        ).length;
     }
 
     _getLadderLabel(value) {

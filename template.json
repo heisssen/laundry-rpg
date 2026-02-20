@@ -27,6 +27,15 @@
                     "assignment": "",
                     "department": "",
                     "clearance": "UNCLASSIFIED",
+                    "profile": {
+                        "codename": "",
+                        "background": "",
+                        "coverIdentity": "",
+                        "shortGoal": "",
+                        "longGoal": "",
+                        "notableIncident": "",
+                        "personalNotes": ""
+                    },
                     "xp": {
                         "value": 0,
                         "unspent": 0
