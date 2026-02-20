@@ -85,6 +85,7 @@ export class LaundryCharacterBuilder extends Application {
         html.find("#assignment-select").on("change", (ev) => {
             this._renderAssignmentDetails(ev.currentTarget?.value ?? "");
         });
+        html.on("click", ".builder-tab-btn", (ev) => this._onBuilderTabClick(ev));
         html.on("change", ".builder-choice-input", (ev) => this._onChoiceChanged(ev.currentTarget));
         html.on("change", ".skill-allocation-input", (ev) => this._onSkillAllocationChanged(ev.currentTarget));
         html.find(".apply-skill-preset").on("click", (ev) => this._onApplySkillPreset(ev));
@@ -92,6 +93,56 @@ export class LaundryCharacterBuilder extends Application {
 
         const select = html.find("#assignment-select")[0];
         if (select) this._renderAssignmentDetails(select.value);
+        this._setBuilderTab("requisition", { force: true });
+        this._syncBuilderTabState(this._getSelectedAssignment());
+    }
+
+    _onBuilderTabClick(ev) {
+        ev.preventDefault();
+        const tab = String(ev.currentTarget?.dataset?.builderTab ?? "").trim();
+        this._setBuilderTab(tab);
+    }
+
+    _setBuilderTab(tab, { force = false } = {}) {
+        const root = this.element?.[0];
+        if (!root) return;
+
+        const allowed = new Set(["requisition", "training", "dossier"]);
+        const requested = allowed.has(tab) ? tab : "requisition";
+        const btn = root.querySelector(`.builder-tab-btn[data-builder-tab="${requested}"]`);
+        const resolved = (!force && btn?.disabled) ? "requisition" : requested;
+
+        root.dataset.builderTab = resolved;
+        for (const button of root.querySelectorAll(".builder-tab-btn")) {
+            button.classList.toggle("active", button.dataset.builderTab === resolved);
+        }
+        for (const panel of root.querySelectorAll(".builder-tab-panel")) {
+            panel.classList.toggle("active", panel.dataset.builderTab === resolved);
+        }
+    }
+
+    _syncBuilderTabState(assignment) {
+        const root = this.element?.[0];
+        if (!root) return;
+
+        const hasAssignment = Boolean(assignment);
+        for (const button of root.querySelectorAll('.builder-tab-btn[data-builder-tab]')) {
+            const tab = String(button.dataset.builderTab ?? "");
+            if (tab === "requisition") {
+                button.disabled = false;
+                button.classList.remove("is-locked");
+                continue;
+            }
+            button.disabled = !hasAssignment;
+            button.classList.toggle("is-locked", !hasAssignment);
+        }
+
+        if (!hasAssignment) {
+            this._setBuilderTab("requisition", { force: true });
+        } else {
+            const current = String(root.dataset.builderTab ?? "requisition");
+            this._setBuilderTab(current, { force: true });
+        }
     }
 
     async _onSubmit(ev) {
@@ -207,7 +258,9 @@ export class LaundryCharacterBuilder extends Application {
             this._renderChoiceList("talent", [], 0, game.i18n.localize("LAUNDRY.SelectAssignmentFirst"));
             this._updateChoiceCounters({ skillChoiceCount: 0, talentChoiceCount: 0 });
             this._renderSkillAllocation(null);
+            this._syncBuilderTabState(null);
             this._updateBiographyDraftFromSelection({ force: false });
+            this._refreshTalentPrerequisites();
             return;
         }
 
@@ -235,7 +288,9 @@ export class LaundryCharacterBuilder extends Application {
         );
         this._updateChoiceCounters(assignment);
         this._renderSkillAllocation(assignment);
+        this._syncBuilderTabState(assignment);
         this._updateBiographyDraftFromSelection({ force: false });
+        this._refreshTalentPrerequisites();
     }
 
     _renderChoiceList(kind, options, choiceCount, emptyMessage) {
@@ -244,17 +299,25 @@ export class LaundryCharacterBuilder extends Application {
 
         const listEl = root.querySelector(`.${kind}-choices`);
         const hintEl = root.querySelector(`.${kind}-choice-hint`);
-        if (!listEl || !hintEl) return;
+        if (!listEl) return;
 
         if (!options.length) {
             listEl.innerHTML = `<p class="builder-choice-empty">${_escapeHtml(emptyMessage)}</p>`;
-            hintEl.textContent = game.i18n.localize("LAUNDRY.NoSelectionRequired");
+            if (hintEl) hintEl.textContent = game.i18n.localize("LAUNDRY.NoSelectionRequired");
             return;
         }
 
-        hintEl.textContent = choiceCount > 0
-            ? game.i18n.format("LAUNDRY.ChooseN", { count: choiceCount })
-            : game.i18n.localize("LAUNDRY.ChooseAny");
+        if (hintEl) {
+            hintEl.textContent = choiceCount > 0
+                ? game.i18n.format("LAUNDRY.ChooseN", { count: choiceCount })
+                : game.i18n.localize("LAUNDRY.ChooseAny");
+        }
+
+        const assignment = this._getSelectedAssignment();
+        const form = root.querySelector("form");
+        const mockActor = kind === "talent"
+            ? this._buildMockActor(assignment, form)
+            : null;
 
         listEl.innerHTML = options.map(name => {
             if (kind !== "talent") {
@@ -268,7 +331,7 @@ export class LaundryCharacterBuilder extends Application {
                 name,
                 requirements: ""
             };
-            const prereq = evaluateTalentPrerequisites(this.actor, {
+            const prereq = evaluateTalentPrerequisites(mockActor, {
                 name: talentMeta.name,
                 type: "talent",
                 system: {
@@ -318,6 +381,7 @@ export class LaundryCharacterBuilder extends Application {
 
         this._updateChoiceCounters(assignment);
         if (kind === "skill") this._renderSkillAllocation(assignment);
+        this._refreshTalentPrerequisites();
     }
 
     _onApplySkillPreset(ev) {
@@ -380,6 +444,7 @@ export class LaundryCharacterBuilder extends Application {
         }
 
         this._updateSkillXpCounter(assignment);
+        this._refreshTalentPrerequisites();
         if (changed) {
             ui.notifications.info(game.i18n.localize("LAUNDRY.SkillPresetApplied"));
         }
@@ -616,7 +681,10 @@ export class LaundryCharacterBuilder extends Application {
 
         let allocations = this._readSkillAllocations(this.element?.find("form")[0], assignment);
         let used = _calculateSkillXpUsage(allocations, assignment);
-        if (used <= budget) return;
+        if (used <= budget) {
+            this._refreshTalentPrerequisites();
+            return;
+        }
 
         let value = Number(inputEl.value ?? min);
         while (value > min && used > budget) {
@@ -627,10 +695,117 @@ export class LaundryCharacterBuilder extends Application {
         }
 
         this._updateSkillXpCounter(assignment);
+        this._refreshTalentPrerequisites();
         ui.notifications.warn(game.i18n.format("LAUNDRY.SkillXpExceeded", {
             used,
             max: budget
         }));
+    }
+
+    _buildMockActor(assignment, form) {
+        const sourceItems = Array.from(this.actor?.items ?? []);
+        const mockActor = {
+            system: foundry.utils.deepClone(this.actor?.system ?? {}),
+            items: sourceItems.map(item => (
+                typeof item?.toObject === "function"
+                    ? item.toObject()
+                    : foundry.utils.deepClone(item)
+            ))
+        };
+
+        if (!assignment || !form) return mockActor;
+
+        mockActor.system = mockActor.system ?? {};
+        mockActor.system.attributes = mockActor.system.attributes ?? {
+            body: { value: 1 },
+            mind: { value: 1 },
+            spirit: { value: 1 }
+        };
+        mockActor.system.attributes.body = mockActor.system.attributes.body ?? { value: 1 };
+        mockActor.system.attributes.mind = mockActor.system.attributes.mind ?? { value: 1 };
+        mockActor.system.attributes.spirit = mockActor.system.attributes.spirit ?? { value: 1 };
+        mockActor.system.attributes.body.value = Number(assignment.attributes?.body ?? 1);
+        mockActor.system.attributes.mind.value = Number(assignment.attributes?.mind ?? 1);
+        mockActor.system.attributes.spirit.value = Number(assignment.attributes?.spirit ?? 1);
+
+        const allocations = this._readSkillAllocations(form, assignment);
+        const draftSkills = this._getAllocatableSkills(assignment);
+        const coreSkillSet = new Set(
+            (assignment.coreSkills ?? []).map(name => String(name).trim().toLowerCase())
+        );
+
+        for (const skillName of draftSkills) {
+            const key = String(skillName ?? "").trim().toLowerCase();
+            if (!key) continue;
+
+            const isCoreSkill = coreSkillSet.has(key);
+            const alloc = allocations[key] || {
+                training: isCoreSkill ? 1 : 0,
+                focus: isCoreSkill ? 1 : 0
+            };
+
+            mockActor.items.push({
+                type: "skill",
+                name: skillName,
+                system: {
+                    training: Number(alloc.training ?? 0),
+                    focus: Number(alloc.focus ?? 0)
+                }
+            });
+        }
+
+        const chosenTalents = _readCheckedValues(form, "talent");
+        const allTalents = _uniqueList((assignment.coreTalents ?? []).concat(chosenTalents));
+        for (const talentName of allTalents) {
+            mockActor.items.push({
+                type: "talent",
+                name: talentName
+            });
+        }
+
+        return mockActor;
+    }
+
+    _refreshTalentPrerequisites() {
+        const root = this.element?.[0];
+        const form = root?.querySelector("form");
+        const assignment = this._getSelectedAssignment();
+        if (!form || !assignment) return;
+
+        const mockActor = this._buildMockActor(assignment, form);
+        const talentLabels = root.querySelectorAll(".builder-choice-option-talent");
+
+        for (const label of talentLabels) {
+            const input = label.querySelector("input");
+            if (!input) continue;
+
+            const talentName = String(input.value ?? "").trim();
+            if (!talentName) continue;
+
+            const talentMeta = this._talentByName.get(talentName.toLowerCase()) ?? {
+                name: talentName,
+                requirements: ""
+            };
+
+            const prereq = evaluateTalentPrerequisites(mockActor, {
+                name: talentMeta.name,
+                type: "talent",
+                system: { requirements: talentMeta.requirements }
+            });
+
+            const badge = label.querySelector(".talent-prereq-badge");
+            if (badge) {
+                const statusLabel = prereq.status === "unmet"
+                    ? game.i18n.localize("LAUNDRY.PrereqUnmetLabel")
+                    : (prereq.status === "review"
+                        ? game.i18n.localize("LAUNDRY.PrereqReviewLabel")
+                        : game.i18n.localize("LAUNDRY.PrereqMetLabel"));
+                badge.className = `talent-prereq-badge talent-prereq-${prereq.status}`;
+                badge.textContent = statusLabel;
+            }
+
+            label.title = describeTalentPrerequisiteResult(prereq);
+        }
     }
 
     _updateSkillXpCounter(assignment) {

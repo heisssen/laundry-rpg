@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.11.0 - 2026-02-20
+
+### Added
+- Form 2B tabbed workflow (`Requisition`, `Training`, `Dossier`) with progressive disclosure: training and dossier remain locked until an assignment is selected.
+- Real-time talent prerequisite recalculation during character generation based on an in-form mock actor snapshot of current attributes, skill allocations, and selected talents.
+
+### Changed
+- Form 2B visual system redesigned to bureaucratic-minimalist dossier styling: rigid document grid, monochrome stamp buttons, custom checkbox glyphs, and fill-in-the-blanks input treatment.
+- Assignment preview attributes now render as high-contrast document cards for immediate readability.
+- Removed redundant assignment hints in Training sections while preserving selection counters and validation flow.
+
 ## 1.10.0 - 2026-02-20
 
 ### Added
