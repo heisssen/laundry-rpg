@@ -100,7 +100,7 @@ function generateSkills() {
             "_id": createId(),
             "name": s.name,
             "type": "skill",
-            "img": "icons/svg/book.svg",
+            "img": "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
             "system": {
                 "attribute": s.attribute,
                 "training": 0,
@@ -122,7 +122,7 @@ function generateTalents() {
             "_id": createId(),
             "name": t.name,
             "type": "talent",
-            "img": "icons/svg/aura.svg",
+            "img": "systems/laundry-rpg/icons/generated/_defaults/talent.svg",
             "system": {
                 "requirements": "",
                 "description": t.description
@@ -142,7 +142,7 @@ function generateAssignments() {
             "_id": createId(),
             "name": a.name,
             "type": "assignment",
-            "img": "icons/svg/mystery-man.svg",
+            "img": "systems/laundry-rpg/icons/generated/_defaults/assignment.svg",
             "system": a.system,
             "effects": [],
             "flags": {}

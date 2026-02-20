@@ -2,7 +2,7 @@
   {
     "name": "Unarmed Strike",
     "type": "weapon",
-    "img": "icons/skills/melee/unarmed-punch-fist.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/unarmed-strike-5856c5.svg",
     "system": {
       "description": "<p>A basic punch, kick, or headbutt.</p>",
       "damage": "S",
@@ -15,7 +15,7 @@
   {
     "name": "Telescopic Baton",
     "type": "weapon",
-    "img": "icons/weapons/staves/stick-wood.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/telescopic-baton-007695.svg",
     "system": {
       "description": "<p>A standard-issue collapsible baton, easily concealed.</p>",
       "damage": "1d6+1",
@@ -28,7 +28,7 @@
   {
     "name": "Combat Knife",
     "type": "weapon",
-    "img": "icons/weapons/daggers/dagger-straight-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/combat-knife-25217c.svg",
     "system": {
       "description": "<p>A sturdy tactical knife for close encounters.</p>",
       "damage": "1d6+1",
@@ -41,7 +41,7 @@
   {
     "name": "Glock 19 (9mm)",
     "type": "weapon",
-    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/glock-19-9mm-cfa440.svg",
     "system": {
       "description": "<p>The standard issue sidearm for active Laundry operatives.</p>",
       "damage": "2d6",
@@ -54,7 +54,7 @@
   {
     "name": "Taser",
     "type": "weapon",
-    "img": "icons/weapons/guns/gun-pistol-steampunk.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/taser-cc4047.svg",
     "system": {
       "description": "<p>Fires electrified darts to incapacitate targets.</p>",
       "damage": "1d6",
@@ -67,7 +67,7 @@
   {
     "name": "Pepper Spray",
     "type": "weapon",
-    "img": "icons/consumables/potions/potion-tube-corked-red.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/pepper-spray-c5b462.svg",
     "system": {
       "description": "<p>Aerosol spray that irritates eyes and respiratory system.</p>",
       "damage": "1",
@@ -80,7 +80,7 @@
   {
     "name": "Heckler & Koch MP5 (9mm)",
     "type": "weapon",
-    "img": "icons/weapons/guns/gun-blunderbuss-bronze.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/heckler-koch-mp5-9mm-acad9d.svg",
     "system": {
       "description": "<p>A submachine gun used by tactical teams.</p>",
       "damage": "2d6+1",
@@ -93,7 +93,7 @@
   {
     "name": "Remington 870 Shotgun",
     "type": "weapon",
-    "img": "icons/weapons/guns/gun-musket-brown.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/remington-870-shotgun-7f2fea.svg",
     "system": {
       "description": "<p>A pump-action shotgun for breaching and close-quarters stopping power.</p>",
       "damage": "3d6",
@@ -106,7 +106,7 @@
   {
     "name": "L115A3 Sniper Rifle",
     "type": "weapon",
-    "img": "icons/weapons/guns/gun-rifle-scope.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/l115a3-sniper-rifle-5b06ce.svg",
     "system": {
       "description": "<p>A long-range precision rifle for specialist operations.</p>",
       "damage": "3d6+2",
@@ -119,7 +119,7 @@
   {
     "name": "Fragmentation Grenade",
     "type": "weapon",
-    "img": "icons/weapons/explosives/bomb-fuse-short.webp",
+    "img": "systems/laundry-rpg/icons/generated/weapons/fragmentation-grenade-0424a8.svg",
     "system": {
       "description": "<p>Standard explosive device. Thrown to deal area damage.</p>",
       "damage": "4d6",

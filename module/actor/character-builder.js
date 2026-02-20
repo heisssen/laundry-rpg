@@ -1118,7 +1118,7 @@ function _stubSkill(name) {
     return {
         name,
         type: "skill",
-        img: "icons/svg/book.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
         system: { description: "Skill added from Assignment.", attribute: "mind", training: 0, focus: 0 }
     };
 }
@@ -1127,7 +1127,7 @@ function _stubTalent(name) {
     return {
         name,
         type: "talent",
-        img: "icons/svg/upgrade.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/talent.svg",
         system: { description: "Talent added from Assignment.", requirements: "" }
     };
 }
@@ -1136,7 +1136,7 @@ function _stubGear(name) {
     return {
         name,
         type: "gear",
-        img: "icons/svg/item-bag.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
         system: { quantity: 1, weight: 0 }
     };
 }

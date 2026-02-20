@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.9.0 - 2026-02-20
+
+### Added
+- Soulbound-style `Combat` tab on actor sheets with snapshot stats, condition toggles, equipped loadout, quick actions, and core combat skill shortcuts.
+- Condition-aware roll automation: Blinded, Prone, Stunned, and Weakened now apply automatic pool/DN modifiers directly in dice resolution and are shown on chat cards.
+- Smart difficulty defaults for C7d6 Tests:
+  - Skill Tests use preset selectors (`Standard`, `Hard`, `Daunting`, `Opposed`) instead of manual DN/Complexity entry.
+  - Opposed tests now render as success-count comparison rolls for GM adjudication.
+  - Weapon attacks stay automated from The Ladder with fixed Complexity `1`.
+  - Spell rolls now always use the spell item's DN/Complexity directly (no roll config prompt).
+- Full generated icon set for skills, talents, spells, weapons, armour, and assignments in an in-world Laundry dossier style, with system-local paths.
+
+### Changed
+- Release manifests bumped to `1.9.0`.
+- Release zip build now includes generated icon assets for distribution installs.
+
 ## 1.8.0 - 2026-02-20
 
 ### Added

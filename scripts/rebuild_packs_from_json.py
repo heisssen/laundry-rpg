@@ -34,13 +34,13 @@ SKILLS = [
 ]
 
 DEFAULT_ICON_BY_TYPE = {
-    "skill": "icons/svg/book.svg",
-    "talent": "icons/svg/aura.svg",
-    "assignment": "icons/sundries/documents/document-sealed-red-white.webp",
-    "weapon": "icons/weapons/swords/sword-steel.webp",
-    "armour": "icons/equipment/chest/breastplate-layered-steel-black.webp",
-    "gear": "icons/svg/item-bag.svg",
-    "spell": "icons/svg/explosion.svg"
+    "skill": "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
+    "talent": "systems/laundry-rpg/icons/generated/_defaults/talent.svg",
+    "assignment": "systems/laundry-rpg/icons/generated/_defaults/assignment.svg",
+    "weapon": "systems/laundry-rpg/icons/generated/_defaults/weapon.svg",
+    "armour": "systems/laundry-rpg/icons/generated/_defaults/armour.svg",
+    "gear": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "spell": "systems/laundry-rpg/icons/generated/_defaults/spell.svg"
 }
 
 
@@ -52,7 +52,10 @@ def _stable_id(item_type: str, name: str, size: int = 16) -> str:
 def _normalize_item(item: dict) -> dict:
     item_type = item["type"]
     item_name = item["name"]
-    image = str(item.get("img") or "").strip() or DEFAULT_ICON_BY_TYPE.get(item_type, "icons/svg/item-bag.svg")
+    image = str(item.get("img") or "").strip() or DEFAULT_ICON_BY_TYPE.get(
+        item_type,
+        "systems/laundry-rpg/icons/generated/_defaults/gear.svg"
+    )
     out = {
         "_id": item.get("_id") or _stable_id(item_type, item_name),
         "name": item_name,

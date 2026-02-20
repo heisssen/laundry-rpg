@@ -199,7 +199,7 @@ export class LaundryActor extends Actor {
             const equipNames = sys.equipment.split(",").map(e => e.trim()).filter(Boolean);
             const equipItems = equipNames.map(name => ({
                 name, type: "gear",
-                img: "icons/svg/item-bag.svg",
+                img: "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
                 system: { quantity: 1, weight: 0 }
             }));
             if (equipItems.length) await this.createEmbeddedDocuments("Item", equipItems);
@@ -240,7 +240,7 @@ export class LaundryActor extends Actor {
 function _stubSkill(name) {
     return {
         name, type: "skill",
-        img: "icons/svg/book.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
         system: { description: "Skill added from Assignment.", attribute: "mind", training: 1, focus: 0 }
     };
 }
@@ -249,7 +249,7 @@ function _stubTalent(name) {
     return {
         name,
         type: "talent",
-        img: "icons/svg/aura.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/talent.svg",
         system: { requirements: "", description: "Core Talent added from Assignment." }
     };
 }

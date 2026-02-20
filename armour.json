@@ -2,7 +2,7 @@
   {
     "name": "Thick Clothing",
     "type": "armour",
-    "img": "icons/equipment/chest/shirt-collared-brown.webp",
+    "img": "systems/laundry-rpg/icons/generated/armours/thick-clothing-a18768.svg",
     "system": {
       "description": "<p>A heavy leather jacket or winter coat. Offers minimal protection.</p>",
       "protection": 1,
@@ -13,7 +13,7 @@
   {
     "name": "Kevlar Vest",
     "type": "armour",
-    "img": "icons/equipment/chest/breastplate-quilted-grey.webp",
+    "img": "systems/laundry-rpg/icons/generated/armours/kevlar-vest-be3595.svg",
     "system": {
       "description": "<p>Standard covert body armour worn under clothing. Protects against small arms fire.</p>",
       "protection": 2,
@@ -24,7 +24,7 @@
   {
     "name": "Tactical Body Armour",
     "type": "armour",
-    "img": "icons/equipment/chest/breastplate-layered-steel-black.webp",
+    "img": "systems/laundry-rpg/icons/generated/armours/tactical-body-armour-a06a9b.svg",
     "system": {
       "description": "<p>Heavy tactical gear worn by OCCULUS strike teams. Includes ceramic plates.</p>",
       "protection": 4,
@@ -35,7 +35,7 @@
   {
     "name": "Riot Shield",
     "type": "armour",
-    "img": "icons/equipment/shield/heater-steel-grey.webp",
+    "img": "systems/laundry-rpg/icons/generated/armours/riot-shield-8cf9d5.svg",
     "system": {
       "description": "<p>A transparent polycarbonate shield. Requires one hand to use.</p>",
       "protection": 2,
@@ -46,7 +46,7 @@
   {
     "name": "Warded Clothing",
     "type": "armour",
-    "img": "icons/equipment/chest/robe-collared-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/armours/warded-clothing-26f5f3.svg",
     "system": {
       "description": "<p>Specially treated garments woven with conductive threads to protect against computational demonology.</p>",
       "protection": 1,

@@ -56,6 +56,7 @@ export async function rollDice({
     attackMeta = null,
     prompt = true,
     testType = "common",
+    difficultyPreset = "standard",
     rollContext = null
 } = {}) {
     const baseConfig = {
@@ -64,6 +65,9 @@ export async function rollDice({
         complexity: Math.max(1, Number(complexity) || 1),
         shift: _clampShift(difficultyShift),
         testType: testType === "luck" ? "luck" : "common",
+        difficultyPreset: difficultyPreset
+            ? _normalizeDifficultyPreset(difficultyPreset)
+            : _inferDifficultyPreset(_clampDn(dn), Math.max(1, Number(complexity) || 1)),
         preRollLuck: "none"
     };
 
@@ -109,6 +113,7 @@ export async function rollDice({
         targetSnapshot,
         attackMeta,
         isLuckTest,
+        difficultyPreset: configured.difficultyPreset,
         preRollLuckUsed,
         rollContext
     });
@@ -203,22 +208,10 @@ async function _executeRoll({
     targetSnapshot,
     attackMeta,
     isLuckTest,
+    difficultyPreset,
     preRollLuckUsed,
     rollContext
 }) {
-    const effectiveDn = Math.max(2, Math.min(6, (dn || 4) + (shift || 0)));
-
-    let roll = null;
-    let rawDice = [];
-
-    if (preRollLuckUsed) {
-        rawDice = Array.from({ length: pool }, () => 6);
-    } else {
-        roll = new Roll(`${pool}d6`);
-        await roll.evaluate();
-        rawDice = roll.terms[0].results.map(d => d.result);
-    }
-
     const actor = actorId ? game.actors?.get(actorId) : null;
     const normalizedRollContext = _normalizeRollContext({
         rollContext,
@@ -226,13 +219,43 @@ async function _executeRoll({
         focusItemId,
         flavor
     });
+    const target = targetSnapshot || _getPrimaryTargetSnapshot();
+    const targetActor = _resolveTargetActor({
+        targetTokenId: target?.tokenId ?? null,
+        targetActorId: target?.actorId ?? null
+    });
+    const statusMods = isLuckTest
+        ? { shiftDelta: 0, poolDelta: 0, notes: [] }
+        : _getStatusRollModifiers({
+            actor,
+            targetActor,
+            rollContext: normalizedRollContext,
+            isWeaponAttack
+        });
+    const basePool = Math.max(0, Math.trunc(Number(pool) || 0));
+    const adjustedPool = Math.max(1, basePool + Math.trunc(Number(statusMods.poolDelta ?? 0) || 0));
+    const baseShift = _clampShift(shift);
+    const statusShiftDelta = _clampShift(statusMods.shiftDelta ?? 0);
+    const totalShift = isLuckTest ? 0 : _clampShift(baseShift + statusShiftDelta);
+    const effectiveDn = Math.max(2, Math.min(6, (dn || 4) + totalShift));
+
+    let roll = null;
+    let rawDice = [];
+
+    if (preRollLuckUsed) {
+        rawDice = Array.from({ length: adjustedPool }, () => 6);
+    } else {
+        roll = new Roll(`${adjustedPool}d6`);
+        await roll.evaluate();
+        rawDice = roll.terms[0].results.map(d => d.result);
+    }
+
     let focusAvailable = 0;
     if (!isLuckTest && actorId && focusItemId) {
         const focusItem = actor?.items?.get(focusItemId);
         focusAvailable = Number(focusItem?.system?.focus ?? 0);
     }
 
-    const target = targetSnapshot || _getPrimaryTargetSnapshot();
     const damageData = await _evaluateDamage({
         damage,
         isWeaponAttack,
@@ -243,10 +266,18 @@ async function _executeRoll({
     const mishapTriggered = Boolean(normalizedRollContext.isMagic && initialComplications > 0);
 
     const state = {
-        pool,
+        pool: adjustedPool,
+        basePool,
         dn,
         complexity,
-        shift,
+        shift: totalShift,
+        baseShift,
+        statusShiftDelta,
+        statusPoolDelta: Math.trunc(Number(statusMods.poolDelta ?? 0) || 0),
+        statusNotes: Array.isArray(statusMods.notes) ? statusMods.notes : [],
+        difficultyPreset: _normalizeDifficultyPreset(difficultyPreset || _inferDifficultyPreset(dn, complexity)),
+        showDifficultyPreset: !isLuckTest && !isWeaponAttack && !normalizedRollContext.isSpell,
+        isOpposedTest: _normalizeDifficultyPreset(difficultyPreset || _inferDifficultyPreset(dn, complexity)) === "opposed",
         effectiveDn,
         damage: damageData.formula,
         damageBaseTotal: damageData.baseTotal,
@@ -361,6 +392,7 @@ function _renderDiceContent(state) {
 
     const attackMetaSection = _renderAttackMetaSection(state);
     const targetSection = _renderTargetSection(state);
+    const statusSection = _renderStatusModifierSection(state);
     const mishapSection = _renderMishapWarningSection(state, results);
     const damageSection = _renderDamageSection(state);
 
@@ -370,15 +402,25 @@ function _renderDiceContent(state) {
     const focusSection = (state.isLuckTest || state.allowFocusControls === false) ? "" : _renderFocusControls(state);
     const luckSection = _renderLuckControls(state, teamLuck, teamLuckMax);
 
+    const skillPreset = state.showDifficultyPreset ? _getDifficultyPresetLabel(state.difficultyPreset) : "";
+    const presetSuffix = skillPreset ? ` | ${skillPreset}` : "";
+    const opposedSuffix = state.isOpposedTest ? " | Opposed: compare successes with the opposing roll" : "";
+    const poolSuffix = Number(state.statusPoolDelta ?? 0) !== 0
+        ? ` | Pool ${Math.max(0, Number(state.basePool ?? state.pool) || 0)} -> ${Math.max(0, Number(state.pool) || 0)}`
+        : "";
+    const successSummary = state.isOpposedTest
+        ? `(Successes: ${outcome.successes})`
+        : `(Successes: ${outcome.successes}/${outcome.complexity})`;
     const formulaBits = state.isLuckTest
         ? `${state.pool}d6 Luck Test (fixed DN 4:1)`
-        : `${state.pool}d6 vs DN ${state.dn}:${state.complexity} (${shiftLabel} -> effective DN ${state.effectiveDn})`;
+        : `${state.pool}d6 vs DN ${state.dn}:${state.complexity} (${shiftLabel} -> effective DN ${state.effectiveDn})${presetSuffix}${opposedSuffix}${poolSuffix}`;
 
     return `
     <div class="laundry-dice-roll">
         <div class="dice-formula">${formulaBits}</div>
         ${attackMetaSection}
         ${targetSection}
+        ${statusSection}
         ${state.preRollLuckUsed ? '<div class="dice-formula">Luck spent: Maximise Successes (all dice treated as 6).</div>' : ''}
         <ol class="dice-rolls">${diceHtml}</ol>
         <div class="dice-roll-summary">
@@ -390,7 +432,7 @@ function _renderDiceContent(state) {
         ${luckSection}
         <div class="dice-outcome ${outcome.cssClass}">
             <strong>${outcome.label}</strong>
-            <span class="success-count">(Successes: ${outcome.successes}/${outcome.complexity})</span>
+            <span class="success-count">${successSummary}</span>
             ${state.isLuckTest ? "" : `<span class="focus-spent">(Focus used: ${state.focusSpent ?? 0})</span>`}
         </div>
         ${damageSection}
@@ -401,6 +443,15 @@ function _buildOutcome(state, results) {
     const successes = results.filter(r => r.success).length;
     const complexity = Math.max(1, Number(state.complexity ?? 1) || 1);
     const margin = successes - complexity;
+
+    if (state.isOpposedTest) {
+        return {
+            label: "Opposed Roll",
+            cssClass: "outcome-opposed",
+            successes,
+            complexity
+        };
+    }
 
     if (margin < 0) {
         return {
@@ -474,6 +525,21 @@ function _renderTargetSection(state) {
     const count = Math.max(1, Number(state.targetCount ?? 1) || 1);
     const label = count > 1 ? `${targetName} (+${count - 1} more)` : targetName;
     return `<div class="target-section"><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Target"))}:</strong> ${_escapeHtml(label)}</div>`;
+}
+
+function _renderStatusModifierSection(state) {
+    const notes = Array.isArray(state.statusNotes) ? state.statusNotes : [];
+    const poolDelta = Math.trunc(Number(state.statusPoolDelta ?? 0) || 0);
+    const shiftDelta = Math.trunc(Number(state.statusShiftDelta ?? 0) || 0);
+    if (!notes.length && poolDelta === 0 && shiftDelta === 0) return "";
+
+    const parts = [];
+    if (poolDelta !== 0) parts.push(`Pool ${poolDelta > 0 ? "+" : ""}${poolDelta}`);
+    if (shiftDelta !== 0) parts.push(`DN Shift ${shiftDelta > 0 ? "+" : ""}${shiftDelta}`);
+    const compact = parts.length ? ` (${parts.join(", ")})` : "";
+    const noteText = notes.map(note => _escapeHtml(note)).join(" | ");
+
+    return `<div class="status-modifier-section"><strong>Status Automation${compact}:</strong> ${noteText}</div>`;
 }
 
 function _renderMishapWarningSection(state, results) {
@@ -770,6 +836,114 @@ function _countFailureDice(state) {
     return _buildResults(state).filter(r => !r.success).length;
 }
 
+function _normalizeDifficultyPreset(value) {
+    const preset = String(value ?? "").trim().toLowerCase();
+    if (["standard", "hard", "daunting", "opposed"].includes(preset)) return preset;
+    return "standard";
+}
+
+function _getDifficultyPresetData(preset) {
+    switch (_normalizeDifficultyPreset(preset)) {
+        case "hard":
+            return { dn: 4, complexity: 2, label: "Hard (DN 4, Comp 2)" };
+        case "daunting":
+            return { dn: 4, complexity: 3, label: "Daunting (DN 4, Comp 3)" };
+        case "opposed":
+            return { dn: 4, complexity: 1, label: "Opposed (DN 4, Comp 1)" };
+        default:
+            return { dn: 4, complexity: 1, label: "Standard (DN 4, Comp 1)" };
+    }
+}
+
+function _getDifficultyPresetLabel(preset) {
+    return _getDifficultyPresetData(preset).label;
+}
+
+function _inferDifficultyPreset(dn, complexity) {
+    const safeDn = _clampDn(dn);
+    const safeComplexity = Math.max(1, Math.trunc(Number(complexity) || 1));
+    if (safeDn !== 4) return "standard";
+    if (safeComplexity >= 3) return "daunting";
+    if (safeComplexity === 2) return "hard";
+    return "standard";
+}
+
+function _collectActorStatuses(actor) {
+    const statuses = new Set();
+    if (!actor) return statuses;
+    for (const effect of actor.effects ?? []) {
+        const effectStatuses = effect?.statuses instanceof Set
+            ? Array.from(effect.statuses)
+            : Array.isArray(effect?.statuses) ? effect.statuses : [];
+        for (const statusId of effectStatuses) {
+            if (statusId) statuses.add(String(statusId));
+        }
+        const legacyStatus = effect.getFlag?.("core", "statusId");
+        if (legacyStatus) statuses.add(String(legacyStatus));
+    }
+    return statuses;
+}
+
+function _getStatusRollModifiers({ actor, targetActor, rollContext, isWeaponAttack }) {
+    const own = _collectActorStatuses(actor);
+    const target = _collectActorStatuses(targetActor);
+    const notes = [];
+    let shiftDelta = 0;
+    let poolDelta = 0;
+
+    const sourceType = String(rollContext?.sourceType ?? "").toLowerCase();
+    const sourceName = String(rollContext?.sourceName ?? "").toLowerCase();
+    const skillName = String(rollContext?.skillName ?? sourceName).toLowerCase();
+    const attribute = String(rollContext?.attribute ?? "").toLowerCase();
+    const attackMode = String(rollContext?.attackMode ?? "").toLowerCase();
+
+    const isVisionRoll = isWeaponAttack || ["awareness", "ranged", "reflexes", "stealth", "close combat"].includes(skillName);
+    const isMovementRoll = isWeaponAttack || ["athletics", "reflexes", "stealth", "ranged"].includes(skillName);
+    const isBodyRoll = isWeaponAttack
+        || attribute === "body"
+        || sourceType === "attribute" && sourceName === "body"
+        || ["athletics", "might", "fortitude", "close combat", "ranged", "reflexes", "survival", "stealth"].includes(skillName);
+
+    if (own.has("stunned")) {
+        shiftDelta += 1;
+        notes.push("Stunned: +1 DN shift.");
+    }
+
+    if (own.has("blinded") && isVisionRoll) {
+        shiftDelta += 1;
+        notes.push("Blinded: +1 DN shift on vision-dependent actions.");
+    }
+
+    if (own.has("prone") && isMovementRoll) {
+        shiftDelta += 1;
+        notes.push("Prone: +1 DN shift on movement/ranged actions.");
+    }
+
+    if (own.has("weakened") && isBodyRoll) {
+        poolDelta -= 1;
+        notes.push("Weakened: -1 die on Body/physical actions.");
+    }
+
+    if (isWeaponAttack) {
+        if (target.has("stunned")) {
+            shiftDelta -= 1;
+            notes.push("Target Stunned: -1 DN shift.");
+        }
+
+        if (target.has("prone")) {
+            if (attackMode === "melee") {
+                shiftDelta -= 1;
+                notes.push("Target Prone vs melee: -1 DN shift.");
+            } else {
+                shiftDelta += 1;
+                notes.push("Target Prone vs ranged: +1 DN shift.");
+            }
+        }
+    }
+
+    return { shiftDelta, poolDelta, notes };
+}
+
 function _isMishapTriggered(state, results = null) {
     if (state?.isLuckTest) return false;
     if (!state?.rollContext?.isMagic) return false;
@@ -781,6 +955,9 @@ function _isMishapTriggered(state, results = null) {
 function _normalizeRollContext({ rollContext, actor, focusItemId, flavor }) {
     const sourceTypeRaw = String(rollContext?.sourceType ?? "").trim().toLowerCase();
     const sourceName = String(rollContext?.sourceName ?? "").trim();
+    const sourceAttribute = String(rollContext?.attribute ?? "").trim().toLowerCase();
+    const sourceSkillName = String(rollContext?.skillName ?? "").trim();
+    const attackMode = String(rollContext?.attackMode ?? "").trim().toLowerCase();
     let isSpell = Boolean(rollContext?.isSpell || sourceTypeRaw === "spell");
     let isMagic = Boolean(rollContext?.isMagic || isSpell);
 
@@ -796,6 +973,9 @@ function _normalizeRollContext({ rollContext, actor, focusItemId, flavor }) {
     return {
         sourceType: sourceTypeRaw || (isSpell ? "spell" : null),
         sourceName: sourceName || focusItemName || "",
+        attribute: sourceAttribute || "",
+        skillName: sourceSkillName || sourceName || focusItemName || "",
+        attackMode: attackMode || "",
         isSpell,
         isMagic
     };
@@ -841,6 +1021,7 @@ async function _rollInjuryFromButton(ev) {
 
 function _getInjuryOutcome(total) {
     const n = Math.max(0, Math.trunc(Number(total) || 0));
+    if (n <= 1) return "Grazed";
     if (n <= 3) return "Stunned";
     if (n <= 5) return "Bleeding";
     return "Incapacitated / Lethal";
@@ -971,6 +1152,7 @@ async function _evaluateDamage({ damage, isWeaponAttack, actor, damageBonus = 0 
 async function _promptRollConfig(config) {
     const teamLuck = await _getTeamLuck();
     const teamLuckMax = await _getTeamLuckMax();
+    const selectedPreset = _normalizeDifficultyPreset(config.difficultyPreset);
 
     const shiftOpts = [
         { value: "-2", label: "Greater Advantage (-2 DN)" },
@@ -994,12 +1176,14 @@ async function _promptRollConfig(config) {
             <input type="number" name="pool" min="0" value="${Math.max(0, Number(config.pool) || 0)}" />
         </div>
         <div class="form-group">
-            <label>Difficulty (DN)</label>
-            <input type="number" name="dn" min="2" max="6" value="${_clampDn(config.dn)}" />
-        </div>
-        <div class="form-group">
-            <label>Complexity</label>
-            <input type="number" name="complexity" min="1" value="${Math.max(1, Number(config.complexity) || 1)}" />
+            <label>Skill Difficulty Preset</label>
+            <select name="difficultyPreset">
+                <option value="standard" ${selectedPreset === "standard" ? "selected" : ""}>Standard (DN 4, Comp 1)</option>
+                <option value="hard" ${selectedPreset === "hard" ? "selected" : ""}>Hard (DN 4, Comp 2)</option>
+                <option value="daunting" ${selectedPreset === "daunting" ? "selected" : ""}>Daunting (DN 4, Comp 3)</option>
+                <option value="opposed" ${selectedPreset === "opposed" ? "selected" : ""}>Opposed (DN 4, Comp 1)</option>
+            </select>
+            <p class="notes">Opposed: compare successes with the opposing roll.</p>
         </div>
         <div class="form-group">
             <label>Advantage</label>
@@ -1043,17 +1227,24 @@ async function _promptRollConfig(config) {
                                 complexity: 1,
                                 shift: 0,
                                 testType,
+                                difficultyPreset: "standard",
                                 preRollLuck: "none"
                             });
                             return;
                         }
 
+                        const difficultyPreset = _normalizeDifficultyPreset(
+                            root.querySelector('[name="difficultyPreset"]')?.value ?? config.difficultyPreset
+                        );
+                        const presetData = _getDifficultyPresetData(difficultyPreset);
+
                         finish({
                             pool: awaitSafeNumber(root.querySelector('[name="pool"]')?.value, config.pool),
-                            dn: _clampDn(root.querySelector('[name="dn"]')?.value ?? config.dn),
-                            complexity: Math.max(1, awaitSafeNumber(root.querySelector('[name="complexity"]')?.value, config.complexity)),
+                            dn: _clampDn(presetData.dn),
+                            complexity: Math.max(1, awaitSafeNumber(presetData.complexity, config.complexity)),
                             shift: _clampShift(root.querySelector('[name="shift"]')?.value ?? config.shift),
                             testType,
+                            difficultyPreset,
                             preRollLuck: root.querySelector('[name="preRollLuck"]')?.value === "maximize" ? "maximize" : "none"
                         });
                     }

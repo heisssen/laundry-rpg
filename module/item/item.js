@@ -43,6 +43,7 @@ export class LaundryItem extends Item {
             rollContext: {
                 sourceType: "skill",
                 sourceName: this.name,
+                attribute: attrName,
                 isMagic: String(this.name ?? "").trim().toLowerCase() === "magic",
                 isSpell: false
             }
@@ -65,7 +66,7 @@ export class LaundryItem extends Item {
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = linkedSkill?.system.training ?? 0;
         const pool      = attrValue + training;
-        const complexity = Math.max(1, Math.trunc(Number(this.system.complexity ?? 1) || 1));
+        const complexity = 1;
 
         const attackContext = getWeaponAttackContext({
             actor,
@@ -142,6 +143,15 @@ export class LaundryItem extends Item {
                 ladderDelta: attackContext.ladderDelta,
                 focusSpentPreRoll: Boolean(attackSelection.spendFocus),
                 adrenalineSpentPreRoll: Boolean(attackSelection.spendAdrenaline)
+            },
+            rollContext: {
+                sourceType: "weapon",
+                sourceName: this.name,
+                skillName: linkedSkillName,
+                attribute: attrName,
+                attackMode: attackContext.isMelee ? "melee" : "ranged",
+                isMagic: false,
+                isSpell: false
             }
         });
     }
@@ -159,8 +169,11 @@ export class LaundryItem extends Item {
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = magicSkill?.system.training ?? 0;
         const pool      = attrValue + training;
-        const dn        = this.system.dn ?? 4;
-        const complexity = this.system.complexity ?? this.system.level ?? 1;
+        const dn = Math.max(2, Math.min(6, Math.trunc(Number(this.system.dn ?? 4) || 4)));
+        const complexity = Math.max(
+            1,
+            Math.trunc(Number(this.system.complexity ?? this.system.level ?? 1) || 1)
+        );
 
         return rollDice({
             pool,
@@ -169,9 +182,11 @@ export class LaundryItem extends Item {
             flavor: `Cast ${this.name} (Magic — Level ${this.system.level ?? 1}, DN ${dn}:${complexity})`,
             actorId: actor.id,
             focusItemId: magicSkill?.id,
+            prompt: false,
             rollContext: {
                 sourceType: "spell",
                 sourceName: this.name,
+                attribute: attrName,
                 isMagic: true,
                 isSpell: true
             }

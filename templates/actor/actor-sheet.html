@@ -67,6 +67,7 @@
 
     <nav class="sheet-tabs tabs" data-group="primary">
         <a class="item" data-tab="dossier">Dossier</a>
+        <a class="item" data-tab="combat">Combat</a>
         <a class="item" data-tab="skills">Skills &amp; Talents</a>
         <a class="item" data-tab="requisition">Requisition</a>
         <a class="item" data-tab="kpis">{{localize "LAUNDRY.KPIs"}}</a>
@@ -194,6 +195,133 @@
             </div>
         </div>
 
+        <div class="tab combat" data-group="primary" data-tab="combat">
+            <div class="panel-grid combat-panel-grid">
+                <section class="panel">
+                    <h3 class="section-header stamp-red">Combat Snapshot</h3>
+                    <div class="combat-snapshot-grid">
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Toughness"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.toughness.value}} / {{combatSnapshot.toughness.max}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Adrenaline"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.adrenaline.value}} / {{combatSnapshot.adrenaline.max}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Armour"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.armour}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Initiative"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.initiative}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.NaturalAwareness"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.awareness}}</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Melee"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.melee.value}} ({{combatSnapshot.melee.label}})</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Accuracy"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.accuracy.value}} ({{combatSnapshot.accuracy.label}})</span>
+                        </div>
+                        <div class="combat-stat-card">
+                            <span class="combat-stat-label">{{localize "LAUNDRY.Defence"}}</span>
+                            <span class="combat-stat-value">{{combatSnapshot.defence.value}} ({{combatSnapshot.defence.label}})</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h3 class="section-header stamp-red">Conditions</h3>
+                    <div class="combat-status-grid">
+                        {{#each combatConditions as |condition|}}
+                        <button type="button"
+                                class="combat-status-toggle {{#if condition.active}}active{{/if}}"
+                                data-status-id="{{condition.id}}">
+                            <img src="{{condition.img}}" title="{{condition.name}}" width="18" height="18" />
+                            <span>{{condition.name}}</span>
+                        </button>
+                        {{/each}}
+                    </div>
+                    <p class="combat-note">{{combat.conditionSummary}}</p>
+                </section>
+
+                <section class="panel">
+                    <h3 class="section-header stamp-red">Loadout</h3>
+                    {{#if combat.hasLoadout}}
+                    <ol class="items-list compact-list combat-loadout-list">
+                        {{#each combatLoadout.weapons as |item|}}
+                        <li class="item flexrow" data-item-id="{{item._id}}">
+                            <div class="item-image rollable" data-roll-type="item">
+                                <img src="{{item.img}}" title="{{item.name}}" width="20" height="20" />
+                            </div>
+                            <h4 class="item-name rollable" data-roll-type="item">{{item.name}}</h4>
+                            <div class="item-formula">DMG {{item.system.damage}}</div>
+                            <div class="item-formula">{{item.system.traits}}</div>
+                            <div class="item-controls">
+                                <a class="item-control item-equip" title="{{localize 'LAUNDRY.Equip'}}">
+                                    <i class="fas fa-shield-alt"></i>
+                                </a>
+                            </div>
+                        </li>
+                        {{/each}}
+                        {{#each combatLoadout.armour as |item|}}
+                        <li class="item flexrow" data-item-id="{{item._id}}">
+                            <div class="item-image">
+                                <img src="{{item.img}}" title="{{item.name}}" width="20" height="20" />
+                            </div>
+                            <h4 class="item-name">{{item.name}}</h4>
+                            <div class="item-formula">ARM {{item.system.protection}}</div>
+                            <div class="item-formula">{{item.system.traits}}</div>
+                            <div class="item-controls">
+                                <a class="item-control item-equip" title="{{localize 'LAUNDRY.Equip'}}">
+                                    <i class="fas fa-shield-alt"></i>
+                                </a>
+                            </div>
+                        </li>
+                        {{/each}}
+                    </ol>
+                    {{else}}
+                    <p class="combat-note">No equipped weapons or armour. Equip items in Requisition or directly from this tab.</p>
+                    {{/if}}
+                </section>
+
+                <section class="panel">
+                    <h3 class="section-header stamp-red">Quick Actions</h3>
+                    <div class="combat-quick-actions">
+                        <button type="button" class="combat-roll-initiative">Roll Initiative</button>
+                        <button type="button" class="take-breather">Take a Breather</button>
+                        <button type="button" class="standard-rest">Standard Rest</button>
+                        {{#if combat.canEndTurn}}
+                        <button type="button" class="end-turn">{{localize "LAUNDRY.EndTurn"}}</button>
+                        {{/if}}
+                        {{#if combat.canOpenGmTracker}}
+                        <button type="button" class="combat-open-gm-tracker">Open GM Tracker</button>
+                        {{/if}}
+                    </div>
+
+                    <h4 class="combat-subheader">Core Combat Skills</h4>
+                    <div class="combat-skill-grid">
+                        {{#each combatSkills as |skill|}}
+                        <div class="combat-skill-card rollable" data-roll-type="skill" data-skill-name="{{skill.name}}" data-attribute="{{skill.attribute}}">
+                            <img src="{{skill.img}}" title="{{skill.name}}" width="24" height="24" />
+                            <div class="combat-skill-meta">
+                                <strong>{{skill.name}}</strong>
+                                <span>{{skill.attributeLabel}} {{skill.attrValue}} | TR {{skill.training}} / F {{skill.focus}} | LVL {{skill.level}}</span>
+                            </div>
+                        </div>
+                        {{/each}}
+                    </div>
+
+                    <p class="combat-note">{{combat.gmTrackerHint}}</p>
+                </section>
+            </div>
+        </div>
+
         <div class="tab skills" data-group="primary" data-tab="skills">
             <section class="panel">
                 <h3 class="section-header stamp-red">Skills</h3>
@@ -213,7 +341,7 @@
                     {{#each skillRows as |skill|}}
                     <li class="item flexrow skill-row" {{#if skill.itemId}}data-item-id="{{skill.itemId}}"{{/if}}>
                         <div class="item-image rollable" data-roll-type="skill" data-skill-name="{{skill.name}}" data-attribute="{{skill.attribute}}">
-                            <img src="icons/svg/book.svg" title="{{skill.name}}" width="20" height="20" />
+                            <img src="{{skill.img}}" title="{{skill.name}}" width="20" height="20" />
                         </div>
                         <h4 class="item-name rollable" data-roll-type="skill" data-skill-name="{{skill.name}}" data-attribute="{{skill.attribute}}">
                             {{skill.name}}

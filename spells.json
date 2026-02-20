@@ -2,7 +2,7 @@
   {
     "name": "Anti-Magic Ward",
     "type": "spell",
-    "img": "icons/magic/defensive/shield-barrier-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/anti-magic-ward-156ace.svg",
     "system": {
       "description": "<p>The target is immune to all spell effects, both beneficial and harmful, derived from a spell of lower Level than whatever Level the Anti-Magic Wards were cast at. The target is also immune from any magical mishaps caused by a spell of lower Level than their Anti-Magic Ward.</p>",
       "level": 1,
@@ -18,7 +18,7 @@
   {
     "name": "Offensive Ward (Curse)",
     "type": "spell",
-    "img": "icons/magic/symbols/rune-sigma-purple.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/offensive-ward-curse-ff6b4b.svg",
     "system": {
       "description": "<p>A target inflicts an effect on the first Size Average or larger creature that makes contact with the target. The spell emits a loud noise, bellowed instruction, flashing light, or foul smell; the triggering creature gains the Stunned Condition for 1 Round, or as long as they maintain contact with the target.</p>",
       "level": 1,
@@ -34,7 +34,7 @@
   {
     "name": "Dimensional Gateway",
     "type": "spell",
-    "img": "icons/magic/movement/portal-vortex-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/dimensional-gateway-742f02.svg",
     "system": {
       "description": "<p>You create two Large Size gateways — one in the target Zone, and a second one anywhere else you choose within 1 km. For the duration of the spell, if a creature Moves or is Shoved into one of the portals, they immediately reappear out of the other one, ignoring all hazards in between.</p>",
       "level": 1,
@@ -50,7 +50,7 @@
   {
     "name": "Silence Geas",
     "type": "spell",
-    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/silence-geas-3e5f8a.svg",
     "system": {
       "description": "<p>When casting the spell, specify a subject that the target is forbidden from discussing. The target cannot willingly or unwillingly speak, write, record, or otherwise disclose information about the subject for as long as the spell is active.</p>",
       "level": 1,
@@ -66,7 +66,7 @@
   {
     "name": "Astral Projection",
     "type": "spell",
-    "img": "icons/magic/perception/third-eye-blue-red.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/astral-projection-90f682.svg",
     "system": {
       "description": "<p>You project a spirit version of yourself, which appears within Close Range of your now vacant body. Whilst in spirit form, you cannot cast spells, or interact with the physical world in any way — you are silent and invisible, phase through physical objects harmlessly, and Fly at your usual Speed. Your body is Incapacitated until the spell ends.</p>",
       "level": 1,
@@ -82,7 +82,7 @@
   {
     "name": "Detect Magic",
     "type": "spell",
-    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/detect-magic-14ee00.svg",
     "system": {
       "description": "<p>You become immediately aware of any spells currently targeting the individual, or that the target recently cast. The most useful applications of this spell are seeing through Glamour, identifying possessed individuals, and discovering what wards, bindings, curses, and geasa are currently active.</p>",
       "level": 1,
@@ -98,7 +98,7 @@
   {
     "name": "Destiny Entanglement Geas",
     "type": "spell",
-    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/destiny-entanglement-geas-737b46.svg",
     "system": {
       "description": "<p>The targets of the spell now share the same mind, telepathically communicating their surface thoughts to each other over any distance as a Free Action. If one of the targets suffers a Psychological Injury, the other target suffers the same Psychological Injury.</p>",
       "level": 1,
@@ -114,7 +114,7 @@
   {
     "name": "Prognostication",
     "type": "spell",
-    "img": "icons/magic/symbols/star-inverted-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/prognostication-8706ed.svg",
     "system": {
       "description": "<p>When you use this spell, the GM provides you with a prediction that relates in some way to the target's Short-Term Goal or Short-Term KPI. Once in the next 24 hours, when the target is undertaking action that in some way benefits from the knowledge this prediction gave them, they can choose to immediately gain the benefits of spending a point of Luck. Increases Threat by +1.</p>",
       "level": 1,
@@ -130,7 +130,7 @@
   {
     "name": "Psychometry",
     "type": "spell",
-    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/psychometry-7ee99f.svg",
     "system": {
       "description": "<p>This power has two targets — one that's already in Close Range ('the hook') and another that is sympathetically linked in some way ('the catch') but not in the caster's possession. The caster learns the current location of the catch at this precise moment in time.</p>",
       "level": 1,
@@ -146,7 +146,7 @@
   {
     "name": "Binding Geas",
     "type": "spell",
-    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/binding-geas-91e10b.svg",
     "system": {
       "description": "<p>Choose an exonome within Range with a Level equal to or lower than the Level used for the Binding Geas. For the duration of the spell, the target cannot harm you, and must obey any instructions they hear you issue. The spell ends if the target is ordered to do something literally impossible, or that would guarantee destruction.</p>",
       "level": 1,
@@ -162,7 +162,7 @@
   {
     "name": "Energy Transference",
     "type": "spell",
-    "img": "icons/magic/lightning/bolt-strike-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/energy-transference-6720a8.svg",
     "system": {
       "description": "<p>You can fill a Zone, and objects in it, with extra-dimensional energy, or drain energy from the space into another dimension. You can fully charge or drain the batteries of small handheld devices, emit a dim light, or negate a Minor Hazard caused by dangerous energies.</p>",
       "level": 1,
@@ -178,7 +178,7 @@
   {
     "name": "Glamour",
     "type": "spell",
-    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/glamour-872936.svg",
     "system": {
       "description": "<p>You tweak the target's appearance to make them more difficult to recognise. You can alter minor visual features of the target, like tattoos, scars, wrinkles or other distinctive features, as well as tricking other senses to cover up bad breath or rough skin.</p>",
       "level": 1,
@@ -194,7 +194,7 @@
   {
     "name": "Sensory Interference",
     "type": "spell",
-    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/sensory-interference-f0ae1f.svg",
     "system": {
       "description": "<p>The caster 'blurs' the outline of the target, sheathing them in a bubble that randomises sounds and de-coheres beams of light. As long as the target remains still or Moves at Slow Speed, the spell can effectively scramble laser beams, foil facial recognition software, obscure CCTV surveillance, and return useless static on directional microphone recordings.</p>",
       "level": 1,
@@ -210,7 +210,7 @@
   {
     "name": "Temperature Manipulation",
     "type": "spell",
-    "img": "icons/magic/fire/flame-burning-red.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/temperature-manipulation-693d16.svg",
     "system": {
       "description": "<p>The target feels a small but noticeable change in temperature — enough to get them shivering, or sweating, or ease discomfort on a hot or cold day. Targeted equipment that is delicate to changes in temperature fails. You may impose or remove the Weakened Condition.</p>",
       "level": 1,
@@ -226,7 +226,7 @@
   {
     "name": "Banishment",
     "type": "spell",
-    "img": "icons/magic/death/skull-horned-goat-pentagram-red.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/banishment-1fcca5.svg",
     "system": {
       "description": "<p>Banishment targets an exonome within range with a Level equal to or lower than the Level used for the Banishment spell. The target suffers 5 Damage for each Level the spell was cast at. This Damage ignores Armour.</p>",
       "level": 1,
@@ -242,7 +242,7 @@
   {
     "name": "Truth Geas",
     "type": "spell",
-    "img": "icons/magic/control/control-influence-crown-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/truth-geas-b21f08.svg",
     "system": {
       "description": "<p>For the duration of the spell, the target must honestly answer any questions the spellcaster poses to them, in enough detail to satisfy the caster's interest. They cannot lie to the caster, use deliberately ambiguous language, or obfuscate with irrelevant information.</p>",
       "level": 1,
@@ -258,7 +258,7 @@
   {
     "name": "Defensive Bindings",
     "type": "spell",
-    "img": "icons/magic/defensive/shield-barrier-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/defensive-bindings-1f558d.svg",
     "system": {
       "description": "<p>Specify a source of direct Damage, such as impact, energy or chemical. For the duration of the spell, you gain +3 Armour against any Damage inflicted by that source. Every point of Damage absorbed reduces the spell's Armour rating by one point — if reduced to 0, the spell ends.</p>",
       "level": 1,
@@ -274,7 +274,7 @@
   {
     "name": "Exorcism",
     "type": "spell",
-    "img": "icons/magic/symbols/star-inverted-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/exorcism-9a6a61.svg",
     "system": {
       "description": "<p>An Exorcism safely disperses thaumic energy left behind after a spell or exonome rampage. This prevents further intrusions between dimensions from occurring spontaneously, removes any Hazards imposed by thaumic resonance, negates any bonuses for Empowering Spells, and generally de-creepifies the space.</p>",
       "level": 1,
@@ -290,7 +290,7 @@
   {
     "name": "Pentacle",
     "type": "spell",
-    "img": "icons/magic/symbols/star-inverted-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/pentacle-b87f7c.svg",
     "system": {
       "description": "<p>Whilst the spell is active, any Level 1 extra-dimensional creatures inside the Zone cannot leave it. Any errant attempts to leave the Zone (Shoving, opening a portal, Astral Projection, etc.) automatically fail, as do any attempts by exonomes to Dispel the Pentacle from inside the target Zone.</p>",
       "level": 1,
@@ -306,7 +306,7 @@
   {
     "name": "Possession",
     "type": "spell",
-    "img": "icons/magic/death/skull-horned-goat-pentagram-red.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/possession-85b71a.svg",
     "system": {
       "description": "<p>Target a disembodied spirit within Range, and a physical host body also within Range. The target body is bonded into the physical host body. In most situations, the possessing spirit gains complete control of the host's actions, but in extreme circumstances the host may attempt to resist the possessor's control with an Opposed Spirit (Zeal) Test.</p>",
       "level": 1,
@@ -322,7 +322,7 @@
   {
     "name": "Summoning",
     "type": "spell",
-    "img": "icons/magic/death/skull-horned-goat-pentagram-red.webp",
+    "img": "systems/laundry-rpg/icons/generated/spells/summoning-57b7bd.svg",
     "system": {
       "description": "<p>Summoning targets a disembodied spirit in the caster's dimension, or an exonome currently in a different dimension. When you cast the spell, the target is bound to answer your summons. The target appears in a location of your choice within Medium Range — typically a summoning grid that has been prepared for that specific purpose.</p>",
       "level": 1,

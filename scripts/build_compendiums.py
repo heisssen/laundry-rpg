@@ -552,7 +552,7 @@ def build():
             '_id': new_id(),
             'name': name,
             'type': 'skill',
-            'img': 'icons/svg/book.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/skill.svg',
             'system': {
                 'attribute': attr,
                 'training': 0,
@@ -572,7 +572,7 @@ def build():
             '_id': new_id(),
             'name': name,
             'type': 'talent',
-            'img': 'icons/svg/aura.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/talent.svg',
             'system': {
                 'requirements': req,
                 'description': desc
@@ -588,7 +588,7 @@ def build():
             '_id': new_id(),
             'name': a['name'],
             'type': 'assignment',
-            'img': 'icons/svg/mystery-man.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/assignment.svg',
             'system': {
                 'attributes': a['attributes'],
                 'coreSkills': a['coreSkills'],
@@ -608,7 +608,7 @@ def build():
             '_id': new_id(),
             'name': s['name'],
             'type': 'spell',
-            'img': 'icons/svg/book.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/spell.svg',
             'system': s['system'],
             'effects': [],
             'flags': {}
@@ -624,7 +624,7 @@ def build():
             '_id': new_id(),
             'name': w['name'],
             'type': 'weapon',
-            'img': 'icons/svg/sword.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/weapon.svg',
             'system': {
                 'damage': damage,
                 'range': '',
@@ -644,7 +644,7 @@ def build():
             '_id': new_id(),
             'name': a['name'],
             'type': 'armour',
-            'img': 'icons/svg/shield.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/armour.svg',
             'system': {
                 'protection': int(a.get('armour', '0') or 0),
                 'traits': a.get('prereq', ''),
@@ -665,7 +665,7 @@ def build():
             '_id': new_id(),
             'name': g['name'],
             'type': 'gear',
-            'img': 'icons/svg/item-bag.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/gear.svg',
             'system': {
                 'quantity': 1,
                 'weight': 0,

@@ -116,6 +116,7 @@ export class LaundryActorSheet extends ActorSheet {
             return {
                 name: def.name,
                 itemId: item?._id ?? null,
+                img: item?.img ?? "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
                 attribute,
                 attributeLabel: CONFIG.LAUNDRY.attributes?.[attribute]?.label ?? attribute,
                 attrValue,
@@ -140,9 +141,63 @@ export class LaundryActorSheet extends ActorSheet {
 
         const activeCombatant = game.combat?.combatant ?? null;
         const isActorTurn = Boolean(activeCombatant?.actor?.id === this.actor.id);
+        const statusIds = ["blinded", "prone", "stunned", "weakened"];
+        const actorStatusSet = this._getActorStatusSet();
+        const conditionConfigs = statusIds.map(id => this._getConditionConfig(id));
+        const activeConditions = conditionConfigs.filter(entry => actorStatusSet.has(entry.id));
+        const equippedWeapons = context.weapons
+            .filter(item => item.system?.equipped === true)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        const equippedArmour = context.armour
+            .filter(item => item.system?.equipped === true)
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        context.combatSnapshot = {
+            toughness: {
+                value: Math.max(0, Math.trunc(Number(actorData.derived?.toughness?.value) || 0)),
+                max: Math.max(0, Math.trunc(Number(actorData.derived?.toughness?.max) || 0))
+            },
+            adrenaline: {
+                value: Math.max(0, Math.trunc(Number(actorData.derived?.adrenaline?.value) || 0)),
+                max: Math.max(0, Math.trunc(Number(actorData.derived?.adrenaline?.max) || 0))
+            },
+            armour: Math.max(0, Math.trunc(Number(actorData.derived?.armour?.value) || 0)),
+            initiative: Math.max(0, Math.trunc(Number(actorData.derived?.initiative?.value) || 0)),
+            awareness: Math.max(0, Math.trunc(Number(actorData.derived?.naturalAwareness?.value) || 0)),
+            melee: {
+                value: Math.max(0, Math.trunc(Number(actorData.derived?.melee?.value) || 0)),
+                label: actorData.derived?.melee?.label ?? "Poor"
+            },
+            accuracy: {
+                value: Math.max(0, Math.trunc(Number(actorData.derived?.accuracy?.value) || 0)),
+                label: actorData.derived?.accuracy?.label ?? "Poor"
+            },
+            defence: {
+                value: Math.max(0, Math.trunc(Number(actorData.derived?.defence?.value) || 0)),
+                label: actorData.derived?.defence?.label ?? "Poor"
+            }
+        };
+        context.combatSkills = ["Close Combat", "Ranged", "Reflexes", "Fortitude", "Awareness", "Magic"]
+            .map(name => context.skillRows.find(skill => skill.name === name))
+            .filter(Boolean);
+        context.combatConditions = conditionConfigs.map(entry => ({
+            ...entry,
+            active: actorStatusSet.has(entry.id)
+        }));
+        context.combatLoadout = {
+            weapons: equippedWeapons,
+            armour: equippedArmour
+        };
         context.combat = {
             isActorTurn,
-            canEndTurn: isActorTurn && Boolean(game.user?.isGM || activeCombatant?.actor?.isOwner)
+            canEndTurn: isActorTurn && Boolean(game.user?.isGM || activeCombatant?.actor?.isOwner),
+            hasActiveConditions: activeConditions.length > 0,
+            conditionSummary: activeConditions.length
+                ? activeConditions.map(entry => entry.name).join(", ")
+                : "No active conditions.",
+            hasLoadout: equippedWeapons.length > 0 || equippedArmour.length > 0,
+            canOpenGmTracker: Boolean(game.user?.isGM && game.laundry?.openGMTracker),
+            gmTrackerHint: "GM monitoring: Threat, Team Luck, BAU prompts and party overview are in GM Tracker."
         };
 
         return context;
@@ -163,6 +218,32 @@ export class LaundryActorSheet extends ActorSheet {
         return matched ? matched.label : "Poor";
     }
 
+    _getActorStatusSet() {
+        const statuses = new Set();
+        for (const effect of this.actor.effects ?? []) {
+            const effectStatuses = effect?.statuses instanceof Set
+                ? Array.from(effect.statuses)
+                : Array.isArray(effect?.statuses)
+                    ? effect.statuses
+                    : [];
+            for (const statusId of effectStatuses) {
+                if (statusId) statuses.add(String(statusId));
+            }
+            const legacyStatus = effect.getFlag?.("core", "statusId");
+            if (legacyStatus) statuses.add(String(legacyStatus));
+        }
+        return statuses;
+    }
+
+    _getConditionConfig(statusId) {
+        const entry = (CONFIG.statusEffects ?? []).find(effect => effect.id === statusId);
+        return {
+            id: statusId,
+            name: entry?.name ?? statusId,
+            img: entry?.img ?? "systems/laundry-rpg/icons/generated/_defaults/talent.svg"
+        };
+    }
+
     // ─── Listeners ────────────────────────────────────────────────────────────
 
     /** @override */
@@ -180,6 +261,9 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".inv-search").on("input", this._onInventorySearch.bind(this));
         html.find(".init-agent").click(this._onInitAgent.bind(this));
         html.find(".end-turn").click(this._onEndTurn.bind(this));
+        html.find(".combat-roll-initiative").click(this._onCombatRollInitiative.bind(this));
+        html.find(".combat-status-toggle").click(this._onCombatStatusToggle.bind(this));
+        html.find(".combat-open-gm-tracker").click(this._onCombatOpenGmTracker.bind(this));
         html.find(".take-breather").click(this._onTakeBreather.bind(this));
         html.find(".standard-rest").click(this._onStandardRest.bind(this));
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
@@ -268,6 +352,8 @@ export class LaundryActorSheet extends ActorSheet {
                 rollContext: {
                     sourceType: "skill",
                     sourceName: skillName,
+                    skillName,
+                    attribute,
                     isMagic: String(skillName ?? "").trim().toLowerCase() === "magic",
                     isSpell: false
                 }
@@ -284,7 +370,14 @@ export class LaundryActorSheet extends ActorSheet {
                 actorId: this.actor.id,
                 flavor: game.i18n.format("LAUNDRY.RollingAttribute", {
                     attribute: attrName.charAt(0).toUpperCase() + attrName.slice(1)
-                })
+                }),
+                rollContext: {
+                    sourceType: "attribute",
+                    sourceName: attrName,
+                    attribute: attrName,
+                    isMagic: false,
+                    isSpell: false
+                }
             });
         }
     }
@@ -354,7 +447,7 @@ export class LaundryActorSheet extends ActorSheet {
         const created = await this.actor.createEmbeddedDocuments("Item", [{
             name: skillName,
             type: "skill",
-            img: "icons/svg/book.svg",
+            img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
             system: {
                 attribute,
                 training: 0,
@@ -402,6 +495,85 @@ export class LaundryActorSheet extends ActorSheet {
         }
 
         await combat.nextTurn();
+    }
+
+    async _onCombatRollInitiative(ev) {
+        ev.preventDefault();
+
+        let combat = game.combat;
+        if (!combat) {
+            if (!game.user?.isGM) {
+                ui.notifications.warn("Start combat first, or ask the GM to create an encounter.");
+                return;
+            }
+
+            const sceneId = canvas?.scene?.id ?? null;
+            if (!sceneId) {
+                ui.notifications.warn("No active scene found for combat.");
+                return;
+            }
+            combat = await Combat.create({ scene: sceneId, active: true });
+        }
+
+        let combatant = combat.combatants.find(c => c.actorId === this.actor.id);
+        if (!combatant) {
+            const token = canvas?.tokens?.placeables?.find(t => t.actor?.id === this.actor.id) ?? null;
+            const created = await combat.createEmbeddedDocuments("Combatant", [{
+                actorId: this.actor.id,
+                tokenId: token?.id ?? null,
+                hidden: false
+            }]);
+            const createdId = created?.[0]?._id ?? created?.[0]?.id ?? null;
+            combatant = createdId
+                ? combat.combatants.get(createdId)
+                : combat.combatants.find(c => c.actorId === this.actor.id);
+        }
+
+        if (!combatant) {
+            ui.notifications.warn("Failed to create a combatant for this actor.");
+            return;
+        }
+
+        await combat.rollInitiative([combatant.id]);
+        ui.combat?.render(true);
+    }
+
+    async _onCombatStatusToggle(ev) {
+        ev.preventDefault();
+        const statusId = String(ev.currentTarget?.dataset?.statusId ?? "").trim();
+        if (!statusId) return;
+
+        const toDelete = this.actor.effects
+            .filter(effect => {
+                const statuses = effect?.statuses instanceof Set
+                    ? Array.from(effect.statuses)
+                    : Array.isArray(effect?.statuses) ? effect.statuses : [];
+                if (statuses.includes(statusId)) return true;
+                return effect.getFlag?.("core", "statusId") === statusId;
+            })
+            .map(effect => effect.id);
+
+        if (toDelete.length) {
+            await this.actor.deleteEmbeddedDocuments("ActiveEffect", toDelete);
+            this.render(false);
+            return;
+        }
+
+        const condition = this._getConditionConfig(statusId);
+        await this.actor.createEmbeddedDocuments("ActiveEffect", [{
+            name: condition.name,
+            img: condition.img,
+            statuses: [statusId],
+            disabled: false,
+            origin: this.actor.uuid
+        }]);
+        this.render(false);
+    }
+
+    _onCombatOpenGmTracker(ev) {
+        ev.preventDefault();
+        if (!game.user?.isGM) return;
+        game.laundry?.openGMTracker?.();
     }
 
     async _onTakeBreather(ev) {
@@ -633,7 +805,7 @@ export class LaundryActorSheet extends ActorSheet {
 
             skillItem ??= {
                 name: skillName, type: "skill",
-                img: "icons/svg/book.svg",
+                img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
                 system: { training: 1, focus: 0, attribute: "mind" }
             };
 
@@ -651,7 +823,7 @@ export class LaundryActorSheet extends ActorSheet {
                 .filter(name => !existingGear.has(name.toLowerCase()))
                 .map(name => ({
                 name, type: "gear",
-                img: "icons/svg/item-bag.svg",
+                img: "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
                 system: { quantity: 1, weight: 0 }
                 }));
             if (items.length) await this.actor.createEmbeddedDocuments("Item", items);

@@ -2,7 +2,7 @@
   {
     "name": "Auditor's Secretary",
     "type": "assignment",
-    "img": "icons/sundries/documents/document-sealed-red-white.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/auditor-s-secretary-4102a4.svg",
     "system": {
       "description": "<p>You keep records of investigations and employee interviews for the terrifying Auditors.</p>",
       "attributes": {
@@ -22,7 +22,7 @@
   {
     "name": "Accountant",
     "type": "assignment",
-    "img": "icons/commodities/currency/coins-assorted-mix-copper.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/accountant-7f69de.svg",
     "system": {
       "description": "<p>You find financial anomalies and determine if incompetence or dark forces are interfering with the Laundry's budget.</p>",
       "attributes": {
@@ -42,7 +42,7 @@
   {
     "name": "Assurance Compliance Officer",
     "type": "assignment",
-    "img": "icons/sundries/documents/document-official-seal.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/assurance-compliance-officer-3d6665.svg",
     "system": {
       "description": "<p>You help fellow employees follow the labyrinthian rules and regulations of ISO9001 certification.</p>",
       "attributes": {
@@ -62,7 +62,7 @@
   {
     "name": "Counter-Possession Exorcist",
     "type": "assignment",
-    "img": "icons/magic/symbols/cross-circle-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/counter-possession-exorcist-2ea7df.svg",
     "system": {
       "description": "<p>You pull renegade souls out of your wayward colleagues' nervous systems.</p>",
       "attributes": {
@@ -82,7 +82,7 @@
   {
     "name": "Cultural Attaché",
     "type": "assignment",
-    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/cultural-attach-ae08ad.svg",
     "system": {
       "description": "<p>You massage diplomatic protocols and relationships back into shape, including agreements with non-humans.</p>",
       "attributes": {
@@ -102,7 +102,7 @@
   {
     "name": "Laundry Basket",
     "type": "assignment",
-    "img": "icons/containers/box/box-wooden-worn-brown.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/laundry-basket-89ed37.svg",
     "system": {
       "description": "<p>You handle the missions and projects that don't fit neatly in the org chart.</p>",
       "attributes": {
@@ -122,7 +122,7 @@
   {
     "name": "Cleaner",
     "type": "assignment",
-    "img": "icons/skills/toxins/poison-bottle-corked-purple.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/cleaner-a5504a.svg",
     "system": {
       "description": "<p>You sweep in and remove bodies, bloodstains, and any other unidentified biological matter.</p>",
       "attributes": {
@@ -142,7 +142,7 @@
   {
     "name": "OCCULUS Support Officer",
     "type": "assignment",
-    "img": "icons/weapons/guns/gun-pistol-steampunk.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/occulus-support-officer-b556ad.svg",
     "system": {
       "description": "<p>You are the heavy cavalry called in when something goes very bad very quickly.</p>",
       "attributes": {
@@ -162,7 +162,7 @@
   {
     "name": "Plumber",
     "type": "assignment",
-    "img": "icons/tools/hand/wrench-metal-silver.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/plumber-66c260.svg",
     "system": {
       "description": "<p>You are the Laundry's field sorcery unit, specialising in exorcism and banishings.</p>",
       "attributes": {
@@ -182,7 +182,7 @@
   {
     "name": "Inhuman Resources Liaison",
     "type": "assignment",
-    "img": "icons/skills/social/diplomacy-peace-handshake.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/inhuman-resources-liaison-80723b.svg",
     "system": {
       "description": "<p>You deal with agreements and alliances with non-human allies.</p>",
       "attributes": {
@@ -202,7 +202,7 @@
   {
     "name": "Medic",
     "type": "assignment",
-    "img": "icons/magic/life/cross-glowing-green.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/medic-458b23.svg",
     "system": {
       "description": "<p>You maintain calm and equilibrium to assist employees staring into the mouth of hell(s).</p>",
       "attributes": {
@@ -222,7 +222,7 @@
   {
     "name": "Zombie Wrangler",
     "type": "assignment",
-    "img": "icons/environment/creatures/zombie-shambling-green.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/zombie-wrangler-9b77ad.svg",
     "system": {
       "description": "<p>You supervise Residual Human Resources in their day-to-day duties.</p>",
       "attributes": {
@@ -242,7 +242,7 @@
   {
     "name": "Armoury Clerk",
     "type": "assignment",
-    "img": "icons/weapons/guns/gun-pistol-black.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/armoury-clerk-6452eb.svg",
     "system": {
       "description": "<p>You issue conventional and supernatural hardware for field missions.</p>",
       "attributes": {
@@ -262,7 +262,7 @@
   {
     "name": "IT Computer Helpdesk",
     "type": "assignment",
-    "img": "icons/commodities/tech/computer-terminal-green.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/it-computer-helpdesk-aaa376.svg",
     "system": {
       "description": "<p>You maintain the Laundry's hardened intranet and deal with occult tech issues.</p>",
       "attributes": {
@@ -282,7 +282,7 @@
   {
     "name": "Courier",
     "type": "assignment",
-    "img": "icons/skills/movement/figure-running-gray.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/courier-eebba4.svg",
     "system": {
       "description": "<p>You pilot tactical vehicles and warded transports for quick deployment.</p>",
       "attributes": {
@@ -302,7 +302,7 @@
   {
     "name": "Counter-Subversion Officer",
     "type": "assignment",
-    "img": "icons/magic/perception/eye-ringed-glow-angry-large.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/counter-subversion-officer-f7adec.svg",
     "system": {
       "description": "<p>You ensure there are no leaks or double agents in the Laundry.</p>",
       "attributes": {
@@ -322,7 +322,7 @@
   {
     "name": "Media Relations Researcher",
     "type": "assignment",
-    "img": "icons/skills/social/theft-pickpocket-bribery-brown.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/media-relations-researcher-f4e4e9.svg",
     "system": {
       "description": "<p>You quash stories and handle official disinformation to protect the public.</p>",
       "attributes": {
@@ -342,7 +342,7 @@
   {
     "name": "Operational Oversight Invigilator",
     "type": "assignment",
-    "img": "icons/tools/navigation/magnifying-glass.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/operational-oversight-invigilator-d0b4f7.svg",
     "system": {
       "description": "<p>You plug holes, track lost weapons, and run operational committees.</p>",
       "attributes": {
@@ -362,7 +362,7 @@
   {
     "name": "Bailiff of the Black Assizes",
     "type": "assignment",
-    "img": "icons/sundries/documents/document-sealed-red-white.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/bailiff-of-the-black-assizes-259dcf.svg",
     "system": {
       "description": "<p>You provide Laundry oversight for those who run afoul of the law and magic.</p>",
       "attributes": {
@@ -382,7 +382,7 @@
   {
     "name": "Apprentice Demonologist",
     "type": "assignment",
-    "img": "icons/sundries/books/book-embossed-bound-brown.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/apprentice-demonologist-283ce1.svg",
     "system": {
       "description": "<p>You draft contracts and bindings for non-human entities and unusual circumstances.</p>",
       "attributes": {
@@ -402,7 +402,7 @@
   {
     "name": "Internal Affairs Investigator",
     "type": "assignment",
-    "img": "icons/tools/navigation/magnifying-glass.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/internal-affairs-investigator-aba481.svg",
     "system": {
       "description": "<p>You handle employee contracts, grievances, and internal investigations.</p>",
       "attributes": {
@@ -422,7 +422,7 @@
   {
     "name": "Acquisitions Curator",
     "type": "assignment",
-    "img": "icons/sundries/books/book-embossed-bound-brown.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/acquisitions-curator-4b95be.svg",
     "system": {
       "description": "<p>You catalog and protect physical artefacts and mythical objects.</p>",
       "attributes": {
@@ -442,7 +442,7 @@
   {
     "name": "Archives Clerk",
     "type": "assignment",
-    "img": "icons/skills/trades/academics-study-reading-book.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/archives-clerk-473a2c.svg",
     "system": {
       "description": "<p>You retrieve documents and navigate the Codex Mathemagica deep underground.</p>",
       "attributes": {
@@ -462,7 +462,7 @@
   {
     "name": "Monitoring Researcher",
     "type": "assignment",
-    "img": "icons/commodities/tech/computer-monitor-blue.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/monitoring-researcher-e7a62b.svg",
     "system": {
       "description": "<p>You monitor occult activity across media, websites, and the ECHELON database.</p>",
       "attributes": {
@@ -482,7 +482,7 @@
   {
     "name": "Computational Demonology Researcher",
     "type": "assignment",
-    "img": "icons/magic/symbols/star-inverted-yellow.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/computational-demonology-researcher-07e413.svg",
     "system": {
       "description": "<p>You develop and expand magical theory using supercomputers.</p>",
       "attributes": {
@@ -502,7 +502,7 @@
   {
     "name": "Occult Forensics Analyst",
     "type": "assignment",
-    "img": "icons/skills/science/chemistry-potion-beaker-green.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/occult-forensics-analyst-5a35c0.svg",
     "system": {
       "description": "<p>You determine who, or what, caused a supernatural incident.</p>",
       "attributes": {
@@ -522,7 +522,7 @@
   {
     "name": "Q Division Boffin",
     "type": "assignment",
-    "img": "icons/tools/hand/hammer-and-nail.webp",
+    "img": "systems/laundry-rpg/icons/generated/assignments/q-division-boffin-f96051.svg",
     "system": {
       "description": "<p>You create cutting-edge, highly dangerous tools and containment grids.</p>",
       "attributes": {

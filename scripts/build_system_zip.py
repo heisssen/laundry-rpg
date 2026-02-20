@@ -17,6 +17,7 @@ INCLUDE = [
     "module",
     "templates",
     "styles",
+    "icons",
     "lang",
     "packs"
 ]

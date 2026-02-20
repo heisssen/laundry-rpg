@@ -455,6 +455,146 @@
     filter: brightness(0.95);
 }
 
+.laundry-rpg .combat-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.laundry-rpg .combat-snapshot-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.laundry-rpg .combat-stat-card {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.35);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+    text-align: center;
+}
+
+.laundry-rpg .combat-stat-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .combat-stat-value {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--laundry-ink);
+}
+
+.laundry-rpg .combat-status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.laundry-rpg .combat-status-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.75);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
+.laundry-rpg .combat-status-toggle.active {
+    border-color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.14);
+    color: var(--laundry-stamp);
+    font-weight: bold;
+}
+
+.laundry-rpg .combat-note {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .combat-loadout-list .item-formula {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.laundry-rpg .combat-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.laundry-rpg .combat-quick-actions button {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.75);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.laundry-rpg .combat-quick-actions .combat-open-gm-tracker {
+    border-color: var(--laundry-accent);
+    color: var(--laundry-accent);
+    background: rgba(47,74,93,0.12);
+}
+
+.laundry-rpg .combat-subheader {
+    margin: 8px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .combat-skill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.laundry-rpg .combat-skill-card {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.45);
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.laundry-rpg .combat-skill-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.laundry-rpg .combat-skill-meta strong {
+    font-size: 11px;
+}
+
+.laundry-rpg .combat-skill-meta span {
+    font-size: 9px;
+    color: var(--laundry-ink-muted);
+}
+
 /* ── Ladder ─────────────────────────────────────────────────────────────── */
 .laundry-rpg .ladder-grid {
     display: grid;
@@ -1707,6 +1847,7 @@
 .laundry-dice-roll .dice-outcome.outcome-success { color: var(--laundry-success); }
 .laundry-dice-roll .dice-outcome.outcome-marginal { color: var(--laundry-accent); }
 .laundry-dice-roll .dice-outcome.outcome-failure { color: var(--laundry-stamp); }
+.laundry-dice-roll .dice-outcome.outcome-opposed { color: #2f4a5d; }
 
 .laundry-dice-roll .success-count,
 .laundry-dice-roll .benefit-label,
@@ -1755,6 +1896,15 @@
     font-size: 11px;
     color: var(--laundry-ink-muted);
     margin-bottom: 4px;
+}
+
+.laundry-dice-roll .status-modifier-section {
+    font-size: 11px;
+    color: #7a1f22;
+    margin-bottom: 4px;
+    border: 1px dashed rgba(122, 31, 34, 0.35);
+    background: rgba(178,31,31,0.08);
+    padding: 4px 6px;
 }
 
 .laundry-dice-roll .damage-section {
@@ -1863,6 +2013,13 @@
     }
 
     .laundry-rpg .bio-profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .combat-panel-grid,
+    .laundry-rpg .combat-snapshot-grid,
+    .laundry-rpg .combat-status-grid,
+    .laundry-rpg .combat-skill-grid {
         grid-template-columns: 1fr;
     }
 
