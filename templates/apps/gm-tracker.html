@@ -54,6 +54,21 @@
     </section>
 
     <section class="gm-tracker-block">
+        <h3>NPC Rapid Spawn</h3>
+        <div class="gm-spawn-grid">
+            <select name="spawnPreset">
+                {{#each npcPresets as |preset|}}
+                <option value="{{preset.id}}">{{preset.name}}</option>
+                {{/each}}
+            </select>
+            <input type="text" name="spawnName" placeholder="Name (optional)" />
+            <input type="number" name="spawnCount" min="1" max="20" value="1" />
+            <button type="button" class="spawn-npc">Spawn</button>
+        </div>
+        <p class="notes">Spawns near your targeted token (or first controlled token if no target).</p>
+    </section>
+
+    <section class="gm-tracker-block">
         <h3>Combat Dashboard</h3>
         {{#if hasCombat}}
         <div class="gm-combat-summary">
@@ -73,6 +88,7 @@
                     <span>ADR {{entry.adrenalineValue}}/{{entry.adrenalineMax}}</span>
                     <span>ACT {{entry.actionsRemaining}} | MOV {{entry.moveRemaining}}</span>
                     <span>STS {{entry.statuses}}</span>
+                    <span class="gm-combat-hints">{{entry.hints}}</span>
                 </div>
                 <div class="gm-combat-actions">
                     <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="toughness" data-delta="-1">-TGH</button>

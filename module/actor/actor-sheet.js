@@ -12,6 +12,11 @@ import {
     describeTalentPrerequisiteResult,
     evaluateTalentPrerequisites
 } from "../utils/talent-prerequisites.js";
+import {
+    NPC_PRESETS,
+    applyNpcPreset,
+    normalizeNpcQuickAction
+} from "../utils/npc-presets.js";
 
 const KPI_STATUS_CSS = {
     open: "kpi-open",
@@ -138,6 +143,17 @@ export class LaundryActorSheet extends ActorSheet {
         context.isNpc       = context.actor.type === "npc";
         context.isCharacter = context.actor.type === "character";
         context.hasAssignment = !!actorData.details?.assignment;
+        const npcRaw = actorData.npc ?? {};
+        const npcClass = String(npcRaw.class ?? "elite");
+        const npcMode = String(npcRaw.mode ?? "lite");
+        const npcFastDamage = Boolean(npcRaw.fastDamage ?? true);
+        const npcTrackInjuries = Boolean(npcRaw.trackInjuries ?? false);
+        const npcMobSize = Math.max(1, Math.trunc(Number(npcRaw.mobSize) || 1));
+        const npcDefeated = Boolean(npcRaw.defeated) || Math.max(0, Math.trunc(Number(actorData.derived?.toughness?.value) || 0)) <= 0;
+        const npcQuickActions = Array.isArray(npcRaw.quickActions)
+            ? npcRaw.quickActions.map(entry => normalizeNpcQuickAction(entry)).map((entry, index) => ({ ...entry, index }))
+            : [];
+        const npcCanSpawn = Boolean(game.user?.isGM && canvas?.scene);
 
         const activeCombatant = game.combat?.combatant ?? null;
         const isActorTurn = Boolean(activeCombatant?.actor?.id === this.actor.id);
@@ -213,6 +229,26 @@ export class LaundryActorSheet extends ActorSheet {
             canOpenGmTracker: Boolean(game.user?.isGM && game.laundry?.openGMTracker),
             gmTrackerHint: "GM monitoring: Threat, Team Luck, BAU prompts and party overview are in GM Tracker."
         };
+        context.npcOps = {
+            mode: npcMode,
+            npcClass,
+            mobSize: npcMobSize,
+            fastDamage: npcFastDamage,
+            trackInjuries: npcTrackInjuries,
+            defeated: npcDefeated,
+            archetype: String(npcRaw.archetype ?? ""),
+            quickActions: npcQuickActions,
+            presets: NPC_PRESETS.map(entry => ({
+                id: entry.id,
+                name: entry.name
+            })),
+            actionKinds: [
+                { id: "attack", name: "Attack" },
+                { id: "spell", name: "Spell" },
+                { id: "test", name: "Test" }
+            ],
+            canSpawnToScene: npcCanSpawn
+        };
 
         return context;
     }
@@ -286,6 +322,12 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
+        html.find(".npc-preset-apply").click(this._onNpcPresetApply.bind(this));
+        html.find(".npc-action-add").click(this._onNpcActionAdd.bind(this));
+        html.find(".npc-action-delete").click(this._onNpcActionDelete.bind(this));
+        html.find(".npc-action-roll").click(this._onNpcActionRoll.bind(this));
+        html.find(".npc-reset-defeated").click(this._onNpcResetDefeated.bind(this));
+        html.on("change", ".npc-action-field", (ev) => this._onNpcActionFieldChange(ev));
         html.on("change", ".kpi-field", (ev) => this._onKpiFieldChange(ev));
 
         // Item editing
@@ -632,6 +674,158 @@ export class LaundryActorSheet extends ActorSheet {
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor: this.actor }),
             content: `<p><strong>${escapedName}</strong> has completed a Standard Rest and recovered Toughness and Adrenaline.</p>`
+        });
+    }
+
+    async _onNpcPresetApply(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        const root = this.element?.[0];
+        const presetId = String(root?.querySelector('[name="npcPreset"]')?.value ?? "").trim();
+        if (!presetId) {
+            ui.notifications.warn("Choose an NPC archetype first.");
+            return;
+        }
+
+        const preset = await applyNpcPreset(this.actor, presetId, { replaceActions: true });
+        if (!preset) {
+            ui.notifications.warn("Failed to apply NPC preset.");
+            return;
+        }
+        ui.notifications.info(`${this.actor.name}: preset applied (${preset.name}).`);
+        this.render(false);
+    }
+
+    async _onNpcActionAdd(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        const actions = this._getNpcQuickActions();
+        actions.push(normalizeNpcQuickAction({
+            name: "New Action",
+            kind: "attack",
+            pool: Math.max(1, Math.trunc(Number(this.actor.system?.derived?.accuracy?.value) || 1)),
+            dn: 4,
+            complexity: 1,
+            damage: "1d6",
+            traits: "",
+            isMagic: false
+        }));
+        await this._setNpcQuickActions(actions);
+        this.render(false);
+    }
+
+    async _onNpcActionDelete(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
+        const actions = this._getNpcQuickActions();
+        if (index < 0 || index >= actions.length) return;
+        actions.splice(index, 1);
+        await this._setNpcQuickActions(actions);
+        this.render(false);
+    }
+
+    async _onNpcActionFieldChange(ev) {
+        if (this.actor.type !== "npc") return;
+        const input = ev.currentTarget;
+        const index = Math.trunc(Number(input?.dataset?.actionIndex) || -1);
+        const key = String(input?.dataset?.actionKey ?? "").trim();
+        if (index < 0 || !key) return;
+
+        const actions = this._getNpcQuickActions();
+        const action = actions[index];
+        if (!action) return;
+
+        if (["pool", "dn", "complexity"].includes(key)) {
+            action[key] = Math.max(
+                key === "dn" ? 2 : 0,
+                Math.trunc(Number(input.value) || (key === "dn" ? 4 : 1))
+            );
+            if (key === "dn") action[key] = Math.min(6, action[key]);
+            if (key === "complexity") action[key] = Math.max(1, action[key]);
+        } else if (key === "isMagic") {
+            action[key] = Boolean(input.checked);
+        } else {
+            action[key] = String(input.value ?? "").trim();
+        }
+
+        actions[index] = normalizeNpcQuickAction(action);
+        await this._setNpcQuickActions(actions);
+    }
+
+    async _onNpcActionRoll(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
+        const actions = this._getNpcQuickActions();
+        const action = actions[index];
+        if (!action) return;
+
+        const kind = String(action.kind ?? "attack");
+        const isWeaponAttack = kind === "attack";
+        const isSpell = kind === "spell";
+        const isMagic = Boolean(action.isMagic || isSpell);
+        const attackMode = String(action.traits ?? "").toLowerCase().includes("melee") ? "melee" : "ranged";
+        const flavour = `${action.name} (${this.actor.name})`;
+
+        await rollDice({
+            pool: Math.max(0, Math.trunc(Number(action.pool) || 0)),
+            dn: Math.max(2, Math.min(6, Math.trunc(Number(action.dn) || 4))),
+            complexity: Math.max(1, Math.trunc(Number(action.complexity) || 1)),
+            flavor: flavour,
+            damage: String(action.damage ?? "").trim(),
+            isWeaponAttack,
+            actorId: this.actor.id,
+            allowPostRollFocus: false,
+            prompt: false,
+            attackMeta: isWeaponAttack
+                ? {
+                    mode: attackMode,
+                    hasTarget: Boolean(game.user?.targets?.size),
+                    attackerRating: attackMode === "melee"
+                        ? Math.max(0, Math.trunc(Number(this.actor.system?.derived?.melee?.value) || 0))
+                        : Math.max(0, Math.trunc(Number(this.actor.system?.derived?.accuracy?.value) || 0)),
+                    defenceRating: 0,
+                    ladderDelta: 0,
+                    defencePenalty: 0,
+                    weaponTraits: String(action.traits ?? "")
+                }
+                : null,
+            rollContext: {
+                sourceType: isSpell ? "spell" : "skill",
+                sourceName: action.name,
+                skillName: isSpell ? "Magic" : action.name,
+                attribute: isSpell ? "mind" : "body",
+                attackMode: isWeaponAttack ? attackMode : "",
+                isMagic,
+                isSpell
+            }
+        });
+    }
+
+    async _onNpcResetDefeated(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        const maxToughness = Math.max(1, Math.trunc(Number(this.actor.system?.derived?.toughness?.max) || 1));
+        await this.actor.update({
+            "system.npc.defeated": false,
+            "system.derived.toughness.value": maxToughness,
+            "system.derived.toughness.damage": 0
+        });
+        ui.notifications.info(`${this.actor.name}: marked as active.`);
+        this.render(false);
+    }
+
+    _getNpcQuickActions() {
+        const actions = this.actor.system?.npc?.quickActions;
+        return Array.isArray(actions)
+            ? actions.map(entry => normalizeNpcQuickAction(entry))
+            : [];
+    }
+
+    async _setNpcQuickActions(actions = []) {
+        await this.actor.update({
+            "system.npc.quickActions": actions.map(entry => normalizeNpcQuickAction(entry))
         });
     }
 

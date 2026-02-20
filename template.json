@@ -50,7 +50,17 @@
         "npc": {
             "templates": ["base"],
             "biography": "",
-            "threat": "minor"
+            "threat": "minor",
+            "npc": {
+                "mode": "lite",
+                "class": "elite",
+                "mobSize": 1,
+                "trackInjuries": false,
+                "fastDamage": true,
+                "archetype": "",
+                "defeated": false,
+                "quickActions": []
+            }
         }
     },
     "Item": {

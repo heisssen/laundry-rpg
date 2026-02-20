@@ -1024,13 +1024,21 @@ async function _applyDamage(message) {
 
     for (const targetActor of targets) {
         if (!targetActor) continue;
+        const isNpc = targetActor.type === "npc";
+        const npcData = isNpc ? (targetActor.system?.npc ?? {}) : {};
+        const npcClass = String(npcData.class ?? "elite").trim().toLowerCase();
+        const npcFastDamage = Boolean(npcData.fastDamage ?? true);
+        const npcTrackInjuries = Boolean(npcData.trackInjuries ?? false);
+        const npcMobSize = Math.max(1, Math.trunc(Number(npcData.mobSize) || 1));
+
         const armour = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.armour?.value ?? 0)));
         const effectiveArmour = Math.max(0, armour - armourIgnored);
         let appliedDamage = Math.max(0, rolledDamage - effectiveArmour);
         let adrenalineReduced = false;
         let nextAdrenaline = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.adrenaline?.value ?? 0)));
 
-        if (appliedDamage > 0 && nextAdrenaline > 0) {
+        const canAdrenalineReact = appliedDamage > 0 && nextAdrenaline > 0 && (!isNpc || !npcFastDamage);
+        if (canAdrenalineReact) {
             const spendAdrenaline = await Dialog.confirm({
                 title: "Adrenaline Reaction",
                 content: `<p><strong>${_escapeHtml(targetActor.name ?? "Agent")}</strong> can spend 1 Adrenaline to halve incoming damage.</p>`
@@ -1047,9 +1055,44 @@ async function _applyDamage(message) {
             currentToughness,
             Math.trunc(Number(targetActor.system?.derived?.toughness?.max ?? currentToughness))
         );
-        const newToughness = Math.max(0, currentToughness - appliedDamage);
-        const newDamageTaken = Math.max(0, maxToughness - newToughness);
+        let newToughness = Math.max(0, currentToughness - appliedDamage);
+        let newDamageTaken = Math.max(0, maxToughness - newToughness);
         const overflowDamage = Math.max(0, appliedDamage - currentToughness);
+        let casualties = 0;
+        let mobRemaining = npcMobSize;
+        let npcDefeated = false;
+
+        if (isNpc && appliedDamage > 0 && npcMobSize > 1 && (npcFastDamage || npcClass === "minion")) {
+            const perBody = Math.max(1, currentToughness || maxToughness || 1);
+            casualties = Math.min(
+                npcMobSize,
+                Math.max(1, Math.ceil(appliedDamage / perBody))
+            );
+            mobRemaining = Math.max(0, npcMobSize - casualties);
+            if (mobRemaining <= 0) {
+                npcDefeated = true;
+            } else {
+                // Fast-mode mob tracking: remove casualties and keep remaining unit at full track.
+                newToughness = maxToughness;
+                newDamageTaken = 0;
+            }
+        }
+
+        if (isNpc && appliedDamage > 0 && npcMobSize <= 1 && (npcFastDamage || npcClass === "minion")) {
+            npcDefeated = true;
+        }
+
+        if (isNpc && newToughness <= 0) {
+            npcDefeated = true;
+        }
+
+        if (npcDefeated) {
+            newToughness = 0;
+            newDamageTaken = Math.max(0, maxToughness);
+            mobRemaining = Math.max(1, mobRemaining);
+        }
+
+        const becameIncapacitated = currentToughness > 0 && newToughness <= 0;
 
         const updateData = {
             "system.derived.toughness.value": newToughness,
@@ -1058,12 +1101,16 @@ async function _applyDamage(message) {
         if (adrenalineReduced) {
             updateData["system.derived.adrenaline.value"] = nextAdrenaline;
         }
+        if (isNpc) {
+            updateData["system.npc.defeated"] = npcDefeated;
+            updateData["system.npc.mobSize"] = Math.max(1, mobRemaining);
+        }
         await targetActor.update(updateData);
 
-        if (traits.crushing && appliedDamage > 0) {
+        if (traits.crushing && appliedDamage > 0 && (!isNpc || !npcDefeated)) {
             await _applyConditionToActor(targetActor, "stunned", { durationRounds: 1, source: "weapon-crushing" });
         }
-        if (traits.suppressive || attackMeta.suppressiveMode) {
+        if ((traits.suppressive || attackMeta.suppressiveMode) && (!isNpc || !npcDefeated)) {
             await _applyConditionToActor(targetActor, "weakened", { durationRounds: 1, source: "weapon-suppressive" });
         }
 
@@ -1074,14 +1121,27 @@ async function _applyDamage(message) {
             applied: appliedDamage,
             from: currentToughness,
             to: newToughness,
-            adrenalineReduced
+            adrenalineReduced,
+            isNpc,
+            mobBefore: npcMobSize,
+            mobAfter: Math.max(1, mobRemaining),
+            casualties,
+            defeated: npcDefeated
         });
 
-        if (appliedDamage > 0 && currentToughness > 0 && newToughness <= 0) {
-            await _postCriticalWoundPrompt({
-                targetActor,
-                damageTaken: overflowDamage
-            });
+        if (appliedDamage > 0 && becameIncapacitated) {
+            if (isNpc && (npcFastDamage || !npcTrackInjuries)) {
+                await _postDeathNotice({
+                    targetActor,
+                    damageTaken: overflowDamage,
+                    appliedDamage
+                });
+            } else {
+                await _postCriticalWoundPrompt({
+                    targetActor,
+                    damageTaken: overflowDamage
+                });
+            }
         }
     }
 
@@ -1092,19 +1152,26 @@ async function _applyDamage(message) {
 
     if (summaries.length === 1) {
         const summary = summaries[0];
-        ui.notifications.info(game.i18n.format("LAUNDRY.DamageApplied", {
+        const baseSummary = game.i18n.format("LAUNDRY.DamageApplied", {
             name: summary.name,
             rolled: summary.rolled,
             armour: summary.armour,
             applied: summary.applied,
             from: summary.from,
             to: summary.to
-        }));
+        });
+        const mobSummary = summary.isNpc && summary.mobBefore > 1
+            ? ` | Mob ${summary.mobBefore} -> ${summary.mobAfter}`
+            : "";
+        const defeatedSummary = summary.defeated ? " | DEFEATED" : "";
+        ui.notifications.info(`${baseSummary}${mobSummary}${defeatedSummary}`);
     } else {
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker(),
             content: `<p><strong>Area Damage Applied:</strong> ${summaries.map(summary =>
                 `${_escapeHtml(summary.name)} (${summary.from} -> ${summary.to}, -${summary.applied})`
+                + `${summary.isNpc && summary.mobBefore > 1 ? ` [Mob ${summary.mobBefore} -> ${summary.mobAfter}]` : ""}`
+                + `${summary.defeated ? " [DEFEATED]" : ""}`
             ).join(" | ")}</p>`
         });
     }
@@ -1446,6 +1513,22 @@ async function _postCriticalWoundPrompt({ targetActor, damageTaken = 0 } = {}) {
     });
 }
 
+async function _postDeathNotice({ targetActor, damageTaken = 0, appliedDamage = 0 } = {}) {
+    if (!targetActor) return;
+    const safeName = _escapeHtml(targetActor.name ?? "Unknown");
+    const safeOverflow = Math.max(0, Math.trunc(Number(damageTaken) || 0));
+    const safeApplied = Math.max(0, Math.trunc(Number(appliedDamage) || 0));
+
+    await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: targetActor }),
+        content: `
+            <div class="laundry-death-card">
+                <div class="death-title">☠ DEATH CONFIRMED: ${safeName}</div>
+                <div>Damage Applied: <strong>${safeApplied}</strong>${safeOverflow > 0 ? ` | Overflow: <strong>${safeOverflow}</strong>` : ""}</div>
+            </div>`
+    });
+}
+
 async function _rollInjuryFromButton(ev) {
     const button = ev?.currentTarget;
     const damageTaken = Math.max(0, Math.trunc(Number(button?.dataset?.damageTaken ?? 0) || 0));
@@ -1472,6 +1555,21 @@ async function _rollInjuryFromButton(ev) {
             suppressChat: true
         })
     );
+    const lethalThresholdReached = total >= 6;
+
+    if (targetActor?.type === "npc" && lethalThresholdReached) {
+        const toughnessMax = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.toughness?.max) || 0));
+        await targetActor.update({
+            "system.npc.defeated": true,
+            "system.derived.toughness.value": 0,
+            "system.derived.toughness.damage": toughnessMax
+        });
+        await _postDeathNotice({
+            targetActor,
+            damageTaken,
+            appliedDamage: damageTaken
+        });
+    }
 
     await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),

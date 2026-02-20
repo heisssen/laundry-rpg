@@ -99,8 +99,50 @@ export class LaundryActor extends Actor {
     // ─── NPCs ─────────────────────────────────────────────────────────────────
 
     _prepareNpcData(sys) {
-        // NPCs use the same derived formula as characters.
+        sys.npc = foundry.utils.mergeObject({
+            mode: "lite",
+            class: "elite",
+            mobSize: 1,
+            trackInjuries: false,
+            fastDamage: true,
+            archetype: "",
+            defeated: false,
+            quickActions: []
+        }, sys.npc ?? {}, { inplace: false, overwrite: false });
+        sys.npc.mobSize = Math.max(1, Math.trunc(Number(sys.npc.mobSize) || 1));
+        sys.npc.mode = String(sys.npc.mode ?? "lite");
+        sys.npc.class = String(sys.npc.class ?? "elite");
+        sys.npc.trackInjuries = Boolean(sys.npc.trackInjuries);
+        sys.npc.fastDamage = Boolean(sys.npc.fastDamage);
+        sys.npc.archetype = String(sys.npc.archetype ?? "");
+        sys.npc.defeated = Boolean(sys.npc.defeated);
+        sys.npc.quickActions = Array.isArray(sys.npc.quickActions) ? sys.npc.quickActions : [];
+
+        // NPCs derive core combat values from the same baseline as characters.
         this._prepareCharacterData(sys);
+
+        if (!sys.npc.trackInjuries) {
+            sys.derived.injuries.max = 0;
+            sys.derived.injuries.value = 0;
+        }
+
+        if (sys.npc.class === "minion") {
+            sys.derived.adrenaline.max = 0;
+            sys.derived.adrenaline.value = 0;
+            if (sys.derived.toughness.max > 2) {
+                sys.derived.toughness.max = Math.max(1, Math.ceil(sys.derived.toughness.max / 2));
+                sys.derived.toughness.value = Math.min(sys.derived.toughness.value, sys.derived.toughness.max);
+                sys.derived.toughness.damage = Math.max(0, sys.derived.toughness.max - sys.derived.toughness.value);
+            }
+        } else if (sys.npc.class === "boss") {
+            sys.derived.adrenaline.max = Math.max(sys.derived.adrenaline.max, 2);
+            sys.derived.adrenaline.value = Math.min(sys.derived.adrenaline.max, Math.max(1, sys.derived.adrenaline.value));
+        }
+
+        if (sys.npc.defeated) {
+            sys.derived.toughness.value = 0;
+            sys.derived.toughness.damage = Math.max(0, sys.derived.toughness.max);
+        }
     }
 
     // ─── Assignment application ───────────────────────────────────────────────

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.14.0 - 2026-02-20
+
+### Added
+- NPC Ops workflow on NPC sheets: preset apply, NPC class/mode controls, mob size, fast-damage toggles, defeated-state controls, and editable one-line NPC action cards.
+- Automatic NPC death display in chat (`☠ DEATH CONFIRMED`) during fast/minion kill resolution and lethal NPC injury outcomes.
+- GM Tracker NPC Rapid Spawn panel with preset + count + name controls for immediate encounter setup.
+
+### Changed
+- Damage automation now supports NPC-lite combat flow directly in Apply Damage: minion/fast-mode defeat handling, mob casualty reduction, defeated state sync, and reduced condition clutter for defeated NPCs.
+- GM Tracker combat rows now include tactical hint badges (Critical, No Action, No Move, Defeated, Can Cast, Ranged).
+- Added new NPC and GM tracker styling blocks for clean desktop/mobile operation in Foundry v12/v13.
+
 ## 1.13.0 - 2026-02-20
 
 ### Added

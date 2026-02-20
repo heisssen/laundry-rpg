@@ -1,5 +1,6 @@
 import { rollDice } from "../dice.js";
 import { normalizeKpiEntries, summarizeKpiEntries } from "../utils/kpi.js";
+import { NPC_PRESETS, createNpcFromPreset, getNpcPreset } from "../utils/npc-presets.js";
 
 export class LaundryGMTracker extends Application {
 
@@ -75,11 +76,31 @@ export class LaundryGMTracker extends Application {
                 if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
                 return b.initiative - a.initiative;
             });
+        const combatantsWithHints = combatants.map(entry => {
+            const actor = game.actors?.get(entry.actorId) ?? null;
+            const hints = [];
+            if (entry.isCritical) hints.push("Critical");
+            if (entry.noActionsLeft) hints.push("No Action");
+            if (entry.noMoveLeft) hints.push("No Move");
+            if ((actor?.system?.npc?.defeated ?? false) === true) hints.push("Defeated");
+            const hasSpellAction = Array.isArray(actor?.system?.npc?.quickActions)
+                && actor.system.npc.quickActions.some(action => String(action?.kind ?? "").toLowerCase() === "spell");
+            const hasSpells = actor?.items?.some(item => item.type === "spell");
+            if (hasSpellAction || hasSpells) hints.push("Can Cast");
+            const hasRanged = actor?.items?.some(item =>
+                item.type === "weapon" && String(item.system?.skill ?? "").toLowerCase().includes("ranged")
+            );
+            if (hasRanged) hints.push("Ranged");
+            return {
+                ...entry,
+                hints: hints.join(" | ") || "Standard"
+            };
+        });
         const combatSummary = {
-            total: combatants.length,
-            critical: combatants.filter(entry => entry.isCritical).length,
-            noActions: combatants.filter(entry => entry.noActionsLeft).length,
-            noMove: combatants.filter(entry => entry.noMoveLeft).length
+            total: combatantsWithHints.length,
+            critical: combatantsWithHints.filter(entry => entry.isCritical).length,
+            noActions: combatantsWithHints.filter(entry => entry.noActionsLeft).length,
+            noMove: combatantsWithHints.filter(entry => entry.noMoveLeft).length
         };
 
         return {
@@ -89,9 +110,10 @@ export class LaundryGMTracker extends Application {
             hasTarget: Boolean(actor),
             pcs,
             hasPcs: pcs.length > 0,
-            hasCombat: Boolean(combat && combat.started && combatants.length),
-            combatants,
-            combatSummary
+            hasCombat: Boolean(combat && combat.started && combatantsWithHints.length),
+            combatants: combatantsWithHints,
+            combatSummary,
+            npcPresets: NPC_PRESETS.map(entry => ({ id: entry.id, name: entry.name }))
         };
     }
 
@@ -121,6 +143,7 @@ export class LaundryGMTracker extends Application {
         html.find(".combat-adjust").on("click", (ev) => this._onCombatAdjust(ev));
         html.find(".combat-open-sheet").on("click", (ev) => this._onCombatOpenSheet(ev));
         html.find(".combat-next-turn").on("click", (ev) => this._onCombatNextTurn(ev));
+        html.find(".spawn-npc").on("click", (ev) => this._onSpawnNpc(ev));
         html.find(".open-rules").on("click", (ev) => this._onOpenCompendium(ev, "laundry-rpg.rules"));
         html.find(".open-spells").on("click", (ev) => this._onOpenCompendium(ev, "laundry-rpg.spells"));
     }
@@ -323,6 +346,50 @@ export class LaundryGMTracker extends Application {
         if (!game.user?.isGM) return;
         if (!game.combat?.started) return;
         await game.combat.nextTurn();
+        this.render(false);
+    }
+
+    async _onSpawnNpc(ev) {
+        ev.preventDefault();
+        if (!game.user?.isGM) return;
+        if (!canvas?.scene) {
+            ui.notifications.warn("No active scene available.");
+            return;
+        }
+
+        const root = this.element?.[0];
+        const presetId = String(root?.querySelector('[name="spawnPreset"]')?.value ?? "").trim();
+        const preset = getNpcPreset(presetId);
+        if (!preset) {
+            ui.notifications.warn("Choose an NPC preset first.");
+            return;
+        }
+
+        const baseName = String(root?.querySelector('[name="spawnName"]')?.value ?? "").trim() || preset.name;
+        const count = Math.max(1, Math.min(20, Math.trunc(Number(root?.querySelector('[name="spawnCount"]')?.value ?? 1) || 1)));
+        const anchorToken = _getPrimaryTargetToken() ?? canvas.tokens?.controlled?.[0] ?? null;
+        const anchorX = anchorToken?.document?.x ?? Math.max(0, Math.trunc(Number(canvas.scene.grid?.size) || 100) * 2);
+        const anchorY = anchorToken?.document?.y ?? Math.max(0, Math.trunc(Number(canvas.scene.grid?.size) || 100) * 2);
+        const grid = Math.max(50, Math.trunc(Number(canvas.scene.grid?.size) || 100));
+        let created = 0;
+
+        for (let idx = 0; idx < count; idx++) {
+            const row = Math.floor(idx / 4);
+            const col = idx % 4;
+            const x = anchorX + (col * grid);
+            const y = anchorY + (row * grid);
+            const npcName = count > 1 ? `${baseName} ${idx + 1}` : baseName;
+            const npc = await createNpcFromPreset({
+                presetId: preset.id,
+                name: npcName,
+                scene: canvas.scene,
+                x,
+                y
+            });
+            if (npc) created += 1;
+        }
+
+        ui.notifications.info(`Spawned ${created} NPC(s) from ${preset.name}.`);
         this.render(false);
     }
 
