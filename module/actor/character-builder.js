@@ -2,6 +2,7 @@ export class LaundryCharacterBuilder extends Application {
     constructor(actor, options = {}) {
         super(options);
         this.actor = actor;
+        this._assignmentById = new Map();
     }
 
     static get defaultOptions() {
@@ -10,7 +11,7 @@ export class LaundryCharacterBuilder extends Application {
             classes: ["laundry-rpg", "character-builder"],
             template: "systems/laundry-rpg/templates/actor/character-builder.html",
             title: "Initialize Agent",
-            width: 520,
+            width: 640,
             height: "auto"
         });
     }
@@ -18,19 +19,17 @@ export class LaundryCharacterBuilder extends Application {
     async getData() {
         const pack = game.packs.get("laundry-rpg.assignments");
         let assignments = [];
+        this._assignmentById = new Map();
 
         if (pack) {
             const docs = await pack.getDocuments();
-            assignments = docs.map(doc => ({
-                id: doc.id,
-                name: doc.name,
-                description: doc.system?.description ?? "",
-                attributes: doc.system?.attributes ?? { body: 1, mind: 1, spirit: 1 },
-                coreSkills: doc.system?.coreSkills ?? "",
-                coreTalent: doc.system?.coreTalent ?? "",
-                talents: doc.system?.talents ?? "",
-                equipment: doc.system?.equipment ?? ""
-            }));
+            assignments = docs
+                .map(doc => _toAssignmentData(doc))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            for (const assignment of assignments) {
+                this._assignmentById.set(assignment.id, assignment);
+            }
         }
 
         return {
@@ -50,9 +49,13 @@ export class LaundryCharacterBuilder extends Application {
             this._onSubmit(ev);
         });
         html.find(".builder-cancel").on("click", () => this.close());
-        html.find("#assignment-select").on("change", (ev) => this._updatePreview(ev.currentTarget));
+        html.find("#assignment-select").on("change", (ev) => {
+            this._renderAssignmentDetails(ev.currentTarget?.value ?? "");
+        });
+        html.on("change", ".builder-choice-input", (ev) => this._onChoiceChanged(ev.currentTarget));
+
         const select = html.find("#assignment-select")[0];
-        if (select) this._updatePreview(select);
+        if (select) this._renderAssignmentDetails(select.value);
     }
 
     async _onSubmit(ev) {
@@ -62,9 +65,32 @@ export class LaundryCharacterBuilder extends Application {
             ? ev.currentTarget
             : ev.currentTarget?.closest?.("form");
         if (!form) return;
-        const assignmentId = form.querySelector('[name="assignment"]')?.value;
+        const assignmentId = form.querySelector('[name="assignment"]')?.value?.trim();
         if (!assignmentId) {
             ui.notifications.warn("Select an Assignment to initialize this agent.");
+            return;
+        }
+
+        const assignmentData = this._assignmentById.get(assignmentId);
+        if (!assignmentData) {
+            ui.notifications.error("Assignment details are unavailable.");
+            return;
+        }
+
+        const chosenSkills = _uniqueList(
+            _readCheckedValues(form, "skill").filter(name => assignmentData.optionalSkills.includes(name))
+        );
+        const chosenTalents = _uniqueList(
+            _readCheckedValues(form, "talent").filter(name => assignmentData.optionalTalents.includes(name))
+        );
+
+        if (assignmentData.skillChoiceCount > 0 && chosenSkills.length !== assignmentData.skillChoiceCount) {
+            ui.notifications.warn(`Select exactly ${assignmentData.skillChoiceCount} optional skill(s).`);
+            return;
+        }
+
+        if (assignmentData.talentChoiceCount > 0 && chosenTalents.length !== assignmentData.talentChoiceCount) {
+            ui.notifications.warn(`Select exactly ${assignmentData.talentChoiceCount} optional talent(s).`);
             return;
         }
 
@@ -90,39 +116,173 @@ export class LaundryCharacterBuilder extends Application {
             if (!confirmed) return;
         }
 
-        await applyAssignmentToActor(this.actor, assignment);
+        await applyAssignmentToActor(this.actor, assignment, {
+            chosenSkills,
+            chosenTalents
+        });
         this.close();
     }
 
-    _updatePreview(selectEl) {
-        if (!selectEl) return;
-        const option = selectEl.options[selectEl.selectedIndex];
-        const data = option?.dataset ?? {};
-
+    _renderAssignmentDetails(assignmentId) {
         const root = this.element?.[0];
         if (!root) return;
+
+        const assignment = this._assignmentById.get(assignmentId);
 
         const setText = (selector, value, fallback = "-") => {
             const el = root.querySelector(selector);
             if (!el) return;
-            const text = (value ?? "").toString().trim();
+            const text = Array.isArray(value)
+                ? _formatList(value)
+                : (value ?? "").toString().trim();
             el.textContent = text.length ? text : fallback;
         };
 
-        setText(".preview-description", data.description, "No description.");
-        setText(".preview-body", data.body);
-        setText(".preview-mind", data.mind);
-        setText(".preview-spirit", data.spirit);
-        setText(".preview-coreskills", data.coreskills);
-        setText(".preview-coretalent", data.coretalent);
-        setText(".preview-talents", data.talents);
-        setText(".preview-equipment", data.equipment);
+        if (!assignment) {
+            setText(".preview-description", "", "Select an assignment to see details.");
+            setText(".preview-body", "-");
+            setText(".preview-mind", "-");
+            setText(".preview-spirit", "-");
+            setText(".preview-core-skills", "-");
+            setText(".preview-optional-skills", "-");
+            setText(".preview-core-talents", "-");
+            setText(".preview-optional-talents", "-");
+            setText(".preview-equipment", "-");
+            this._renderChoiceList("skill", [], 0, "Select an assignment first.");
+            this._renderChoiceList("talent", [], 0, "Select an assignment first.");
+            this._updateChoiceCounters({ skillChoiceCount: 0, talentChoiceCount: 0 });
+            return;
+        }
+
+        setText(".preview-description", assignment.description, "No description.");
+        setText(".preview-body", assignment.attributes.body);
+        setText(".preview-mind", assignment.attributes.mind);
+        setText(".preview-spirit", assignment.attributes.spirit);
+        setText(".preview-core-skills", assignment.coreSkills);
+        setText(".preview-optional-skills", assignment.optionalSkills);
+        setText(".preview-core-talents", assignment.coreTalents);
+        setText(".preview-optional-talents", assignment.optionalTalents);
+        setText(".preview-equipment", assignment.equipment);
+
+        this._renderChoiceList(
+            "skill",
+            assignment.optionalSkills,
+            assignment.skillChoiceCount,
+            "No optional skills for this assignment."
+        );
+        this._renderChoiceList(
+            "talent",
+            assignment.optionalTalents,
+            assignment.talentChoiceCount,
+            "No optional talents for this assignment."
+        );
+        this._updateChoiceCounters(assignment);
+    }
+
+    _renderChoiceList(kind, options, choiceCount, emptyMessage) {
+        const root = this.element?.[0];
+        if (!root) return;
+
+        const listEl = root.querySelector(`.${kind}-choices`);
+        const hintEl = root.querySelector(`.${kind}-choice-hint`);
+        if (!listEl || !hintEl) return;
+
+        if (!options.length) {
+            listEl.innerHTML = `<p class="builder-choice-empty">${_escapeHtml(emptyMessage)}</p>`;
+            hintEl.textContent = "No selection required.";
+            return;
+        }
+
+        hintEl.textContent = choiceCount > 0
+            ? `Choose ${choiceCount}.`
+            : "Choose any number.";
+
+        listEl.innerHTML = options.map(name => (
+            `<label class="builder-choice-option">
+                <input class="builder-choice-input" type="checkbox" data-choice-kind="${kind}" value="${_escapeHtml(name)}" />
+                <span>${_escapeHtml(name)}</span>
+            </label>`
+        )).join("");
+    }
+
+    _onChoiceChanged(inputEl) {
+        if (!inputEl) return;
+        const kind = inputEl.dataset?.choiceKind;
+        if (!kind) return;
+
+        const assignment = this._getSelectedAssignment();
+        if (!assignment) return;
+
+        const choiceCount = kind === "skill"
+            ? assignment.skillChoiceCount
+            : assignment.talentChoiceCount;
+
+        if (choiceCount > 0) {
+            const root = this.element?.[0];
+            if (!root) return;
+            const checked = root.querySelectorAll(
+                `.builder-choice-input[data-choice-kind="${kind}"]:checked`
+            );
+            if (checked.length > choiceCount) {
+                inputEl.checked = false;
+                const label = kind === "skill" ? "skills" : "talents";
+                ui.notifications.warn(`You can choose only ${choiceCount} ${label}.`);
+            }
+        }
+
+        this._updateChoiceCounters(assignment);
+    }
+
+    _updateChoiceCounters(assignment) {
+        const root = this.element?.[0];
+        if (!root) return;
+
+        this._updateChoiceCounter(root, "skill", assignment?.skillChoiceCount ?? 0);
+        this._updateChoiceCounter(root, "talent", assignment?.talentChoiceCount ?? 0);
+    }
+
+    _updateChoiceCounter(root, kind, choiceCount) {
+        const counter = root.querySelector(`.${kind}-choice-counter`);
+        if (!counter) return;
+
+        const selected = root.querySelectorAll(
+            `.builder-choice-input[data-choice-kind="${kind}"]:checked`
+        ).length;
+
+        if (choiceCount > 0) {
+            counter.textContent = `${selected}/${choiceCount} selected`;
+            counter.classList.toggle("is-valid", selected === choiceCount);
+            counter.classList.toggle("is-invalid", selected !== choiceCount);
+            return;
+        }
+
+        counter.textContent = `${selected} selected`;
+        counter.classList.remove("is-valid", "is-invalid");
+    }
+
+    _getSelectedAssignment() {
+        const root = this.element?.[0];
+        if (!root) return null;
+        const assignmentId = root.querySelector('[name="assignment"]')?.value?.trim();
+        if (!assignmentId) return null;
+        return this._assignmentById.get(assignmentId) ?? null;
     }
 }
 
-async function applyAssignmentToActor(actor, assignment) {
+async function applyAssignmentToActor(actor, assignment, selected = {}) {
     const sys = assignment.system ?? {};
     const attributes = sys.attributes ?? {};
+    const parsed = _parseAssignmentSystem(sys);
+
+    const selectedSkills = Array.isArray(selected.chosenSkills)
+        ? selected.chosenSkills
+        : [];
+    const selectedTalents = Array.isArray(selected.chosenTalents)
+        ? selected.chosenTalents
+        : [];
+
+    const skillsToAdd = _uniqueList(parsed.coreSkills.concat(selectedSkills));
+    const talentsToAdd = _uniqueList(parsed.coreTalents.concat(selectedTalents));
 
     await actor.update({
         "system.attributes.body.value": attributes.body ?? 1,
@@ -136,30 +296,23 @@ async function applyAssignmentToActor(actor, assignment) {
     const skills = await _fetchCompendiumItems(
         "laundry-rpg.skills",
         "skill",
-        _parseList(sys.coreSkills),
+        skillsToAdd,
         _stubSkill
-    );
-
-    const coreTalents = await _fetchCompendiumItems(
-        "laundry-rpg.talents",
-        "talent",
-        _parseList(sys.coreTalent),
-        _stubTalent
     );
 
     const talents = await _fetchCompendiumItems(
         "laundry-rpg.talents",
         "talent",
-        _parseList(sys.talents),
+        talentsToAdd,
         _stubTalent
     );
 
     const equipment = await _fetchEquipmentItems(
-        _parseList(sys.equipment)
+        parsed.equipment
     );
 
     const pending = []
-        .concat(skills, coreTalents, talents, equipment)
+        .concat(skills, talents, equipment)
         .filter(item => item && !existing.has(`${item.type}:${item.name.toLowerCase()}`));
 
     const dedupe = new Set();
@@ -181,6 +334,119 @@ function _parseList(value) {
     if (!value) return [];
     if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
     return String(value).split(",").map(v => v.trim()).filter(Boolean);
+}
+
+function _parseChoiceCount(value) {
+    if (value === null || value === undefined || value === "") return null;
+    if (Number.isFinite(value)) {
+        const n = Math.floor(Number(value));
+        return n >= 0 ? n : null;
+    }
+
+    const match = String(value).match(/\d+/);
+    if (!match) return null;
+    const parsed = Number(match[0]);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return Math.floor(parsed);
+}
+
+function _uniqueList(values) {
+    const out = [];
+    const seen = new Set();
+
+    for (const raw of values ?? []) {
+        const value = String(raw ?? "").trim();
+        if (!value) continue;
+        const key = value.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(value);
+    }
+
+    return out;
+}
+
+function _parseAssignmentSystem(sys = {}) {
+    const listedSkills = _uniqueList(_parseList(sys.coreSkills));
+    const parsedCoreSkills = _uniqueList(_parseList(sys.coreSkill));
+    const coreSkills = parsedCoreSkills.length
+        ? parsedCoreSkills
+        : (listedSkills.length ? [listedSkills[0]] : []);
+
+    let optionalSkills = _uniqueList(_parseList(sys.skillOptions));
+    if (!optionalSkills.length && listedSkills.length) {
+        const coreSet = new Set(coreSkills.map(name => name.toLowerCase()));
+        optionalSkills = listedSkills.filter(name => !coreSet.has(name.toLowerCase()));
+    }
+
+    const coreTalents = _uniqueList(_parseList(sys.coreTalent));
+    const optionalTalents = _uniqueList(_parseList(sys.talents));
+    const equipment = _uniqueList(_parseList(sys.equipment));
+
+    const parsedSkillChoices = _parseChoiceCount(
+        sys.skillChoiceCount ?? sys.skillChoices ?? sys.skillsToChoose
+    );
+    const skillChoiceCount = parsedSkillChoices ?? 0;
+
+    const parsedTalentChoices = _parseChoiceCount(
+        sys.talentChoiceCount ?? sys.talentChoices ?? sys.talentsToChoose
+    );
+    const talentChoiceCount = parsedTalentChoices
+        ?? (optionalTalents.length ? Math.min(2, optionalTalents.length) : 0);
+
+    return {
+        coreSkills,
+        optionalSkills,
+        coreTalents,
+        optionalTalents,
+        equipment,
+        skillChoiceCount,
+        talentChoiceCount
+    };
+}
+
+function _toAssignmentData(doc) {
+    const sys = doc.system ?? {};
+    const attrs = sys.attributes ?? {};
+    const parsed = _parseAssignmentSystem(sys);
+
+    return {
+        id: doc.id,
+        name: doc.name,
+        description: sys.description ?? "",
+        attributes: {
+            body: Number(attrs.body ?? 1),
+            mind: Number(attrs.mind ?? 1),
+            spirit: Number(attrs.spirit ?? 1)
+        },
+        coreSkills: parsed.coreSkills,
+        optionalSkills: parsed.optionalSkills,
+        coreTalents: parsed.coreTalents,
+        optionalTalents: parsed.optionalTalents,
+        equipment: parsed.equipment,
+        skillChoiceCount: parsed.skillChoiceCount,
+        talentChoiceCount: parsed.talentChoiceCount
+    };
+}
+
+function _readCheckedValues(form, kind) {
+    return Array.from(
+        form.querySelectorAll(`.builder-choice-input[data-choice-kind="${kind}"]:checked`)
+    ).map(el => String(el.value ?? "").trim()).filter(Boolean);
+}
+
+function _formatList(values) {
+    const list = Array.isArray(values) ? values.filter(Boolean) : [];
+    return list.length ? list.join(", ") : "";
+}
+
+function _escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
 }
 
 async function _fetchCompendiumItems(packId, type, names, stubFn) {
@@ -240,7 +506,7 @@ function _stubSkill(name) {
         name,
         type: "skill",
         img: "icons/svg/book.svg",
-        system: { description: "Skill added from Assignment.", attribute: "mind", training: 1, focus: 0 }
+        system: { description: "Skill added from Assignment.", attribute: "mind", training: 0, focus: 0 }
     };
 }
 

@@ -4,8 +4,11 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path('/mnt/Data/laundry/laundry-rpg')
-PDF_PATH = ROOT / "The Laundry Roleplaying Game - Operative's Handbook.pdf"
-TXT_PATH = Path('/tmp/laundry.pdf.txt')
+PDF_CANDIDATES = [
+    ROOT / "The Laundry Roleplaying Game - Operative's Handbook.pdf",
+    ROOT / "The Laundry Roleplaying Game - Operative's Handbook_compressed.pdf"
+]
+TXT_PATH = ROOT / 'tmp' / 'pdfs' / 'handbook.txt'
 
 PACKS_DIR = ROOT / 'packs'
 PACKS_DIR.mkdir(exist_ok=True)
@@ -48,8 +51,13 @@ SKILLS_DEFAULTS = [
 def ensure_text():
     if TXT_PATH.exists():
         return
+    TXT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    pdf_path = next((p for p in PDF_CANDIDATES if p.exists()), None)
+    if pdf_path is None:
+        candidates = "\n".join(str(p) for p in PDF_CANDIDATES)
+        raise FileNotFoundError(f"Could not find source PDF. Looked for:\n{candidates}")
     subprocess.run([
-        'pdftotext', '-layout', str(PDF_PATH), str(TXT_PATH)
+        'pdftotext', '-layout', str(pdf_path), str(TXT_PATH)
     ], check=True)
 
 
@@ -64,6 +72,27 @@ def title_case(name: str) -> str:
 
 def split_cols(line: str):
     return [c for c in re.split(r"\s{2,}", line.strip()) if c]
+
+
+def unique_preserve(items):
+    seen = set()
+    out = []
+    for item in items:
+        key = item.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(item)
+    return out
+
+
+def clean_csv_list(value: str):
+    parts = []
+    for raw in re.split(r",", value or ""):
+        cleaned = raw.strip().rstrip('*').strip()
+        if cleaned:
+            parts.append(cleaned)
+    return unique_preserve(parts)
 
 
 def extract_talents(lines):
@@ -134,8 +163,10 @@ def extract_assignments(lines):
 
             core_skill = ''
             skills_list = ''
+            skill_xp = 0
             core_talent = ''
             talents = ''
+            talent_choices = 0
             equipment = ''
 
             for k in range(i + 1, min(i + 30, len(lines))):
@@ -144,37 +175,60 @@ def extract_assignments(lines):
                     continue
                 if l.startswith('Core Skill:'):
                     core_skill = l.split('Core Skill:', 1)[1].strip()
-                elif l.startswith('Skills (12 XP):'):
-                    skills_list = l.split('Skills (12 XP):', 1)[1].strip()
-                    for m in range(k + 1, min(k + 5, len(lines))):
-                        ml = lines[m].strip()
-                        if not ml:
-                            continue
-                        if any(ml.startswith(x) for x in ['Core Talent:', 'Talents (Choose', 'Equipment:']):
-                            break
-                        skills_list += ' ' + ml
-                elif l.startswith('Core Talent:'):
-                    core_talent = l.split('Core Talent:', 1)[1].strip()
-                elif l.startswith('Talents (Choose'):
-                    talents = l.split(':', 1)[1].strip()
-                    for m in range(k + 1, min(k + 5, len(lines))):
-                        ml = lines[m].strip()
-                        if not ml:
-                            continue
-                        if ml.startswith('Equipment:'):
-                            break
-                        talents += ' ' + ml
-                elif l.startswith('Equipment:'):
-                    equipment = l.split('Equipment:', 1)[1].strip()
-                    break
+                else:
+                    skill_match = re.match(r"Skills\s*\((\d+)\s*XP\):\s*(.*)", l)
+                    talent_match = re.match(r"Talents\s*\(Choose\s*(\d+)\):\s*(.*)", l)
 
-            def clean_list(s):
-                return ', '.join([p.strip() for p in re.split(r",", s) if p.strip()])
+                    if skill_match:
+                        skill_xp = int(skill_match.group(1))
+                        skills_list = skill_match.group(2).strip()
+                        for m in range(k + 1, min(k + 5, len(lines))):
+                            ml = lines[m].strip()
+                            if not ml:
+                                continue
+                            if any(ml.startswith(x) for x in ['Core Talent:', 'Talents (Choose', 'Equipment:']):
+                                break
+                            skills_list += ' ' + ml
+                        continue
 
-            core_skill_clean = clean_list(core_skill)
-            skills_clean = clean_list(skills_list)
+                    if l.startswith('Core Talent:'):
+                        core_talent = l.split('Core Talent:', 1)[1].strip()
+                        continue
 
-            combined_skills = ', '.join([p for p in [core_skill_clean, skills_clean] if p])
+                    if talent_match:
+                        talent_choices = int(talent_match.group(1))
+                        talents = talent_match.group(2).strip()
+                        for m in range(k + 1, min(k + 5, len(lines))):
+                            ml = lines[m].strip()
+                            if not ml:
+                                continue
+                            if ml.startswith('Equipment:'):
+                                break
+                            talents += ' ' + ml
+                        continue
+
+                    if l.startswith('Talents (Choose'):
+                        talents = l.split(':', 1)[1].strip()
+                        for m in range(k + 1, min(k + 5, len(lines))):
+                            ml = lines[m].strip()
+                            if not ml:
+                                continue
+                            if any(ml.startswith(x) for x in ['Core Talent:', 'Talents (Choose', 'Equipment:']):
+                                break
+                            talents += ' ' + ml
+                        continue
+
+                    if l.startswith('Equipment:'):
+                        equipment = l.split('Equipment:', 1)[1].strip()
+                        break
+
+            core_skill_list = clean_csv_list(core_skill)
+            core_skill_name = core_skill_list[0] if core_skill_list else ''
+            skill_options = clean_csv_list(skills_list)
+            if core_skill_name:
+                skill_options = [s for s in skill_options if s.casefold() != core_skill_name.casefold()]
+            combined_skills = ', '.join(unique_preserve(core_skill_list + skill_options))
+            talents_clean = clean_csv_list(talents)
 
             assignments.append({
                 'name': name,
@@ -183,10 +237,14 @@ def extract_assignments(lines):
                     'mind': int(nums[1]),
                     'spirit': int(nums[2])
                 },
+                'coreSkill': core_skill_name,
+                'skillOptions': ', '.join(skill_options),
+                'skillXP': skill_xp,
+                'talentChoices': talent_choices,
                 'coreSkills': combined_skills,
                 'coreTalent': core_talent,
-                'talents': clean_list(talents),
-                'equipment': clean_list(equipment)
+                'talents': ', '.join(talents_clean),
+                'equipment': ', '.join(clean_csv_list(equipment))
             })
 
     uniq = {}

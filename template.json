@@ -61,6 +61,10 @@
         "assignment": {
             "templates": ["base"],
             "attributes": { "body": 0, "mind": 0, "spirit": 0 },
+            "coreSkill": "",
+            "skillOptions": "",
+            "skillXP": 0,
+            "talentChoices": 2,
             "coreSkills": "",
             "coreTalent": "",
             "talents": "",

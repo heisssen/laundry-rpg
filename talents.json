@@ -1132,5 +1132,32 @@
       "description": "<p>You are a skilled performer, but you have exceptional talent with one type of performance in particular.</p>",
       "requirements": "Focus (1) in Presence"
     }
+  },
+  {
+    "name": "Voice of Authority",
+    "type": "talent",
+    "img": "icons/skills/social/intimidation-imposing.webp",
+    "system": {
+      "description": "<p>You project authority and inspire trust. You have Advantage on Tests to instruct, direct, or persuade groups of people.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Wall Street",
+    "type": "talent",
+    "img": "icons/commodities/currency/coins-assorted-mix-copper.webp",
+    "system": {
+      "description": "<p>You are skilled at bargaining, haggling, and brokering contracts. You have Advantage on business deal Tests and failed bribes are less likely to be reported.</p>",
+      "requirements": "None"
+    }
+  },
+  {
+    "name": "Word on the Street",
+    "type": "talent",
+    "img": "icons/skills/social/theft-pickpocket-bribery-brown.webp",
+    "system": {
+      "description": "<p>You stay current with local news and rumours. Gain Advantage on Tests to gather local gossip and you always recognize local celebrities.</p>",
+      "requirements": "Focus (1) in Academics"
+    }
   }
 ]

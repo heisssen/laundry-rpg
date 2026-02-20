@@ -617,6 +617,77 @@
     justify-content: flex-end;
 }
 
+.laundry-rpg .builder-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.laundry-rpg .builder-choice-group {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.35);
+    padding: 8px;
+}
+
+.laundry-rpg .builder-choice-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.laundry-rpg .builder-choice-head h3 {
+    margin: 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-stamp);
+}
+
+.laundry-rpg .builder-choice-counter {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .builder-choice-counter.is-valid {
+    color: var(--laundry-success);
+}
+
+.laundry-rpg .builder-choice-counter.is-invalid {
+    color: var(--laundry-stamp);
+}
+
+.laundry-rpg .builder-choice-hint {
+    margin: 0 0 6px;
+    font-size: 11px;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .builder-choice-list {
+    max-height: 180px;
+    overflow: auto;
+    display: grid;
+    gap: 4px;
+    padding-right: 2px;
+}
+
+.laundry-rpg .builder-choice-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.laundry-rpg .builder-choice-empty {
+    margin: 0;
+    font-size: 11px;
+    color: var(--laundry-ink-muted);
+}
+
 .laundry-rpg .builder-preview {
     border: 1px solid var(--laundry-line);
     background: rgba(255,255,255,0.4);
@@ -649,6 +720,11 @@
     color: var(--laundry-ink-muted);
 }
 
+.laundry-rpg .preview-row span:first-child {
+    font-weight: bold;
+    color: var(--laundry-ink);
+}
+
 .laundry-rpg .builder-empty {
     font-size: 12px;
     color: var(--laundry-ink-muted);
@@ -671,6 +747,12 @@
     color: var(--laundry-ink);
     padding: 4px 10px;
     cursor: pointer;
+}
+
+@media (max-width: 680px) {
+    .laundry-rpg .builder-selection-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── Chat Dice Card ─────────────────────────────────────────────────────── */

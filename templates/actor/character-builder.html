@@ -1,7 +1,7 @@
 <form class="character-builder-form" method="post" action="javascript:void(0);">
     <header class="builder-header">
         <h2>Initialize {{actorName}}</h2>
-        <p>Select an Assignment to generate core attributes, skills, talents, and requisitioned kit.</p>
+        <p>Select an Assignment, then choose only the optional skills and talents your agent should start with.</p>
     </header>
 
     {{#if hasAssignments}}
@@ -10,19 +10,35 @@
         <select name="assignment" id="assignment-select" required>
             <option value="">Select Assignment</option>
             {{#each assignments as |assignment|}}
-            <option value="{{assignment.id}}"
-                data-description="{{assignment.description}}"
-                data-coreskills="{{assignment.coreSkills}}"
-                data-coretalent="{{assignment.coreTalent}}"
-                data-talents="{{assignment.talents}}"
-                data-equipment="{{assignment.equipment}}"
-                data-body="{{assignment.attributes.body}}"
-                data-mind="{{assignment.attributes.mind}}"
-                data-spirit="{{assignment.attributes.spirit}}">
+            <option value="{{assignment.id}}">
                 {{assignment.name}} (B{{assignment.attributes.body}} / M{{assignment.attributes.mind}} / S{{assignment.attributes.spirit}})
             </option>
             {{/each}}
         </select>
+    </div>
+
+    <div class="builder-selection-grid">
+        <section class="builder-choice-group">
+            <div class="builder-choice-head">
+                <h3>Optional Skills</h3>
+                <span class="builder-choice-counter skill-choice-counter">0 selected</span>
+            </div>
+            <p class="builder-choice-hint skill-choice-hint">Select an assignment to configure optional skills.</p>
+            <div class="builder-choice-list skill-choices">
+                <p class="builder-choice-empty">Select an assignment first.</p>
+            </div>
+        </section>
+
+        <section class="builder-choice-group">
+            <div class="builder-choice-head">
+                <h3>Optional Talents</h3>
+                <span class="builder-choice-counter talent-choice-counter">0 selected</span>
+            </div>
+            <p class="builder-choice-hint talent-choice-hint">Select an assignment to configure optional talents.</p>
+            <div class="builder-choice-list talent-choices">
+                <p class="builder-choice-empty">Select an assignment first.</p>
+            </div>
+        </section>
     </div>
 
     <div class="builder-preview">
@@ -33,9 +49,10 @@
             <span>Mind: <strong class="preview-mind">-</strong></span>
             <span>Spirit: <strong class="preview-spirit">-</strong></span>
         </div>
-        <div class="preview-row"><span>Core Skills:</span> <span class="preview-coreskills">-</span></div>
-        <div class="preview-row"><span>Core Talent:</span> <span class="preview-coretalent">-</span></div>
-        <div class="preview-row"><span>Talents:</span> <span class="preview-talents">-</span></div>
+        <div class="preview-row"><span>Core Skill(s):</span> <span class="preview-core-skills">-</span></div>
+        <div class="preview-row"><span>Optional Skills:</span> <span class="preview-optional-skills">-</span></div>
+        <div class="preview-row"><span>Core Talent(s):</span> <span class="preview-core-talents">-</span></div>
+        <div class="preview-row"><span>Talent Options:</span> <span class="preview-optional-talents">-</span></div>
         <div class="preview-row"><span>Equipment:</span> <span class="preview-equipment">-</span></div>
     </div>
 

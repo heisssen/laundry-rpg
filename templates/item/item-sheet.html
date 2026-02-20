@@ -66,12 +66,28 @@
                 <input type="text" name="system.coreSkills" value="{{system.coreSkills}}" />
             </div>
             <div class="form-group">
+                <label>Core Skill</label>
+                <input type="text" name="system.coreSkill" value="{{system.coreSkill}}" />
+            </div>
+            <div class="form-group">
+                <label>Skill Options <em>({{localize "LAUNDRY.CommaSeparated"}})</em></label>
+                <input type="text" name="system.skillOptions" value="{{system.skillOptions}}" />
+            </div>
+            <div class="form-group">
+                <label>Skill XP Budget</label>
+                <input type="number" name="system.skillXP" value="{{system.skillXP}}" min="0" />
+            </div>
+            <div class="form-group">
                 <label>{{localize "LAUNDRY.CoreTalent"}}</label>
                 <input type="text" name="system.coreTalent" value="{{system.coreTalent}}" />
             </div>
             <div class="form-group">
                 <label>{{localize "LAUNDRY.Talents"}} <em>({{localize "LAUNDRY.CommaSeparated"}})</em></label>
                 <input type="text" name="system.talents" value="{{system.talents}}" />
+            </div>
+            <div class="form-group">
+                <label>Talent Choices</label>
+                <input type="number" name="system.talentChoices" value="{{system.talentChoices}}" min="0" />
             </div>
             <div class="form-group">
                 <label>{{localize "LAUNDRY.StartingEquipment"}} <em>({{localize "LAUNDRY.CommaSeparated"}})</em></label>

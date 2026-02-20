@@ -1,24 +1,24 @@
-{"_id": "axm3d25y44c5absx", "name": "Academics", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "44621j8n4lujqdbz", "name": "Athletics", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "p8t1q8i2y4xlq1k0", "name": "Awareness", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "59m3ygzfi6tilykn", "name": "Bureaucracy", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "ynws258ah8f16wml", "name": "Close Combat", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "vqcs45bh1p0juiss", "name": "Computers", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "mznubap8h3yg4d90", "name": "Dexterity", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "ylvjazsjm04ni1uw", "name": "Engineering", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "bwuwe9gmf2xgbq83", "name": "Fast Talk", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "uba0khtjytfbme67", "name": "Fortitude", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "bivypd2ptbdzwvrx", "name": "Intuition", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "gth7rgbbduep86t1", "name": "Magic", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "th1exjlbtb8sxkz1", "name": "Medicine", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "bbriig7mcfhcdqvu", "name": "Might", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "7bmacr2h1b4xh7gu", "name": "Occult", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "7b2twie65lj74m58", "name": "Presence", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "497jq1qr7o7829vx", "name": "Ranged", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "o4qa5mccovy2sdyu", "name": "Reflexes", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "auzrr8xez26ibghm", "name": "Resolve", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "iczlvjm016jd5ool", "name": "Science", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "mptbpfuco8aiuclx", "name": "Stealth", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "2eq8e1b4u1m5jsib", "name": "Survival", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "7suj67dv9yla7tk0", "name": "Technology", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
-{"_id": "bl33m0es0vbmo8o0", "name": "Zeal", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "f82e44317099013b", "name": "Academics", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "c4ff11794fa72384", "name": "Athletics", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "609b2333c75b13c5", "name": "Awareness", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "fa2cf8bf7545c029", "name": "Bureaucracy", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "71239db9090a76c5", "name": "Close Combat", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "c1ecd15a8ccd5f29", "name": "Computers", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "e65680079c7ddf9a", "name": "Dexterity", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "df635ae27a56e18f", "name": "Engineering", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "e9e8e1e1a51a61df", "name": "Fast Talk", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "e3b505f01d7fd42c", "name": "Fortitude", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "edfc000dd783de09", "name": "Intuition", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "660fa5c40e602970", "name": "Magic", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "e3b6d974932b9cdf", "name": "Medicine", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "d3a8f66b7c2d4707", "name": "Might", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "e6546178a3497f37", "name": "Occult", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "28e578031a22c7f9", "name": "Presence", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "97f7d57a13b93d31", "name": "Ranged", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "716a88391496da90", "name": "Reflexes", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "1874f540b800da5f", "name": "Resolve", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "8e67e59fc43117a1", "name": "Science", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "a4795ae613e011f7", "name": "Stealth", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "body", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "2c19eabef9a5db01", "name": "Survival", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "f6f1b0f2a10653bc", "name": "Technology", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "mind", "training": 0, "focus": 0}, "effects": [], "flags": {}}
+{"_id": "7e5d7ba1f867242f", "name": "Zeal", "type": "skill", "img": "icons/svg/book.svg", "system": {"description": "", "attribute": "spirit", "training": 0, "focus": 0}, "effects": [], "flags": {}}
