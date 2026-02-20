@@ -33,8 +33,7 @@ export class LaundryItem extends Item {
         const attrName  = this.system.attribute ?? "mind";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = this.system.training ?? 0;
-        const focus     = this.system.focus ?? 0;
-        const pool      = attrValue + training + focus;
+        const pool      = attrValue + training;
 
         return rollDice({
             pool,
@@ -66,8 +65,7 @@ export class LaundryItem extends Item {
         const attrName  = linkedSkill?.system.attribute ?? "body";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = linkedSkill?.system.training ?? 0;
-        const focusValue = linkedSkill?.system.focus ?? 0;
-        const pool      = attrValue + training + focusValue;
+        const pool      = attrValue + training;
         const complexity = 1;
 
         const attackContext = getWeaponAttackContext({
@@ -76,7 +74,6 @@ export class LaundryItem extends Item {
             linkedSkillName
         });
 
-        const focusAvailable = Math.max(0, Math.trunc(Number(linkedSkill?.system?.focus ?? 0) || 0));
         const adrenalineAvailable = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value ?? 0) || 0));
         const attackSelection = await LaundryAttackDialog.prompt({
             actor,
@@ -84,28 +81,12 @@ export class LaundryItem extends Item {
             attackContext,
             basePool: pool,
             complexity,
-            focusAvailable,
             adrenalineAvailable
         });
 
         if (!attackSelection) return null;
         const actionSpent = await game.laundry?.consumeCombatAction?.(actor, { warn: true });
         if (actionSpent === false) return null;
-
-        if (attackSelection.spendFocus) {
-            if (!linkedSkill) {
-                ui.notifications.warn(game.i18n.localize("LAUNDRY.FocusSkillMissing"));
-                return null;
-            }
-
-            const currentFocus = Math.max(0, Math.trunc(Number(linkedSkill.system?.focus ?? 0) || 0));
-            if (currentFocus <= 0) {
-                ui.notifications.warn(game.i18n.localize("LAUNDRY.FocusUnavailableAttack"));
-                return null;
-            }
-
-            await linkedSkill.update({ "system.focus": currentFocus - 1 });
-        }
 
         if (attackSelection.spendAdrenaline) {
             const currentAdrenaline = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value ?? 0) || 0));
@@ -147,7 +128,6 @@ export class LaundryItem extends Item {
                 ladderDelta: attackContext.ladderDelta,
                 defencePenalty: attackContext.defencePenalty ?? 0,
                 weaponTraits: String(this.system?.traits ?? ""),
-                focusSpentPreRoll: Boolean(attackSelection.spendFocus),
                 adrenalineSpentPreRoll: Boolean(attackSelection.spendAdrenaline)
             },
             rollContext: {
@@ -174,8 +154,7 @@ export class LaundryItem extends Item {
         const attrName  = magicSkill?.system.attribute ?? "mind";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = magicSkill?.system.training ?? 0;
-        const focus     = magicSkill?.system.focus ?? 0;
-        const pool      = attrValue + training + focus;
+        const pool      = attrValue + training;
         const dn = Math.max(2, Math.min(6, Math.trunc(Number(this.system.dn ?? 4) || 4)));
         const complexity = Math.max(
             1,

@@ -35,12 +35,6 @@
     </section>
 
     <section class="attack-dialog-toggles">
-        <label class="attack-dialog-toggle {{#unless canSpendFocus}}is-disabled{{/unless}}">
-            <input type="checkbox" name="spendFocus" {{#unless canSpendFocus}}disabled{{/unless}} />
-            <span>{{localize "LAUNDRY.SpendFocusBoost"}}</span>
-            <small>{{localize "LAUNDRY.Focus"}}: {{focusAvailable}}</small>
-        </label>
-
         <label class="attack-dialog-toggle {{#unless canSpendAdrenaline}}is-disabled{{/unless}}">
             <input type="checkbox" name="spendAdrenaline" {{#unless canSpendAdrenaline}}disabled{{/unless}} />
             <span>{{localize "LAUNDRY.SpendAdrenalineBoost"}}</span>

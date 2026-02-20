@@ -25,7 +25,6 @@ export class LaundryAttackDialog extends Application {
         attackContext = {},
         basePool = 1,
         complexity = 1,
-        focusAvailable = 0,
         adrenalineAvailable = 0
     } = {}, options = {}) {
         super(options);
@@ -34,7 +33,6 @@ export class LaundryAttackDialog extends Application {
         this.attackContext = attackContext ?? {};
         this.basePool = Math.max(0, Math.trunc(Number(basePool) || 0));
         this.complexity = Math.max(1, Math.trunc(Number(complexity) || 1));
-        this.focusAvailable = Math.max(0, Math.trunc(Number(focusAvailable) || 0));
         this.adrenalineAvailable = Math.max(0, Math.trunc(Number(adrenalineAvailable) || 0));
 
         this._resolved = false;
@@ -76,10 +74,7 @@ export class LaundryAttackDialog extends Application {
             ladderDeltaLabel,
             ladderDelta,
             basePool: this.basePool,
-            poolWithFocus: this.basePool + (this.focusAvailable > 0 ? 1 : 0),
-            focusAvailable: this.focusAvailable,
             adrenalineAvailable: this.adrenalineAvailable,
-            canSpendFocus: this.focusAvailable > 0,
             canSpendAdrenaline: this.adrenalineAvailable > 0
         };
     }
@@ -113,15 +108,13 @@ export class LaundryAttackDialog extends Application {
     _onSubmit(event) {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const spendFocus = formData.get("spendFocus") === "on" && this.focusAvailable > 0;
         const spendAdrenaline = formData.get("spendAdrenaline") === "on" && this.adrenalineAvailable > 0;
 
         this._finish({
             dn: Math.max(2, Math.min(6, Number(this.attackContext?.dn ?? 4) || 4)),
             complexity: this.complexity,
-            spendFocus,
             spendAdrenaline,
-            poolBonus: (spendFocus ? 1 : 0) + (spendAdrenaline ? 1 : 0),
+            poolBonus: spendAdrenaline ? 1 : 0,
             damageBonus: 0,
             target: this.attackContext?.target ?? null,
             attackContext: this.attackContext

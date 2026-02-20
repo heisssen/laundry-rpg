@@ -164,9 +164,6 @@ export class LaundryCharacterBuilder extends Application {
             return;
         }
 
-        const chosenSkills = _uniqueList(
-            _readCheckedValues(form, "skill").filter(name => assignmentData.optionalSkills.includes(name))
-        );
         const chosenTalents = _uniqueList(
             _readCheckedValues(form, "talent").filter(name => assignmentData.optionalTalents.includes(name))
         );
@@ -182,11 +179,6 @@ export class LaundryCharacterBuilder extends Application {
                 used: usedXp,
                 max: xpBudget
             }));
-            return;
-        }
-
-        if (assignmentData.skillChoiceCount > 0 && chosenSkills.length !== assignmentData.skillChoiceCount) {
-            ui.notifications.warn(game.i18n.format("LAUNDRY.SelectExactSkills", { count: assignmentData.skillChoiceCount }));
             return;
         }
 
@@ -218,7 +210,6 @@ export class LaundryCharacterBuilder extends Application {
         }
 
         await applyAssignmentToActor(this.actor, assignment, {
-            chosenSkills,
             chosenTalents,
             skillAllocations,
             profileDraft,
@@ -254,7 +245,6 @@ export class LaundryCharacterBuilder extends Application {
             setText(".preview-core-talents", "-");
             setText(".preview-optional-talents", "-");
             setText(".preview-equipment", "-");
-            this._renderChoiceList("skill", [], 0, game.i18n.localize("LAUNDRY.SelectAssignmentFirst"));
             this._renderChoiceList("talent", [], 0, game.i18n.localize("LAUNDRY.SelectAssignmentFirst"));
             this._updateChoiceCounters({ skillChoiceCount: 0, talentChoiceCount: 0 });
             this._renderSkillAllocation(null);
@@ -274,12 +264,6 @@ export class LaundryCharacterBuilder extends Application {
         setText(".preview-optional-talents", assignment.optionalTalents);
         setText(".preview-equipment", assignment.equipment);
 
-        this._renderChoiceList(
-            "skill",
-            assignment.optionalSkills,
-            assignment.skillChoiceCount,
-            game.i18n.localize("LAUNDRY.NoOptionalSkills")
-        );
         this._renderChoiceList(
             "talent",
             assignment.optionalTalents,
@@ -651,17 +635,8 @@ export class LaundryCharacterBuilder extends Application {
     }
 
     _getAllocatableSkills(assignment) {
-        const root = this.element?.[0];
         if (!assignment) return [];
-        if (assignment.skillChoiceCount <= 0) {
-            return _uniqueList(assignment.coreSkills.concat(assignment.optionalSkills));
-        }
-
-        const form = root?.querySelector("form");
-        const selectedOptional = form
-            ? _readCheckedValues(form, "skill").filter(name => assignment.optionalSkills.includes(name))
-            : [];
-        return _uniqueList(assignment.coreSkills.concat(selectedOptional));
+        return _uniqueList(assignment.coreSkills.concat(assignment.optionalSkills));
     }
 
     _onSkillAllocationChanged(inputEl) {
@@ -870,15 +845,11 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     const overwriteBiography = Boolean(selected.overwriteBiography);
     const biographyDraft = String(selected.biographyDraft ?? "").trim();
 
-    const selectedSkills = _uniqueList(Array.isArray(selected.chosenSkills) ? selected.chosenSkills : [])
-        .filter(name => parsed.optionalSkills.some(opt => opt.toLowerCase() === name.toLowerCase()));
     const selectedTalents = _uniqueList(Array.isArray(selected.chosenTalents) ? selected.chosenTalents : [])
         .filter(name => parsed.optionalTalents.some(opt => opt.toLowerCase() === name.toLowerCase()));
     const skillAllocations = _normalizeSkillAllocations(selected.skillAllocations);
 
-    const skillPool = parsed.skillChoiceCount > 0
-        ? parsed.coreSkills.concat(selectedSkills)
-        : parsed.coreSkills.concat(parsed.optionalSkills);
+    const skillPool = parsed.coreSkills.concat(parsed.optionalSkills);
     const allocatedSkillNames = Object.values(skillAllocations).map(entry => entry.name);
     const skillsToAdd = _uniqueList(skillPool.concat(allocatedSkillNames));
     const talentsToAdd = _uniqueList(parsed.coreTalents.concat(selectedTalents));

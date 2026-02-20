@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.3 - 2026-02-20
+
+### Changed
+- Dice pool formulas for Skill, Weapon, and Spell rolls now use `Attribute + Training` only; `Focus` is no longer auto-converted into extra dice.
+- Attack pre-roll dialog no longer offers `Spend Focus (+1d6)`; only Adrenaline pre-spend remains there.
+- Character Builder Training tab no longer requires Optional Skills checkbox selection; skill allocation now directly includes the assignment skill list.
+
 ## 1.11.2 - 2026-02-20
 
 ### Changed
