@@ -2899,6 +2899,107 @@
     display: inline-block;
 }
 
+.laundry-rpg .requisition-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.45rem 0 0.35rem;
+}
+
+.laundry-rpg .requisition-actions-row button {
+    flex: 1 1 180px;
+}
+
+.laundry-rpg .laundry-mission-card,
+.laundry-rpg .laundry-threat-card,
+.laundry-rpg .laundry-support-card,
+.laundry-rpg .laundry-endeavour-card {
+    border: 1px solid #6f6758;
+    background: linear-gradient(180deg, #efe8d8 0%, #e4dccb 100%);
+    padding: 0.55rem 0.65rem;
+    border-radius: 3px;
+}
+
+.laundry-rpg .laundry-mission-card h3 {
+    margin: 0.3rem 0 0.45rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.03em;
+}
+
+.laundry-rpg .laundry-mission-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    color: #612d20;
+}
+
+.laundry-rpg .laundry-mission-line {
+    margin: 0.2rem 0;
+}
+
+.laundry-rpg .laundry-support-card.laundry-support-approved,
+.laundry-rpg .laundry-endeavour-card.laundry-endeavour-pass {
+    border-color: #2f6b3d;
+}
+
+.laundry-rpg .laundry-support-card.laundry-support-denied,
+.laundry-rpg .laundry-endeavour-card.laundry-endeavour-fail {
+    border-color: #7a2f2f;
+}
+
+.laundry-mission-generator-app,
+.laundry-support-request-app,
+.laundry-endeavours-app {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.laundry-mission-generator-app .laundry-mission-generator-head,
+.laundry-support-request-app .laundry-support-head,
+.laundry-endeavours-app .laundry-endeavours-head {
+    border-bottom: 1px solid #9a8d74;
+    padding-bottom: 0.35rem;
+}
+
+.laundry-mission-generator-app h2,
+.laundry-support-request-app h2,
+.laundry-endeavours-app h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.laundry-mission-generator-app p,
+.laundry-support-request-app p,
+.laundry-endeavours-app p {
+    margin: 0.1rem 0;
+}
+
+.laundry-mission-generator-app .laundry-mission-generator-actions,
+.laundry-support-request-app .laundry-support-actions,
+.laundry-endeavours-app .laundry-endeavour-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.laundry-mission-generator-app .laundry-mission-generator-actions button,
+.laundry-support-request-app .laundry-support-actions button,
+.laundry-endeavours-app .laundry-endeavour-actions button {
+    flex: 1 1 auto;
+}
+
+.laundry-mission-generator-app .laundry-mission-generator-preview,
+.laundry-support-request-app .laundry-support-preview,
+.laundry-endeavours-app .laundry-endeavour-details {
+    border: 1px solid #8f836d;
+    background: #f2ece0;
+    border-radius: 3px;
+    padding: 0.45rem 0.55rem;
+}
+
 @media (max-width: 700px) {
     .laundry-attack-dialog .attack-dialog-grid {
         grid-template-columns: 1fr;

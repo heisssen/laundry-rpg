@@ -1,0 +1,27 @@
+<section class="laundry-mission-generator-app">
+    <header class="laundry-mission-generator-head">
+        <h2>Mission Generator</h2>
+        <p>Supervisor's Guide pp.46-48</p>
+    </header>
+
+    <div class="laundry-mission-generator-actions">
+        <button type="button" data-action="generate">Generate Mission</button>
+        <button type="button" data-action="send" {{#unless hasMission}}disabled{{/unless}}>Post To Chat</button>
+    </div>
+
+    {{#if hasMission}}
+    <div class="laundry-mission-generator-preview">
+        <p><strong>OPERATION:</strong> {{mission.operationName}}</p>
+        <p><strong>Location:</strong> {{mission.location}}</p>
+        <p><strong>Objective:</strong> {{mission.objective}}</p>
+        <p><strong>Suspect:</strong> {{mission.suspect}}</p>
+        <p><strong>Culprit:</strong> {{mission.culprit}}</p>
+        <p><strong>Complication:</strong> {{mission.complication}}</p>
+        <p><strong>Intel:</strong> {{mission.intel}}</p>
+        <p><strong>Escalation:</strong> {{mission.escalation.groundZero}} -> {{mission.escalation.crisis}}</p>
+    </div>
+    {{else}}
+    <p class="notes">Generate a mission to preview the classified briefing before posting.</p>
+    {{/if}}
+</section>
+

@@ -1,0 +1,43 @@
+<section class="laundry-endeavours-app">
+    <header class="laundry-endeavours-head">
+        <h2>FORM D-17 // Endeavours Submission</h2>
+        <p>Operative: <strong>{{actorName}}</strong></p>
+        <p class="notes">Supervisor's Guide reference window: pages 57-64.</p>
+    </header>
+
+    <div class="form-group">
+        <label>Downtime Activity</label>
+        <select name="endeavourId">
+            {{#each endeavours as |entry|}}
+            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.label}}</option>
+            {{/each}}
+        </select>
+    </div>
+
+    {{#if isTrainingCourse}}
+    <div class="laundry-endeavour-details">
+        <div class="form-group">
+            <label>Skill</label>
+            <select name="skillName">
+                {{#each skills as |skill|}}
+                <option value="{{skill.name}}" {{#if skill.selected}}selected{{/if}}>{{skill.name}}</option>
+                {{/each}}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Increase</label>
+            <select name="trainingStat">
+                {{#each trainingStatOptions as |opt|}}
+                <option value="{{opt.id}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+                {{/each}}
+            </select>
+        </div>
+        <p>Mechanics: deduct 5 XP, increase selected stat by 1, then set training refund pending flag (+1 XP on pass).</p>
+    </div>
+    {{/if}}
+
+    <div class="laundry-endeavour-actions">
+        <button type="button" data-action="submit-endeavour">File Endeavour</button>
+    </div>
+</section>
+

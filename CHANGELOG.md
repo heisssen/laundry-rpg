@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.16.0 - 2026-02-20
+
+### Added
+- Supervisor's Guide mission tooling: new Mission Generator app with extracted tables (pages 46-48), operation codename synthesis, and classified mission briefing chat output.
+- Threat-to-NPC integration: GM Tracker now includes `Apply Threat Buffs`, applying Threat-fueled Active Effects to hostile NPCs and per-turn Threat regeneration/adrenaline ticks during combat.
+- New departmental `Call for Support` workflow from actor sheets with department-specific DN/Complexity checks and structured support result cards.
+- New `EndeavoursApp` downtime workflow (pages 57-64) with `Take Downtime` access on character sheets.
+
+### Changed
+- Requisition support now consumes `flags.laundry-rpg.endeavours.paperwork_bonus` as +1 automatic success on the next support roll.
+- Mission start automation now processes downtime flags: `Family Vacation` adrenaline bonus and `Moonlighting` exhaustion (`Weakened`) are applied automatically on combat start.
+- Downtime automation now persists structured endeavour state via `flags.laundry-rpg.endeavours.*` and emits bureaucratic in-chat summaries for each resolved activity.
+
 ## 1.15.1 - 2026-02-20
 
 ### Added

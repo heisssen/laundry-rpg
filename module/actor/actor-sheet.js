@@ -1,5 +1,7 @@
 import { rollDice } from "../dice.js";
 import { LaundryCharacterBuilder } from "./character-builder.js";
+import { openSupportRequestApp } from "../apps/support-request.js";
+import { openEndeavoursApp } from "../apps/endeavours.js";
 import {
     KPI_HORIZONS,
     KPI_PRIORITIES,
@@ -319,6 +321,9 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".combat-adrenaline-action").click(this._onCombatAdrenalineAction.bind(this));
         html.find(".take-breather").click(this._onTakeBreather.bind(this));
         html.find(".standard-rest").click(this._onStandardRest.bind(this));
+        html.find(".call-support").click(this._onCallSupport.bind(this));
+        html.find(".open-endeavours").click(this._onOpenEndeavours.bind(this));
+        html.find(".take-downtime").click(this._onOpenEndeavours.bind(this));
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
@@ -676,6 +681,16 @@ export class LaundryActorSheet extends ActorSheet {
             speaker: ChatMessage.getSpeaker({ actor: this.actor }),
             content: `<p><strong>${escapedName}</strong> has completed a Standard Rest and recovered Toughness and Adrenaline.</p>`
         });
+    }
+
+    async _onCallSupport(ev) {
+        ev.preventDefault();
+        await openSupportRequestApp(this.actor);
+    }
+
+    async _onOpenEndeavours(ev) {
+        ev.preventDefault();
+        await openEndeavoursApp(this.actor);
     }
 
     async _onNpcPresetApply(ev) {

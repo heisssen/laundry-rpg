@@ -3,11 +3,15 @@ import { LaundryActorSheet, LaundryNpcSheet } from "./actor/actor-sheet.js";
 import { LaundryCharacterBuilder } from "./actor/character-builder.js";
 import { LaundryAutomationSettings } from "./apps/automation-settings.js";
 import { LaundryGMTracker } from "./apps/gm-tracker.js";
+import { openMissionGenerator } from "./apps/mission-generator.js";
+import { openSupportRequestApp } from "./apps/support-request.js";
+import { openEndeavoursApp, applyMissionStartEndeavourEffects } from "./apps/endeavours.js";
 import { bindTokenHudControls } from "./apps/token-hud.js";
 import { LaundryItem } from "./item/item.js";
 import { LaundryItemSheet } from "./item/item-sheet.js";
 import { bindDiceChatControls } from "./dice.js";
 import { migrateWorld } from "./migration.js";
+import { applyThreatBuffsToCurrentScene, applyThreatRoundRegeneration } from "./utils/threat-integration.js";
 
 /**
  * Global system configuration — consumed by templates via `config.*`
@@ -166,6 +170,10 @@ Hooks.once("init", async function () {
         setAutomationTable: (tableType, tableUuid) => setAutomationTable(tableType, tableUuid),
         resetAutomationTable: (tableType) => resetAutomationTable(tableType),
         ensureAutomationTables: () => ensureAutomationRollTables(),
+        openMissionGenerator: () => openMissionGenerator(),
+        openSupportRequest: (actor) => openSupportRequestApp(actor),
+        openEndeavours: (actor) => openEndeavoursApp(actor),
+        applyThreatBuffs: (options = {}) => applyThreatBuffsToCurrentScene(options),
         openGMTracker: () => {
             if (!game.user?.isGM) return null;
             const existing = Object.values(ui.windows).find(app =>
@@ -264,12 +272,15 @@ Hooks.on("updateCombat", async (combat, changed) => {
     if (!_isTurnUpdate(changed)) return;
     await cleanupExpiredConditions(combat);
     await initializeTurnEconomyForActiveCombatant(combat);
+    await applyThreatRoundRegeneration(combat);
     refreshCombatDrivenUIs();
 });
 
 Hooks.on("combatStart", async (combat) => {
     await cleanupExpiredConditions(combat);
     await initializeTurnEconomyForActiveCombatant(combat);
+    await applyThreatRoundRegeneration(combat);
+    await applyMissionStartEndeavourEffects();
     refreshCombatDrivenUIs();
 });
 
@@ -304,7 +315,10 @@ async function preloadTemplates() {
         "systems/laundry-rpg/templates/item/item-sheet.html",
         "systems/laundry-rpg/templates/apps/attack-dialog.html",
         "systems/laundry-rpg/templates/apps/gm-tracker.html",
-        "systems/laundry-rpg/templates/apps/automation-settings.html"
+        "systems/laundry-rpg/templates/apps/automation-settings.html",
+        "systems/laundry-rpg/templates/apps/mission-generator.html",
+        "systems/laundry-rpg/templates/apps/support-request.html",
+        "systems/laundry-rpg/templates/apps/endeavours.html"
     ]);
 }
 

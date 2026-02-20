@@ -1,6 +1,8 @@
 import { rollDice } from "../dice.js";
 import { normalizeKpiEntries, summarizeKpiEntries } from "../utils/kpi.js";
 import { NPC_PRESETS, createNpcFromPreset, getNpcPreset } from "../utils/npc-presets.js";
+import { openMissionGenerator } from "./mission-generator.js";
+import { applyThreatBuffsToCurrentScene } from "../utils/threat-integration.js";
 
 export class LaundryGMTracker extends Application {
 
@@ -135,6 +137,8 @@ export class LaundryGMTracker extends Application {
         html.find(".set-threat").on("click", (ev) => this._onSubmit(ev));
         html.find(".award-luck").on("click", (ev) => this._onAwardLuck(ev));
         html.find(".request-bau").on("click", (ev) => this._onRequestBau(ev));
+        html.find(".open-mission-generator").on("click", (ev) => this._onOpenMissionGenerator(ev));
+        html.find(".apply-threat-buffs").on("click", (ev) => this._onApplyThreatBuffs(ev));
         html.find(".max-adrenaline").on("click", (ev) => this._onMaxAdrenaline(ev));
         html.find(".pc-adjust").on("click", (ev) => this._onPcAdjust(ev));
         html.find(".pc-bau").on("click", (ev) => this._onBauForPc(ev));
@@ -230,6 +234,21 @@ export class LaundryGMTracker extends Application {
         }
 
         ui.notifications.info(game.i18n.format("LAUNDRY.AdrenalineMaxedAll", { count: changed }));
+        this.render(false);
+    }
+
+    async _onOpenMissionGenerator(ev) {
+        ev.preventDefault();
+        if (!game.user?.isGM) return;
+        await openMissionGenerator();
+    }
+
+    async _onApplyThreatBuffs(ev) {
+        ev.preventDefault();
+        if (!game.user?.isGM) return;
+        const threatLevel = Number(game.settings.get("laundry-rpg", "threatLevel")) || 0;
+        const result = await applyThreatBuffsToCurrentScene({ threatLevel });
+        ui.notifications.info(`Threat buffs applied to ${Math.max(0, Math.trunc(Number(result?.applied) || 0))} hostile NPC actor(s).`);
         this.render(false);
     }
 
