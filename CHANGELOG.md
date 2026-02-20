@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.1 - 2026-02-20
+
+### Fixed
+- Attack dialog `Roll Attack` submit binding now works when the template root node is the `<form>` itself, preventing form refresh and ensuring the roll executes correctly from the Combat flow.
+
 ## 1.12.0 - 2026-02-20
 
 ### Added
