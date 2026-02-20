@@ -555,34 +555,22 @@ export class LaundryActorSheet extends ActorSheet {
         const statusId = String(ev.currentTarget?.dataset?.statusId ?? "").trim();
         if (!statusId) return;
 
-        const toDelete = this.actor.effects
-            .filter(effect => {
-                const statuses = effect?.statuses instanceof Set
-                    ? Array.from(effect.statuses)
-                    : Array.isArray(effect?.statuses) ? effect.statuses : [];
-                if (statuses.includes(statusId)) return true;
-                return effect.getFlag?.("core", "statusId") === statusId;
-            })
-            .map(effect => effect.id);
-
-        if (toDelete.length) {
+        const actorStatuses = game.laundry?.getActorStatuses?.(this.actor) ?? new Set();
+        if (actorStatuses.has(statusId)) {
             if (statusId === "prone") {
                 const spentMove = await game.laundry?.consumeCombatMove?.(this.actor, { warn: true });
                 if (spentMove === false) return;
             }
-            await this.actor.deleteEmbeddedDocuments("ActiveEffect", toDelete);
+            await game.laundry?.removeCondition?.(this.actor, statusId, { suppressChat: true });
             this.render(false);
             return;
         }
 
-        const condition = this._getConditionConfig(statusId);
-        await this.actor.createEmbeddedDocuments("ActiveEffect", [{
-            name: condition.name,
-            img: condition.img,
-            statuses: [statusId],
-            disabled: false,
-            origin: this.actor.uuid
-        }]);
+        await game.laundry?.applyCondition?.(this.actor, statusId, {
+            durationRounds: 0,
+            source: "sheet-toggle",
+            suppressChat: true
+        });
         this.render(false);
     }
 

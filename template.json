@@ -96,6 +96,8 @@
             "range": "Close",
             "skill": "Ranged",
             "traits": "",
+            "ammo": 0,
+            "ammoMax": 0,
             "equipped": false
         },
         "armour": {

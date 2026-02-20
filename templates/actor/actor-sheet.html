@@ -261,7 +261,10 @@
                             </div>
                             <h4 class="item-name rollable" data-roll-type="item">{{item.name}}</h4>
                             <div class="item-formula">DMG {{item.system.damage}}</div>
-                            <div class="item-formula">{{item.system.traits}}</div>
+                            <div class="item-formula">
+                                {{item.system.traits}}
+                                {{#if item.system.ammoMax}} | AMMO {{item.system.ammo}}/{{item.system.ammoMax}}{{/if}}
+                            </div>
                             <div class="item-controls">
                                 <a class="item-control item-equip" title="{{localize 'LAUNDRY.Equip'}}">
                                     <i class="fas fa-shield-alt"></i>
@@ -460,6 +463,9 @@
                         <div class="item-detail">
                             {{#if (laundryEq item.type "weapon")}}
                                 <span class="gear-tag weapon-tag">WPN {{item.system.damage}}</span>
+                                {{#if item.system.ammoMax}}
+                                <span class="gear-tag">AMMO {{item.system.ammo}}/{{item.system.ammoMax}}</span>
+                                {{/if}}
                             {{/if}}
                             {{#if (laundryEq item.type "armour")}}
                                 <span class="gear-tag armour-tag">ARM +{{item.system.protection}}</span>

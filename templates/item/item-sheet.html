@@ -115,6 +115,14 @@
                 <input type="text" name="system.traits" value="{{system.traits}}" placeholder="e.g. Lethal, Concealable" />
             </div>
             <div class="form-group">
+                <label>Ammo</label>
+                <input type="number" name="system.ammo" value="{{system.ammo}}" min="0" />
+            </div>
+            <div class="form-group">
+                <label>Ammo Max</label>
+                <input type="number" name="system.ammoMax" value="{{system.ammoMax}}" min="0" />
+            </div>
+            <div class="form-group">
                 <label>{{localize "LAUNDRY.Equipped"}}</label>
                 <input type="checkbox" name="system.equipped" {{#if system.equipped}}checked{{/if}} />
             </div>

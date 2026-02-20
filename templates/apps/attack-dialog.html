@@ -35,11 +35,31 @@
     </section>
 
     <section class="attack-dialog-toggles">
+        <label class="attack-dialog-toggle">
+            <span>Fire Mode</span>
+            <select name="fireMode" {{#unless canSelectFireMode}}disabled{{/unless}}>
+                {{#each fireModes as |mode|}}
+                <option value="{{mode.id}}" {{#unless mode.enabled}}disabled{{/unless}}>{{mode.label}}</option>
+                {{/each}}
+            </select>
+            {{#if ammo.usesAmmo}}
+            <small>Ammo: {{ammo.current}} / {{ammo.max}}</small>
+            {{/if}}
+        </label>
+    </section>
+
+    <section class="attack-dialog-toggles">
         <label class="attack-dialog-toggle {{#unless canSpendAdrenaline}}is-disabled{{/unless}}">
             <input type="checkbox" name="spendAdrenaline" {{#unless canSpendAdrenaline}}disabled{{/unless}} />
             <span>{{localize "LAUNDRY.SpendAdrenalineBoost"}}</span>
             <small>{{localize "LAUNDRY.Adrenaline"}}: {{adrenalineAvailable}}</small>
         </label>
+        {{#if traitProfile.area}}
+        <label class="attack-dialog-toggle">
+            <span>Area Trait Active</span>
+            <small>Apply damage to all currently targeted tokens on hit.</small>
+        </label>
+        {{/if}}
     </section>
 
     <footer class="attack-dialog-actions">

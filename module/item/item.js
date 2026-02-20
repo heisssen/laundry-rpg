@@ -67,12 +67,36 @@ export class LaundryItem extends Item {
         const training  = linkedSkill?.system.training ?? 0;
         const pool      = attrValue + training;
         const complexity = 1;
+        const traitProfile = _extractWeaponTraits(this.system?.traits);
+        const ammoMax = Math.max(0, Math.trunc(Number(this.system?.ammoMax) || 0));
+        const ammoCurrent = Math.max(0, Math.trunc(Number(this.system?.ammo) || 0));
+        const usesAmmo = ammoMax > 0;
+
+        if (usesAmmo && ammoCurrent <= 0 && traitProfile.reload) {
+            const reloadConfirmed = await Dialog.confirm({
+                title: "Reload Required",
+                content: `<p><strong>${foundry.utils.escapeHTML(this.name ?? "Weapon")}</strong> is empty. Spend 1 Action to reload to ${ammoMax}?</p>`
+            });
+            if (reloadConfirmed) {
+                const actionSpentForReload = await game.laundry?.consumeCombatAction?.(actor, { warn: true });
+                if (actionSpentForReload === false) return null;
+                await this.update({ "system.ammo": ammoMax });
+                ui.notifications.info(`${this.name}: reloaded to ${ammoMax}.`);
+            }
+            return null;
+        }
+
+        if (usesAmmo && ammoCurrent <= 0) {
+            ui.notifications.warn(`${this.name}: no ammunition remaining.`);
+            return null;
+        }
 
         const attackContext = getWeaponAttackContext({
             actor,
             weapon: this,
             linkedSkillName
         });
+        let ammoRemaining = usesAmmo ? ammoCurrent : null;
 
         const adrenalineAvailable = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value ?? 0) || 0));
         const attackSelection = await LaundryAttackDialog.prompt({
@@ -81,23 +105,48 @@ export class LaundryItem extends Item {
             attackContext,
             basePool: pool,
             complexity,
+            traitProfile,
+            ammo: {
+                usesAmmo,
+                current: ammoCurrent,
+                max: ammoMax
+            },
             adrenalineAvailable
         });
 
         if (!attackSelection) return null;
+
+        const spendAdrenaline = Boolean(attackSelection.spendAdrenaline);
+        const currentAdrenaline = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value ?? 0) || 0));
+        if (spendAdrenaline && currentAdrenaline <= 0) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.AdrenalineUnavailable"));
+            return null;
+        }
+
+        const ammoSpent = usesAmmo
+            ? Math.max(1, Math.trunc(Number(attackSelection.ammoCost ?? 1) || 1))
+            : 0;
+        const latestAmmo = usesAmmo ? Math.max(0, Math.trunc(Number(this.system?.ammo) || 0)) : 0;
+        if (usesAmmo && latestAmmo < ammoSpent) {
+            ui.notifications.warn(`${this.name}: insufficient ammo for ${String(attackSelection.fireMode ?? "selected mode")}.`);
+            return null;
+        }
+
         const actionSpent = await game.laundry?.consumeCombatAction?.(actor, { warn: true });
         if (actionSpent === false) return null;
 
-        if (attackSelection.spendAdrenaline) {
-            const currentAdrenaline = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value ?? 0) || 0));
-            if (currentAdrenaline <= 0) {
-                ui.notifications.warn(game.i18n.localize("LAUNDRY.AdrenalineUnavailable"));
-                return null;
-            }
-
+        if (spendAdrenaline) {
             await actor.update({
                 "system.derived.adrenaline.value": currentAdrenaline - 1
             });
+        }
+
+        if (usesAmmo) {
+            ammoRemaining = Math.max(0, latestAmmo - ammoSpent);
+            await this.update({ "system.ammo": ammoRemaining });
+            if (ammoRemaining <= 0 && traitProfile.reload) {
+                ui.notifications.info(`${this.name}: magazine empty. Reload required.`);
+            }
         }
 
         const modeLabel = attackContext.isMelee
@@ -107,7 +156,7 @@ export class LaundryItem extends Item {
         return rollDice({
             pool: pool + (attackSelection.poolBonus ?? 0),
             dn: attackSelection.dn,
-            complexity: attackSelection.complexity ?? complexity,
+            complexity: Math.max(1, Number(attackSelection.complexity ?? complexity) + Math.max(0, Math.trunc(Number(attackSelection.complexityBonus ?? 0) || 0))),
             flavor: game.i18n.format("LAUNDRY.AttackFlavor", {
                 weapon: this.name,
                 mode: modeLabel
@@ -128,6 +177,11 @@ export class LaundryItem extends Item {
                 ladderDelta: attackContext.ladderDelta,
                 defencePenalty: attackContext.defencePenalty ?? 0,
                 weaponTraits: String(this.system?.traits ?? ""),
+                fireMode: String(attackSelection.fireMode ?? "single"),
+                suppressiveMode: Boolean(attackSelection.suppressiveMode),
+                areaMode: Boolean(attackSelection.areaMode),
+                ammoSpent,
+                ammoRemaining,
                 adrenalineSpentPreRoll: Boolean(attackSelection.spendAdrenaline)
             },
             rollContext: {
@@ -189,4 +243,22 @@ export class LaundryItem extends Item {
             content: `<h3>${this.name}</h3>${this.system.description ?? ""}`
         });
     }
+}
+
+function _extractWeaponTraits(rawTraits) {
+    const raw = String(rawTraits ?? "").trim().toLowerCase();
+    const tokens = raw
+        .split(/[,\n;]+/g)
+        .map(entry => entry.trim())
+        .filter(Boolean);
+    const blob = tokens.join(" ");
+    const has = (word) => tokens.includes(word) || new RegExp(`\\b${word}\\b`).test(blob);
+
+    return {
+        burst: has("burst"),
+        automatic: has("automatic") || has("auto"),
+        suppressive: has("suppressive"),
+        area: has("area") || has("blast") || has("spread"),
+        reload: has("reload")
+    };
 }

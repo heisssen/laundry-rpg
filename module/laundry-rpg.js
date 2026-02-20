@@ -67,13 +67,45 @@ const LAUNDRY = {
     ]
 };
 
-const LAUNDRY_STATUS_EFFECTS = [
-    { id: "blinded", name: "Blinded", img: "icons/svg/blind.svg" },
-    { id: "prone", name: "Prone", img: "icons/svg/falling.svg" },
-    { id: "stunned", name: "Stunned", img: "icons/svg/daze.svg" },
-    { id: "weakened", name: "Weakened", img: "icons/svg/downgrade.svg" }
-];
+const LAUNDRY_CONDITIONS = {
+    blinded: {
+        id: "blinded",
+        name: "Blinded",
+        img: "icons/svg/blind.svg",
+        defaultDurationRounds: 0,
+        clearAtTurnStart: false
+    },
+    prone: {
+        id: "prone",
+        name: "Prone",
+        img: "icons/svg/falling.svg",
+        defaultDurationRounds: 0,
+        clearAtTurnStart: false
+    },
+    stunned: {
+        id: "stunned",
+        name: "Stunned",
+        img: "icons/svg/daze.svg",
+        defaultDurationRounds: 1,
+        clearAtTurnStart: true
+    },
+    weakened: {
+        id: "weakened",
+        name: "Weakened",
+        img: "icons/svg/downgrade.svg",
+        defaultDurationRounds: 1,
+        clearAtTurnStart: false
+    }
+};
+const LAUNDRY_STATUS_EFFECTS = Object.values(LAUNDRY_CONDITIONS).map(entry => ({
+    id: entry.id,
+    name: entry.name,
+    img: entry.img
+}));
+const LAUNDRY_STATUS_IDS = new Set(Object.keys(LAUNDRY_CONDITIONS));
 const TURN_ECONOMY_FLAG = "turnEconomy";
+const INJURY_TABLE_SETTING = "injuryTableUuid";
+const MISHAP_TABLE_SETTING = "mishapTableUuid";
 
 Hooks.once("init", async function () {
     console.log("Laundry RPG | Initialising The Laundry RPG System");
@@ -84,10 +116,17 @@ Hooks.once("init", async function () {
         LaundryCharacterBuilder,
         LaundryGMTracker,
         config: LAUNDRY,
+        conditions: LAUNDRY_CONDITIONS,
         getCombatTurnEconomy: (actor) => getCombatTurnEconomy(actor),
         consumeCombatAction: (actor, options = {}) => consumeCombatAction(actor, options),
         consumeCombatMove: (actor, options = {}) => consumeCombatMove(actor, options),
         spendAdrenalineForExtraAction: (actor) => spendAdrenalineForExtraAction(actor),
+        getActorStatuses: (actor) => _collectActorStatuses(actor),
+        getConditionDefinition: (statusId) => _getConditionDefinition(statusId),
+        applyCondition: (actor, statusId, options = {}) => applyCondition(actor, statusId, options),
+        removeCondition: (actor, statusId, options = {}) => removeCondition(actor, statusId, options),
+        getAutomationTable: (tableType) => getAutomationTable(tableType),
+        ensureAutomationTables: () => ensureAutomationRollTables(),
         openGMTracker: () => {
             if (!game.user?.isGM) return null;
             const existing = Object.values(ui.windows).find(app =>
@@ -149,6 +188,7 @@ Hooks.once("ready", async function () {
     try {
         await migrateWorld();
         await initializeTeamLuckDefaults();
+        await ensureAutomationRollTables();
     } catch (err) {
         console.error("Laundry RPG | Migration failed", err);
     }
@@ -173,11 +213,13 @@ Hooks.on("renderCombatTracker", (_app, html) => {
 
 Hooks.on("updateCombat", async (combat, changed) => {
     if (!_isTurnUpdate(changed)) return;
+    await cleanupExpiredConditions(combat);
     await initializeTurnEconomyForActiveCombatant(combat);
     refreshCombatDrivenUIs();
 });
 
 Hooks.on("combatStart", async (combat) => {
+    await cleanupExpiredConditions(combat);
     await initializeTurnEconomyForActiveCombatant(combat);
     refreshCombatDrivenUIs();
 });
@@ -242,6 +284,24 @@ function registerSystemSettings() {
         type: Number,
         default: 0
     });
+
+    game.settings.register("laundry-rpg", INJURY_TABLE_SETTING, {
+        name: "Injury RollTable UUID",
+        hint: "Stores linked Injury automation RollTable UUID.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: ""
+    });
+
+    game.settings.register("laundry-rpg", MISHAP_TABLE_SETTING, {
+        name: "Mishap RollTable UUID",
+        hint: "Stores linked Mishap automation RollTable UUID.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: ""
+    });
 }
 
 async function initializeTeamLuckDefaults() {
@@ -261,6 +321,154 @@ async function initializeTeamLuckDefaults() {
     if (clampedCurrent !== current) {
         await game.settings.set("laundry-rpg", "teamLuck", clampedCurrent);
     }
+}
+
+async function getAutomationTable(tableType) {
+    const normalized = String(tableType ?? "").trim().toLowerCase();
+    const settingKey = normalized === "mishap" ? MISHAP_TABLE_SETTING : INJURY_TABLE_SETTING;
+    const tableUuid = String(game.settings.get("laundry-rpg", settingKey) ?? "").trim();
+    if (!tableUuid) return null;
+    try {
+        const table = await fromUuid(tableUuid);
+        return table instanceof RollTable ? table : null;
+    } catch (err) {
+        console.warn(`Laundry RPG | Failed to resolve automation RollTable: ${tableType}`, err);
+        return null;
+    }
+}
+
+async function ensureAutomationRollTables() {
+    if (!game.user?.isGM) return;
+    await _ensureAutomationTable({
+        tableType: "injury",
+        settingKey: INJURY_TABLE_SETTING,
+        defaults: _buildDefaultInjuryTableData()
+    });
+    await _ensureAutomationTable({
+        tableType: "mishap",
+        settingKey: MISHAP_TABLE_SETTING,
+        defaults: _buildDefaultMishapTableData()
+    });
+}
+
+async function _ensureAutomationTable({ tableType, settingKey, defaults } = {}) {
+    const existing = await getAutomationTable(tableType);
+    if (existing) return existing;
+
+    const table = await RollTable.create(defaults, { renderSheet: false });
+    await game.settings.set("laundry-rpg", settingKey, table.uuid);
+    console.log(`Laundry RPG | Created default ${tableType} RollTable: ${table.uuid}`);
+    return table;
+}
+
+function _buildDefaultInjuryTableData() {
+    return {
+        name: "Laundry Injury Table",
+        description: "Default injury outcomes used by automation (editable by GM).",
+        formula: "1d20",
+        replacement: true,
+        displayRoll: true,
+        results: [
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Stunned.",
+                weight: 1,
+                range: [1, 3],
+                drawn: false,
+                flags: {
+                    "laundry-rpg": {
+                        statusId: "stunned",
+                        durationRounds: 1
+                    }
+                }
+            },
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Bleeding. Mark ongoing harm and pressure the target.",
+                weight: 1,
+                range: [4, 5],
+                drawn: false,
+                flags: {
+                    "laundry-rpg": {
+                        statusId: "weakened",
+                        durationRounds: 1
+                    }
+                }
+            },
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Incapacitated / Lethal trauma.",
+                weight: 1,
+                range: [6, 8],
+                drawn: false,
+                flags: {
+                    "laundry-rpg": {
+                        statusId: "stunned",
+                        durationRounds: 1
+                    }
+                }
+            },
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Catastrophic Injury: immediate removal or death at GM discretion.",
+                weight: 1,
+                range: [9, 20],
+                drawn: false
+            }
+        ]
+    };
+}
+
+function _buildDefaultMishapTableData() {
+    return {
+        name: "Laundry Magic Mishap Table",
+        description: "Default computational mishap outcomes used by automation (editable by GM).",
+        formula: "1d6",
+        replacement: true,
+        displayRoll: true,
+        results: [
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Arcane Feedback: caster is Stunned.",
+                weight: 1,
+                range: [1, 2],
+                drawn: false,
+                flags: {
+                    "laundry-rpg": {
+                        statusId: "stunned",
+                        durationRounds: 1
+                    }
+                }
+            },
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Signal Bleed: nearby electronics glitch, occult signatures spike.",
+                weight: 1,
+                range: [3, 4],
+                drawn: false
+            },
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Aetheric Backlash: caster suffers harmful recoil and is Weakened.",
+                weight: 1,
+                range: [5, 5],
+                drawn: false,
+                flags: {
+                    "laundry-rpg": {
+                        statusId: "weakened",
+                        durationRounds: 1
+                    }
+                }
+            },
+            {
+                type: CONST.TABLE_RESULT_TYPES.TEXT,
+                text: "Catastrophic Breach: severe anomaly manifests.",
+                weight: 1,
+                range: [6, 6],
+                drawn: false
+            }
+        ]
+    };
 }
 
 async function cacheTalentNameIndex() {
@@ -349,9 +557,7 @@ function _collectActorStatuses(actor) {
     const statuses = new Set();
     if (!actor) return statuses;
     for (const effect of actor.effects ?? []) {
-        const effectStatuses = effect?.statuses instanceof Set
-            ? Array.from(effect.statuses)
-            : Array.isArray(effect?.statuses) ? effect.statuses : [];
+        const effectStatuses = _extractEffectStatuses(effect);
         for (const statusId of effectStatuses) {
             if (statusId) statuses.add(String(statusId));
         }
@@ -361,19 +567,153 @@ function _collectActorStatuses(actor) {
     return statuses;
 }
 
+function _getConditionDefinition(statusId) {
+    const key = String(statusId ?? "").trim().toLowerCase();
+    return LAUNDRY_CONDITIONS[key] ?? null;
+}
+
+function _extractEffectStatuses(effect) {
+    const statuses = effect?.statuses instanceof Set
+        ? Array.from(effect.statuses)
+        : Array.isArray(effect?.statuses) ? effect.statuses : [];
+    if (statuses.length) return statuses.map(value => String(value));
+    const legacy = effect?.getFlag?.("core", "statusId");
+    return legacy ? [String(legacy)] : [];
+}
+
 async function _removeActorStatus(actor, statusId) {
     if (!actor || !statusId) return;
     const toDelete = actor.effects
         .filter(effect => {
-            const effectStatuses = effect?.statuses instanceof Set
-                ? Array.from(effect.statuses)
-                : Array.isArray(effect?.statuses) ? effect.statuses : [];
+            const effectStatuses = _extractEffectStatuses(effect);
             if (effectStatuses.includes(statusId)) return true;
             return effect.getFlag?.("core", "statusId") === statusId;
         })
         .map(effect => effect.id);
     if (!toDelete.length) return;
     await actor.deleteEmbeddedDocuments("ActiveEffect", toDelete);
+}
+
+export async function removeCondition(actor, statusId, { suppressChat = false } = {}) {
+    const statusKey = String(statusId ?? "").trim().toLowerCase();
+    if (!actor || !statusKey) return false;
+    const hadStatus = _collectActorStatuses(actor).has(statusKey);
+    if (!hadStatus) return false;
+    await _removeActorStatus(actor, statusKey);
+    if (!suppressChat) {
+        const condition = _getConditionDefinition(statusKey);
+        const safeName = foundry.utils.escapeHTML(actor.name ?? "Agent");
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: `<p><strong>${safeName}</strong>: ${condition?.name ?? statusKey} removed.</p>`
+        });
+    }
+    return true;
+}
+
+export async function applyCondition(actor, statusId, {
+    durationRounds = null,
+    source = "automation",
+    suppressChat = false,
+    refreshDurationIfPresent = true
+} = {}) {
+    const statusKey = String(statusId ?? "").trim().toLowerCase();
+    if (!actor || !statusKey) return false;
+    const condition = _getConditionDefinition(statusKey);
+    if (!condition) return false;
+
+    const existing = actor.effects.find(effect => _extractEffectStatuses(effect).includes(statusKey));
+    const combat = game.combat;
+    const resolvedDuration = Number.isFinite(Number(durationRounds))
+        ? Math.max(0, Math.trunc(Number(durationRounds)))
+        : Math.max(0, Math.trunc(Number(condition.defaultDurationRounds ?? 0) || 0));
+
+    if (existing) {
+        if (refreshDurationIfPresent && resolvedDuration > 0 && combat?.started) {
+            await existing.update({
+                duration: {
+                    rounds: resolvedDuration,
+                    startRound: Math.max(0, Math.trunc(Number(combat.round ?? 0) || 0)),
+                    startTurn: Math.max(0, Math.trunc(Number(combat.turn ?? 0) || 0))
+                },
+                [`flags.laundry-rpg.conditionData`]: {
+                    statusId: statusKey,
+                    durationRounds: resolvedDuration,
+                    source
+                }
+            });
+        }
+        return true;
+    }
+
+    const effectData = {
+        name: condition.name,
+        img: condition.img,
+        statuses: [statusKey],
+        disabled: false,
+        origin: actor.uuid,
+        flags: {
+            core: {
+                statusId: statusKey
+            },
+            "laundry-rpg": {
+                conditionData: {
+                    statusId: statusKey,
+                    durationRounds: resolvedDuration,
+                    source
+                }
+            }
+        }
+    };
+
+    if (resolvedDuration > 0 && combat?.started) {
+        effectData.duration = {
+            rounds: resolvedDuration,
+            startRound: Math.max(0, Math.trunc(Number(combat.round ?? 0) || 0)),
+            startTurn: Math.max(0, Math.trunc(Number(combat.turn ?? 0) || 0))
+        };
+    }
+
+    await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
+
+    if (!suppressChat) {
+        const safeName = foundry.utils.escapeHTML(actor.name ?? "Agent");
+        const durationText = resolvedDuration > 0 ? ` (${resolvedDuration} round)` : "";
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: `<p><strong>${safeName}</strong> gains <strong>${condition.name}</strong>${durationText}.</p>`
+        });
+    }
+    return true;
+}
+
+async function cleanupExpiredConditions(combat) {
+    if (!game.user?.isGM) return;
+    if (!combat?.started) return;
+
+    for (const combatant of combat.combatants ?? []) {
+        const actor = combatant?.actor;
+        if (!actor) continue;
+        const expiredIds = [];
+        for (const effect of actor.effects ?? []) {
+            const statuses = _extractEffectStatuses(effect).map(value => value.toLowerCase());
+            if (!statuses.some(status => LAUNDRY_STATUS_IDS.has(status))) continue;
+            const rounds = Number(effect.duration?.rounds ?? 0);
+            const remaining = Number(effect.duration?.remaining);
+            if (!Number.isFinite(rounds) || rounds <= 0) continue;
+            if (!Number.isFinite(remaining)) continue;
+            if (remaining > 0) continue;
+            expiredIds.push(effect.id);
+        }
+
+        if (!expiredIds.length) continue;
+        await actor.deleteEmbeddedDocuments("ActiveEffect", expiredIds);
+        const safeName = foundry.utils.escapeHTML(actor.name ?? "Agent");
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: `<p><strong>${safeName}</strong>: temporary conditions expired.</p>`
+        });
+    }
 }
 
 export function getCombatTurnEconomy(actor) {
@@ -489,13 +829,19 @@ async function initializeTurnEconomyForActiveCombatant(combat) {
     const normalized = _normalizeTurnEconomyState(combat, existing);
     if (existing?.turnKey === normalized.turnKey) return;
 
-    if (_collectActorStatuses(actor).has("stunned")) {
-        normalized.actionsRemaining = 0;
-        await _removeActorStatus(actor, "stunned");
-        await ChatMessage.create({
-            speaker: ChatMessage.getSpeaker({ actor }),
-            content: `<p><strong>${foundry.utils.escapeHTML(actor.name ?? "Agent")}</strong> is Stunned and loses their Action this turn.</p>`
-        });
+    for (const statusId of _collectActorStatuses(actor)) {
+        const definition = _getConditionDefinition(statusId);
+        if (!definition?.clearAtTurnStart) continue;
+        if (statusId === "stunned") {
+            normalized.actionsRemaining = 0;
+            await removeCondition(actor, statusId, { suppressChat: true });
+            await ChatMessage.create({
+                speaker: ChatMessage.getSpeaker({ actor }),
+                content: `<p><strong>${foundry.utils.escapeHTML(actor.name ?? "Agent")}</strong> is Stunned and loses their Action this turn.</p>`
+            });
+            continue;
+        }
+        await removeCondition(actor, statusId, { suppressChat: true });
     }
 
     await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, normalized);

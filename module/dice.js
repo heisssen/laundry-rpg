@@ -197,6 +197,11 @@ export function bindDiceChatControls(message, html) {
         await _applyDamage(message);
     });
 
+    html.find(".resolve-opposed").off("click.laundry-resolve-opposed").on("click.laundry-resolve-opposed", async (ev) => {
+        ev.preventDefault();
+        await _resolveOpposedRoll(message);
+    });
+
     if (!_canCurrentUserApplyDamage(state)) {
         html.find(".apply-damage").remove();
     }
@@ -301,6 +306,15 @@ async function _executeRoll({
         targetName: target?.name ?? "",
         targetActorId: target?.actorId ?? null,
         targetTokenId: target?.tokenId ?? null,
+        targetActorIds: Array.isArray(target?.actorIds)
+            ? target.actorIds.filter(Boolean)
+            : (target?.actorId ? [target.actorId] : []),
+        targetTokenIds: Array.isArray(target?.tokenIds)
+            ? target.tokenIds.filter(Boolean)
+            : (target?.tokenId ? [target.tokenId] : []),
+        targetNames: Array.isArray(target?.names)
+            ? target.names.filter(name => String(name ?? "").trim().length > 0)
+            : (target?.name ? [target.name] : []),
         targetCount: target?.count ?? 0,
         rawDice,
         focusAllocations: [],
@@ -411,6 +425,7 @@ function _renderDiceContent(state) {
     const statusSection = _renderStatusModifierSection(state);
     const mishapSection = _renderMishapWarningSection(state, results);
     const damageSection = _renderDamageSection(state);
+    const opposedSection = _renderOpposedResolverSection(state);
 
     const teamLuck = Math.max(0, Number(state.teamLuck ?? 0));
     const teamLuckMax = Math.max(0, Number(state.teamLuckMax ?? 0));
@@ -445,6 +460,7 @@ function _renderDiceContent(state) {
             <span class="comp-summary">${_escapeHtml(game.i18n.localize("LAUNDRY.Complications"))}: ${complications}</span>
         </div>
         ${mishapSection}
+        ${opposedSection}
         ${focusSection}
         ${luckSection}
         ${adrenalineSection}
@@ -455,6 +471,29 @@ function _renderDiceContent(state) {
         </div>
         ${damageSection}
     </div>`;
+}
+
+function _renderOpposedResolverSection(state) {
+    if (!state?.isOpposedTest) return "";
+    const resolution = state.opposedResolution ?? null;
+    if (resolution) {
+        const own = Math.max(0, Math.trunc(Number(resolution.ownSuccesses) || 0));
+        const opp = Math.max(0, Math.trunc(Number(resolution.opponentSuccesses) || 0));
+        const label = resolution.result === "win"
+            ? "WIN"
+            : (resolution.result === "lose" ? "LOSS" : "TIE");
+        const opponent = String(resolution.opponentLabel ?? "Opponent");
+        return `
+            <div class="status-modifier-section">
+                <strong>Opposed Resolution:</strong> ${_escapeHtml(label)} (${own} vs ${opp}) against ${_escapeHtml(opponent)}
+            </div>`;
+    }
+
+    return `
+        <div class="laundry-focus-controls">
+            <button type="button" class="resolve-opposed spend-focus">Resolve Opposed</button>
+            <span class="laundry-focus-meta">Compare this roll against another Opposed roll card.</span>
+        </div>`;
 }
 
 function _buildOutcome(state, results) {
@@ -538,10 +577,14 @@ function _renderAttackMetaSection(state) {
 }
 
 function _renderTargetSection(state) {
-    const targetName = String(state.targetName ?? "").trim();
+    const targetNames = Array.isArray(state.targetNames) && state.targetNames.length
+        ? state.targetNames
+        : [state.targetName].filter(Boolean);
+    const targetName = String(targetNames[0] ?? "").trim();
     if (!targetName) return "";
 
-    const count = Math.max(1, Number(state.targetCount ?? 1) || 1);
+    const explicitCount = Math.max(0, Number(state.targetCount ?? 0) || 0);
+    const count = Math.max(explicitCount, targetNames.length, 1);
     const label = count > 1 ? `${targetName} (+${count - 1} more)` : targetName;
     return `<div class="target-section"><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Target"))}:</strong> ${_escapeHtml(label)}</div>`;
 }
@@ -565,10 +608,11 @@ function _renderMishapWarningSection(state, results) {
     if (!_isMishapTriggered(state, results)) return "";
     const sourceName = String(state.rollContext?.sourceName ?? "").trim();
     const sourceBits = sourceName ? ` data-source-name="${_escapeHtml(sourceName)}"` : "";
+    const actorBits = state.actorId ? ` data-actor-id="${_escapeHtml(state.actorId)}"` : "";
     return `
         <div class="mishap-warning-section">
             <div class="mishap-warning-text"><strong>⚠️ COMPUTATIONAL COMPLICATION / MISHAP TRIGGERED!</strong></div>
-            <button type="button" class="roll-mishap spend-focus"${sourceBits}>Roll Mishap</button>
+            <button type="button" class="roll-mishap spend-focus"${sourceBits}${actorBits}>Roll Mishap</button>
         </div>`;
 }
 
@@ -807,6 +851,133 @@ async function _updateDiceMessage(message, state) {
     });
 }
 
+async function _resolveOpposedRoll(message) {
+    if (!message?.id) return;
+    if (!message.isOwner && !game.user?.isGM) {
+        ui.notifications.warn("Only the roll owner or GM can resolve opposed tests.");
+        return;
+    }
+
+    const ownState = _getDiceState(message);
+    if (!ownState?.isOpposedTest) return;
+    if (ownState?.opposedResolution) {
+        ui.notifications.info("This opposed roll has already been resolved.");
+        return;
+    }
+
+    const candidates = game.messages.contents
+        .filter(entry => entry.id !== message.id)
+        .map(entry => ({
+            message: entry,
+            state: _getDiceState(entry)
+        }))
+        .filter(entry => entry.state?.isOpposedTest)
+        .filter(entry => !entry.state?.opposedResolution);
+
+    if (!candidates.length) {
+        ui.notifications.warn("No unresolved opposed roll cards found.");
+        return;
+    }
+
+    const selectedMessageId = await _promptOpposedSelection(message, candidates);
+    if (!selectedMessageId) return;
+
+    const opponentMessage = game.messages.get(selectedMessageId);
+    const opponentState = opponentMessage ? _getDiceState(opponentMessage) : null;
+    if (!opponentMessage || !opponentState?.isOpposedTest) {
+        ui.notifications.warn("Selected opposed roll is no longer available.");
+        return;
+    }
+    if (opponentState?.opposedResolution) {
+        ui.notifications.warn("Selected opposed roll was already resolved.");
+        return;
+    }
+
+    const ownSuccesses = _buildOutcome(ownState, _buildResults(ownState)).successes;
+    const opponentSuccesses = _buildOutcome(opponentState, _buildResults(opponentState)).successes;
+    const ownResult = ownSuccesses > opponentSuccesses
+        ? "win"
+        : (ownSuccesses < opponentSuccesses ? "lose" : "tie");
+    const opponentResult = ownResult === "win"
+        ? "lose"
+        : (ownResult === "lose" ? "win" : "tie");
+    const ownSpeaker = String(message.speaker?.alias ?? "Opponent");
+    const opponentSpeaker = String(opponentMessage.speaker?.alias ?? "Opponent");
+
+    ownState.opposedResolution = {
+        opponentMessageId: opponentMessage.id,
+        opponentLabel: opponentSpeaker,
+        ownSuccesses,
+        opponentSuccesses,
+        result: ownResult,
+        resolvedAt: Date.now()
+    };
+    opponentState.opposedResolution = {
+        opponentMessageId: message.id,
+        opponentLabel: ownSpeaker,
+        ownSuccesses: opponentSuccesses,
+        opponentSuccesses: ownSuccesses,
+        result: opponentResult,
+        resolvedAt: Date.now()
+    };
+
+    await _updateDiceMessage(message, ownState);
+    await _updateDiceMessage(opponentMessage, opponentState);
+}
+
+async function _promptOpposedSelection(message, candidates) {
+    return new Promise(resolve => {
+        let settled = false;
+        const finish = (value) => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+
+        const optionsHtml = candidates.map(entry => {
+            const state = entry.state;
+            const opponentSuccesses = _buildOutcome(state, _buildResults(state)).successes;
+            const alias = String(entry.message.speaker?.alias ?? "Actor");
+            const flavor = String(entry.message.flavor ?? "").trim();
+            const label = flavor
+                ? `${alias} — ${flavor} (${opponentSuccesses} successes)`
+                : `${alias} (${opponentSuccesses} successes)`;
+            return `<option value="${entry.message.id}">${_escapeHtml(label)}</option>`;
+        }).join("");
+
+        const content = `
+            <form class="laundry-opposed-resolver">
+                <div class="form-group">
+                    <label>Resolve against:</label>
+                    <select name="opponentMessageId">${optionsHtml}</select>
+                </div>
+            </form>`;
+
+        new Dialog({
+            title: "Resolve Opposed Test",
+            content,
+            classes: ["laundry-rpg", "laundry-dialog"],
+            buttons: {
+                resolve: {
+                    label: "Resolve",
+                    callback: (html) => {
+                        const selected = String(
+                            html[0]?.querySelector('[name="opponentMessageId"]')?.value ?? ""
+                        ).trim();
+                        finish(selected || null);
+                    }
+                },
+                cancel: {
+                    label: "Cancel",
+                    callback: () => finish(null)
+                }
+            },
+            default: "resolve",
+            close: () => finish(null)
+        }).render(true);
+    });
+}
+
 async function _applyDamage(message) {
     const state = _getDiceState(message);
     if (!state?.isWeaponAttack) {
@@ -814,8 +985,8 @@ async function _applyDamage(message) {
         return;
     }
 
-    const targetActor = _resolveTargetActor(state);
-    if (!targetActor) {
+    const allTargets = _resolveTargetActors(state);
+    if (!allTargets.length) {
         ui.notifications.warn(game.i18n.localize("LAUNDRY.NoAttackTargetCaptured"));
         return;
     }
@@ -841,72 +1012,102 @@ async function _applyDamage(message) {
 
     const rolledDamage = Math.max(0, Math.trunc(rawDamage));
     const traits = _extractWeaponTraits(state);
+    const attackMeta = state.attackMeta ?? {};
+    const isAreaAttack = Boolean(traits.area || attackMeta.areaMode);
+    const targets = isAreaAttack ? allTargets : [allTargets[0]];
     const criticals = results.filter(result => result.rawValue === 6).length;
-    const armour = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.armour?.value ?? 0)));
+    const summaries = [];
     const armourIgnored = traits.piercing ? criticals : 0;
-    const effectiveArmour = Math.max(0, armour - armourIgnored);
-    let appliedDamage = Math.max(0, rolledDamage - effectiveArmour);
-    let adrenalineReduced = false;
-    let nextAdrenaline = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.adrenaline?.value ?? 0)));
 
-    if (appliedDamage > 0 && nextAdrenaline > 0) {
-        const spendAdrenaline = await Dialog.confirm({
-            title: "Adrenaline Reaction",
-            content: `<p><strong>${_escapeHtml(targetActor.name ?? "Agent")}</strong> can spend 1 Adrenaline to halve incoming damage.</p>`
+    for (const targetActor of targets) {
+        if (!targetActor) continue;
+        const armour = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.armour?.value ?? 0)));
+        const effectiveArmour = Math.max(0, armour - armourIgnored);
+        let appliedDamage = Math.max(0, rolledDamage - effectiveArmour);
+        let adrenalineReduced = false;
+        let nextAdrenaline = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.adrenaline?.value ?? 0)));
+
+        if (appliedDamage > 0 && nextAdrenaline > 0) {
+            const spendAdrenaline = await Dialog.confirm({
+                title: "Adrenaline Reaction",
+                content: `<p><strong>${_escapeHtml(targetActor.name ?? "Agent")}</strong> can spend 1 Adrenaline to halve incoming damage.</p>`
+            });
+            if (spendAdrenaline) {
+                nextAdrenaline = Math.max(0, nextAdrenaline - 1);
+                appliedDamage = Math.floor(appliedDamage / 2);
+                adrenalineReduced = true;
+            }
+        }
+
+        const currentToughness = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.toughness?.value ?? 0)));
+        const maxToughness = Math.max(
+            currentToughness,
+            Math.trunc(Number(targetActor.system?.derived?.toughness?.max ?? currentToughness))
+        );
+        const newToughness = Math.max(0, currentToughness - appliedDamage);
+        const newDamageTaken = Math.max(0, maxToughness - newToughness);
+        const overflowDamage = Math.max(0, appliedDamage - currentToughness);
+
+        const updateData = {
+            "system.derived.toughness.value": newToughness,
+            "system.derived.toughness.damage": newDamageTaken
+        };
+        if (adrenalineReduced) {
+            updateData["system.derived.adrenaline.value"] = nextAdrenaline;
+        }
+        await targetActor.update(updateData);
+
+        if (traits.crushing && appliedDamage > 0) {
+            await _applyConditionToActor(targetActor, "stunned", { durationRounds: 1, source: "weapon-crushing" });
+        }
+        if (traits.suppressive || attackMeta.suppressiveMode) {
+            await _applyConditionToActor(targetActor, "weakened", { durationRounds: 1, source: "weapon-suppressive" });
+        }
+
+        summaries.push({
+            name: targetActor.name,
+            rolled: rolledDamage,
+            armour: effectiveArmour,
+            applied: appliedDamage,
+            from: currentToughness,
+            to: newToughness,
+            adrenalineReduced
         });
-        if (spendAdrenaline) {
-            nextAdrenaline = Math.max(0, nextAdrenaline - 1);
-            appliedDamage = Math.floor(appliedDamage / 2);
-            adrenalineReduced = true;
+
+        if (appliedDamage > 0 && currentToughness > 0 && newToughness <= 0) {
+            await _postCriticalWoundPrompt({
+                targetActor,
+                damageTaken: overflowDamage
+            });
         }
     }
 
-    const currentToughness = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.toughness?.value ?? 0)));
-    const maxToughness = Math.max(
-        currentToughness,
-        Math.trunc(Number(targetActor.system?.derived?.toughness?.max ?? currentToughness))
-    );
-    const newToughness = Math.max(0, currentToughness - appliedDamage);
-    const newDamageTaken = Math.max(0, maxToughness - newToughness);
-    const overflowDamage = Math.max(0, appliedDamage - currentToughness);
-
-    const updateData = {
-        "system.derived.toughness.value": newToughness,
-        "system.derived.toughness.damage": newDamageTaken
-    };
-    if (adrenalineReduced) {
-        updateData["system.derived.adrenaline.value"] = nextAdrenaline;
+    if (!summaries.length) {
+        ui.notifications.warn(game.i18n.localize("LAUNDRY.NoAttackTargetCaptured"));
+        return;
     }
 
-    await targetActor.update(updateData);
-
-    if (traits.crushing && appliedDamage > 0) {
-        await _applyStatusToActor(targetActor, "stunned");
+    if (summaries.length === 1) {
+        const summary = summaries[0];
+        ui.notifications.info(game.i18n.format("LAUNDRY.DamageApplied", {
+            name: summary.name,
+            rolled: summary.rolled,
+            armour: summary.armour,
+            applied: summary.applied,
+            from: summary.from,
+            to: summary.to
+        }));
+    } else {
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker(),
+            content: `<p><strong>Area Damage Applied:</strong> ${summaries.map(summary =>
+                `${_escapeHtml(summary.name)} (${summary.from} -> ${summary.to}, -${summary.applied})`
+            ).join(" | ")}</p>`
+        });
     }
 
-    ui.notifications.info(game.i18n.format("LAUNDRY.DamageApplied", {
-        name: targetActor.name,
-        rolled: rolledDamage,
-        armour: effectiveArmour,
-        applied: appliedDamage,
-        from: currentToughness,
-        to: newToughness
-    }));
     if (armourIgnored > 0) {
         ui.notifications.info(`Piercing: ignored ${armourIgnored} armour from ${criticals} critical(s).`);
-    }
-    if (adrenalineReduced) {
-        ui.notifications.info("Adrenaline reaction used: incoming damage halved.");
-    }
-    if (traits.crushing && appliedDamage > 0) {
-        ui.notifications.info("Crushing effect: target is Stunned.");
-    }
-
-    if (appliedDamage > 0 && currentToughness > 0 && newToughness <= 0) {
-        await _postCriticalWoundPrompt({
-            targetActor,
-            damageTaken: overflowDamage
-        });
     }
 }
 
@@ -920,9 +1121,33 @@ function _resolveTargetActor(state) {
     return game.actors?.get(actorId) ?? null;
 }
 
+function _resolveTargetActors(state) {
+    const fromTokens = Array.isArray(state?.targetTokenIds)
+        ? state.targetTokenIds
+            .map(id => canvas.tokens?.get(id)?.actor ?? null)
+            .filter(Boolean)
+        : [];
+    if (fromTokens.length) return _dedupeActors(fromTokens);
+
+    const fromActors = Array.isArray(state?.targetActorIds)
+        ? state.targetActorIds
+            .map(id => game.actors?.get(id) ?? null)
+            .filter(Boolean)
+        : [];
+    if (fromActors.length) return _dedupeActors(fromActors);
+
+    const single = _resolveTargetActor({
+        targetTokenId: state?.targetTokenId ?? null,
+        targetActorId: state?.targetActorId ?? null
+    });
+    return single ? [single] : [];
+}
+
 function _canCurrentUserApplyDamage(state) {
-    const targetActor = _resolveTargetActor(state);
-    return Boolean(game.user?.isGM || targetActor?.isOwner);
+    if (game.user?.isGM) return true;
+    const targets = _resolveTargetActors(state);
+    if (!targets.length) return false;
+    return targets.every(actor => actor?.isOwner);
 }
 
 function _extractWeaponTraits(state) {
@@ -934,22 +1159,63 @@ function _extractWeaponTraits(state) {
     const asBlob = tokens.join(" ");
     return {
         piercing: tokens.includes("piercing") || /\bpiercing\b/.test(asBlob),
-        crushing: tokens.includes("crushing") || /\bcrushing\b/.test(asBlob)
+        crushing: tokens.includes("crushing") || /\bcrushing\b/.test(asBlob),
+        burst: tokens.includes("burst") || /\bburst\b/.test(asBlob),
+        automatic: tokens.includes("automatic") || tokens.includes("auto") || /\bautomatic\b/.test(asBlob) || /\bauto\b/.test(asBlob),
+        suppressive: tokens.includes("suppressive") || /\bsuppressive\b/.test(asBlob),
+        area: tokens.includes("area") || tokens.includes("blast") || tokens.includes("spread") || /\barea\b/.test(asBlob) || /\bblast\b/.test(asBlob) || /\bspread\b/.test(asBlob),
+        reload: tokens.includes("reload") || /\breload\b/.test(asBlob)
     };
 }
 
-async function _applyStatusToActor(actor, statusId) {
+function _dedupeActors(actors = []) {
+    const map = new Map();
+    for (const actor of actors) {
+        if (!actor?.id || map.has(actor.id)) continue;
+        map.set(actor.id, actor);
+    }
+    return Array.from(map.values());
+}
+
+async function _applyConditionToActor(actor, statusId, { durationRounds = 0, source = "automation" } = {}) {
     if (!actor || !statusId) return;
-    if (_actorHasStatus(actor, statusId)) return;
+
+    if (game.laundry?.applyCondition) {
+        await game.laundry.applyCondition(actor, statusId, {
+            durationRounds,
+            source,
+            suppressChat: true
+        });
+        return;
+    }
 
     const config = (CONFIG.statusEffects ?? []).find(entry => entry.id === statusId);
-    await actor.createEmbeddedDocuments("ActiveEffect", [{
+    const combat = game.combat;
+    const effectData = {
         name: config?.name ?? statusId,
         img: config?.img ?? "icons/svg/daze.svg",
         statuses: [statusId],
         disabled: false,
-        origin: actor.uuid
-    }]);
+        origin: actor.uuid,
+        flags: {
+            core: { statusId },
+            "laundry-rpg": {
+                conditionData: {
+                    statusId,
+                    durationRounds: Math.max(0, Math.trunc(Number(durationRounds) || 0)),
+                    source
+                }
+            }
+        }
+    };
+    if (combat?.started && durationRounds > 0) {
+        effectData.duration = {
+            rounds: Math.max(0, Math.trunc(Number(durationRounds) || 0)),
+            startRound: Math.max(0, Math.trunc(Number(combat.round ?? 0) || 0)),
+            startTurn: Math.max(0, Math.trunc(Number(combat.turn ?? 0) || 0))
+        };
+    }
+    await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
 }
 
 function _findAutoFocusDie(state) {
@@ -1116,7 +1382,7 @@ async function _postCriticalWoundPrompt({ targetActor, damageTaken = 0 } = {}) {
         content: `
             <div class="laundry-critical-wound-card">
                 <div class="critical-wound-title"><strong>CRITICAL WOUND: ${safeName}</strong></div>
-                <button type="button" class="roll-injury" data-damage-taken="${applied}" data-target-name="${safeName}">Roll Injury</button>
+                <button type="button" class="roll-injury" data-damage-taken="${applied}" data-target-name="${safeName}" data-target-actor-id="${targetActor.id}">Roll Injury</button>
             </div>`
     });
 }
@@ -1125,11 +1391,28 @@ async function _rollInjuryFromButton(ev) {
     const button = ev?.currentTarget;
     const damageTaken = Math.max(0, Math.trunc(Number(button?.dataset?.damageTaken ?? 0) || 0));
     const targetName = String(button?.dataset?.targetName ?? "").trim();
+    const targetActorId = String(button?.dataset?.targetActorId ?? "").trim();
+    const targetActor = targetActorId ? game.actors?.get(targetActorId) ?? null : null;
     const roll = new Roll(`1d6 + ${damageTaken}`);
     await roll.evaluate();
     const total = Math.max(0, Math.trunc(Number(roll.total ?? 0) || 0));
-    const outcome = _getInjuryOutcome(total);
+    const resolved = await _resolveOutcomeFromAutomationTable({
+        tableType: "injury",
+        total
+    });
+    const outcome = resolved?.text ?? _getInjuryOutcome(total);
     const targetLabel = targetName ? ` for ${_escapeHtml(targetName)}` : "";
+    const statusId = String(resolved?.statusId ?? "").trim().toLowerCase();
+    const durationRounds = Math.max(0, Math.trunc(Number(resolved?.durationRounds) || 0));
+    const statusApplied = Boolean(
+        targetActor
+        && statusId
+        && await game.laundry?.applyCondition?.(targetActor, statusId, {
+            durationRounds,
+            source: "injury-table",
+            suppressChat: true
+        })
+    );
 
     await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
@@ -1138,6 +1421,8 @@ async function _rollInjuryFromButton(ev) {
                 <strong>INJURY RESULT${targetLabel}:</strong>
                 1d6 + ${damageTaken} = <strong>${total}</strong>
                 <span class="injury-outcome">(${_escapeHtml(outcome)})</span>
+                ${resolved?.tableName ? `<div class="injury-outcome">Table: ${_escapeHtml(resolved.tableName)}</div>` : ""}
+                ${statusApplied ? `<div class="injury-outcome">Condition Applied: ${_escapeHtml(statusId)}</div>` : ""}
             </div>`,
         rolls: [roll],
         sound: CONFIG.sounds.dice
@@ -1154,11 +1439,28 @@ function _getInjuryOutcome(total) {
 async function _rollMishapFromButton(ev) {
     const button = ev?.currentTarget;
     const sourceName = String(button?.dataset?.sourceName ?? "").trim();
+    const actorId = String(button?.dataset?.actorId ?? "").trim();
+    const actor = actorId ? game.actors?.get(actorId) ?? null : null;
     const sourceLabel = sourceName ? ` (${_escapeHtml(sourceName)})` : "";
     const roll = new Roll("1d6");
     await roll.evaluate();
     const total = Math.max(1, Math.trunc(Number(roll.total ?? 1) || 1));
-    const outcome = _getMishapOutcome(total);
+    const resolved = await _resolveOutcomeFromAutomationTable({
+        tableType: "mishap",
+        total
+    });
+    const outcome = resolved?.text ?? _getMishapOutcome(total);
+    const statusId = String(resolved?.statusId ?? "").trim().toLowerCase();
+    const durationRounds = Math.max(0, Math.trunc(Number(resolved?.durationRounds) || 0));
+    const statusApplied = Boolean(
+        actor
+        && statusId
+        && await game.laundry?.applyCondition?.(actor, statusId, {
+            durationRounds,
+            source: "mishap-table",
+            suppressChat: true
+        })
+    );
 
     await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
@@ -1167,6 +1469,8 @@ async function _rollMishapFromButton(ev) {
                 <strong>MISHAP RESULT${sourceLabel}:</strong>
                 <strong>${total}</strong>
                 <span class="mishap-outcome">- ${_escapeHtml(outcome)}</span>
+                ${resolved?.tableName ? `<div class="mishap-outcome">Table: ${_escapeHtml(resolved.tableName)}</div>` : ""}
+                ${statusApplied ? `<div class="mishap-outcome">Condition Applied: ${_escapeHtml(statusId)}</div>` : ""}
             </div>`,
         rolls: [roll],
         sound: CONFIG.sounds.dice
@@ -1181,22 +1485,94 @@ function _getMishapOutcome(total) {
     return "Catastrophic Breach: severe anomaly manifests (Incapacitated/Lethal fallout).";
 }
 
+async function _resolveOutcomeFromAutomationTable({ tableType, total } = {}) {
+    const table = await game.laundry?.getAutomationTable?.(tableType);
+    if (!table) return null;
+
+    const results = Array.from(table.results ?? []);
+    if (!results.length) return null;
+    const picked = _pickTableResultByTotal(results, total);
+    if (!picked) return null;
+
+    const flagData = picked.getFlag?.("laundry-rpg", "conditionData")
+        ?? picked.flags?.["laundry-rpg"]
+        ?? {};
+    return {
+        tableName: String(table.name ?? "").trim(),
+        text: _extractTableResultText(picked),
+        statusId: String(flagData?.statusId ?? "").trim().toLowerCase(),
+        durationRounds: Math.max(0, Math.trunc(Number(flagData?.durationRounds) || 0))
+    };
+}
+
+function _pickTableResultByTotal(results, total) {
+    const safeTotal = Math.max(0, Math.trunc(Number(total) || 0));
+    const withRanges = results
+        .map(result => ({
+            result,
+            range: _extractTableResultRange(result)
+        }))
+        .filter(entry => entry.range !== null);
+
+    const direct = withRanges.find(entry => safeTotal >= entry.range[0] && safeTotal <= entry.range[1]);
+    if (direct) return direct.result;
+
+    const nearestBelow = withRanges
+        .filter(entry => safeTotal >= entry.range[0])
+        .sort((a, b) => b.range[1] - a.range[1])[0];
+    if (nearestBelow) return nearestBelow.result;
+
+    const nearestAbove = withRanges
+        .sort((a, b) => a.range[0] - b.range[0])[0];
+    return nearestAbove?.result ?? results[0] ?? null;
+}
+
+function _extractTableResultRange(result) {
+    const raw = result?.range;
+    if (!Array.isArray(raw) || raw.length < 2) return null;
+    const min = Math.max(0, Math.trunc(Number(raw[0]) || 0));
+    const max = Math.max(min, Math.trunc(Number(raw[1]) || min));
+    return [min, max];
+}
+
+function _extractTableResultText(result) {
+    if (!result) return "";
+    const text = result.text ?? result.getChatText?.() ?? "";
+    return String(text ?? "").trim();
+}
+
 function _getPrimaryTargetSnapshot() {
     const targets = Array.from(game.user?.targets ?? []);
     if (!targets.length) return null;
 
-    const [primary] = targets;
-    if (!primary) return null;
+    const normalizedTargets = targets
+        .map(target => {
+            const token = target.document ?? target;
+            const actor = target.actor ?? token?.actor ?? null;
+            return {
+                name: target.name ?? token?.name ?? actor?.name ?? "",
+                actorId: actor?.id ?? null,
+                tokenId: target.id ?? token?.id ?? null
+            };
+        })
+        .filter(entry => Boolean(entry.actorId || entry.tokenId));
+    if (!normalizedTargets.length) return null;
 
-    const token = primary.document ?? primary;
-    const actor = primary.actor ?? token?.actor ?? null;
-    const name = primary.name ?? token?.name ?? actor?.name ?? "";
+    const [primary] = normalizedTargets;
+    const actorIds = Array.from(new Set(normalizedTargets.map(entry => entry.actorId).filter(Boolean)));
+    const tokenIds = Array.from(new Set(normalizedTargets.map(entry => entry.tokenId).filter(Boolean)));
+    const names = normalizedTargets
+        .map(entry => String(entry.name ?? "").trim())
+        .filter(Boolean);
 
     return {
-        name,
-        actorId: actor?.id ?? null,
-        tokenId: primary.id ?? token?.id ?? null,
-        count: targets.length
+        name: primary.name,
+        actorId: primary.actorId,
+        tokenId: primary.tokenId,
+        actorIds,
+        tokenIds,
+        names,
+        count: normalizedTargets.length
     };
 }
 

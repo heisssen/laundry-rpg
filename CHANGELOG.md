@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.12.0 - 2026-02-20
+
+### Added
+- RollTable-backed automation scaffolding for Injury and Mishap resolution with world settings and GM-editable default tables.
+- Opposed test resolver in chat cards (`Resolve Opposed`) that links two opposed rolls and writes Win/Lose/Tie outcomes to both messages.
+- Weapon ammo support (`ammo`, `ammoMax`) with fire-mode automation (single/burst/auto/suppressive), ammo costs, and reload-aware flow.
+- CI/CD release workflow at `.github/workflows/release.yml` for tag-based packaging and GitHub Releases publishing.
+
+### Changed
+- Damage application now supports multi-target snapshots for area attacks and applies trait-driven effects across targets.
+- Condition application in dice automation now routes through the system condition API (`game.laundry.applyCondition`) for consistent v12/v13 effect handling.
+- Combat/rest UX and sheet wiring were aligned with the new automation layer (status toggles, Breather/Standard Rest actions, combat panel integration).
+
 ## 1.11.3 - 2026-02-20
 
 ### Changed

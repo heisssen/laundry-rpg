@@ -25,6 +25,8 @@ export class LaundryAttackDialog extends Application {
         attackContext = {},
         basePool = 1,
         complexity = 1,
+        traitProfile = {},
+        ammo = {},
         adrenalineAvailable = 0
     } = {}, options = {}) {
         super(options);
@@ -33,6 +35,18 @@ export class LaundryAttackDialog extends Application {
         this.attackContext = attackContext ?? {};
         this.basePool = Math.max(0, Math.trunc(Number(basePool) || 0));
         this.complexity = Math.max(1, Math.trunc(Number(complexity) || 1));
+        this.traitProfile = {
+            burst: Boolean(traitProfile?.burst),
+            automatic: Boolean(traitProfile?.automatic),
+            suppressive: Boolean(traitProfile?.suppressive),
+            area: Boolean(traitProfile?.area),
+            reload: Boolean(traitProfile?.reload)
+        };
+        this.ammo = {
+            usesAmmo: Boolean(ammo?.usesAmmo),
+            current: Math.max(0, Math.trunc(Number(ammo?.current) || 0)),
+            max: Math.max(0, Math.trunc(Number(ammo?.max) || 0))
+        };
         this.adrenalineAvailable = Math.max(0, Math.trunc(Number(adrenalineAvailable) || 0));
 
         this._resolved = false;
@@ -55,6 +69,7 @@ export class LaundryAttackDialog extends Application {
             : (ladderDelta < 0
                 ? game.i18n.format("LAUNDRY.LadderDiffLower", { steps: Math.abs(ladderDelta) })
                 : game.i18n.localize("LAUNDRY.LadderDiffEqual"));
+        const fireModes = this._getFireModes();
 
         return {
             ...data,
@@ -75,7 +90,11 @@ export class LaundryAttackDialog extends Application {
             ladderDelta,
             basePool: this.basePool,
             adrenalineAvailable: this.adrenalineAvailable,
-            canSpendAdrenaline: this.adrenalineAvailable > 0
+            canSpendAdrenaline: this.adrenalineAvailable > 0,
+            fireModes,
+            canSelectFireMode: fireModes.filter(mode => mode.enabled !== false).length > 1,
+            ammo: this.ammo,
+            traitProfile: this.traitProfile
         };
     }
 
@@ -109,17 +128,78 @@ export class LaundryAttackDialog extends Application {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const spendAdrenaline = formData.get("spendAdrenaline") === "on" && this.adrenalineAvailable > 0;
+        const requestedMode = String(formData.get("fireMode") ?? "single").trim().toLowerCase();
+        const fireModes = this._getFireModes();
+        const enabledModes = fireModes.filter(mode => mode.enabled !== false);
+        if (!enabledModes.length) {
+            ui.notifications.warn("No available fire mode with current ammo.");
+            return;
+        }
+        const fireMode = enabledModes.find(mode => mode.id === requestedMode) ?? enabledModes[0];
 
         this._finish({
             dn: Math.max(2, Math.min(6, Number(this.attackContext?.dn ?? 4) || 4)),
             complexity: this.complexity,
             spendAdrenaline,
-            poolBonus: spendAdrenaline ? 1 : 0,
+            fireMode: fireMode.id,
+            suppressiveMode: fireMode.id === "suppressive",
+            areaMode: Boolean(this.traitProfile?.area),
+            complexityBonus: Math.max(0, Math.trunc(Number(fireMode.complexityBonus) || 0)),
+            ammoCost: Math.max(0, Math.trunc(Number(fireMode.ammoCost) || 0)),
+            poolBonus: Math.max(0, Math.trunc(Number(fireMode.poolBonus) || 0)) + (spendAdrenaline ? 1 : 0),
             damageBonus: 0,
             target: this.attackContext?.target ?? null,
             attackContext: this.attackContext
         });
 
         this.close();
+    }
+
+    _getFireModes() {
+        const usesAmmo = Boolean(this.ammo?.usesAmmo);
+        const singleAmmo = usesAmmo ? 1 : 0;
+        const modes = [{
+            id: "single",
+            label: usesAmmo ? "Single Shot (1 ammo)" : "Single Shot",
+            poolBonus: 0,
+            complexityBonus: 0,
+            ammoCost: singleAmmo,
+            enabled: !usesAmmo || this.ammo.current >= singleAmmo
+        }];
+
+        if (this.traitProfile?.burst) {
+            modes.push({
+                id: "burst",
+                label: usesAmmo ? "Burst (+1d6, 3 ammo)" : "Burst (+1d6)",
+                poolBonus: 1,
+                complexityBonus: 0,
+                ammoCost: usesAmmo ? 3 : 0,
+                enabled: !usesAmmo || this.ammo.current >= 3
+            });
+        }
+
+        if (this.traitProfile?.automatic) {
+            modes.push({
+                id: "auto",
+                label: usesAmmo ? "Auto (+2d6, 5 ammo)" : "Auto (+2d6)",
+                poolBonus: 2,
+                complexityBonus: 0,
+                ammoCost: usesAmmo ? 5 : 0,
+                enabled: !usesAmmo || this.ammo.current >= 5
+            });
+        }
+
+        if (this.traitProfile?.suppressive) {
+            modes.push({
+                id: "suppressive",
+                label: usesAmmo ? "Suppressive (+1d6, Comp +1, 5 ammo)" : "Suppressive (+1d6, Comp +1)",
+                poolBonus: 1,
+                complexityBonus: 1,
+                ammoCost: usesAmmo ? 5 : 0,
+                enabled: !usesAmmo || this.ammo.current >= 5
+            });
+        }
+
+        return modes;
     }
 }
