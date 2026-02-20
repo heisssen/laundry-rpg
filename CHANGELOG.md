@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.10.0 - 2026-02-20
+
+### Added
+- Full turn-economy automation for combat turns (Action/Move counters per active combatant), including actor sheet controls to spend Action/Move and spend Adrenaline for +1 Action.
+- Stunned automation for turn economy: stunned combatants automatically lose their next Action at turn start.
+- Adrenaline roll reaction from dice cards: spend 1 Adrenaline to add an extra `1d6` after seeing the roll result.
+- Damage reaction automation: targets can spend 1 Adrenaline during damage application to halve incoming post-armour damage.
+- Weapon trait automation on damage application:
+  - `Piercing`: ignores 1 Armour per natural six rolled on the attack.
+  - `Crushing`: automatically applies `Stunned` on successful damaging hits.
+
+### Changed
+- Initiative now follows book formula directly: `Mind + Awareness Training + Reflexes Training`.
+- Combat dice status automation aligned to the rules:
+  - `Prone`: melee attacks against prone targets gain `+1d6`; ranged attacks against prone targets suffer `-1d6`.
+  - `Blinded`: vision-based checks suffer `-1d6`, and blinded targets apply a `-1 Defence` step in Ladder attack DN resolution.
+- Skill/spell/weapon dice pools now include Focus in base pool calculation (`Attribute + Training + Focus`).
+- Attack cards now block damage application when the attack did not achieve the required successes.
+- Injury severity trigger now keys off overflow through Toughness (`1d6 + overflow damage`) and keeps the requested table bands (Stunned/Bleeding/Incapacitated-Lethal).
+- Manifest versions bumped to `1.10.0`.
+
 ## 1.9.0 - 2026-02-20
 
 ### Added

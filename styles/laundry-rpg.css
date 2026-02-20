@@ -538,6 +538,15 @@
     margin-bottom: 8px;
 }
 
+.laundry-rpg .combat-turn-economy {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: var(--laundry-ink-muted);
+}
+
 .laundry-rpg .combat-quick-actions button {
     border: 1px solid var(--laundry-line-dark);
     background: rgba(255,255,255,0.75);

@@ -195,7 +195,7 @@
     "LAUNDRY.LadderDiffLower": "{steps} lower",
     "LAUNDRY.LadderDiffEqual": "Equal",
     "LAUNDRY.SpendFocusBoost": "Spend Focus (+1d6)",
-    "LAUNDRY.SpendAdrenalineBoost": "Spend Adrenaline (+1 damage)",
+    "LAUNDRY.SpendAdrenalineBoost": "Spend Adrenaline (+1d6)",
     "LAUNDRY.RollAttack": "Roll Attack",
     "LAUNDRY.AttackFlavor": "Attack with {weapon} ({mode})",
     "LAUNDRY.AttackNoTarget": "No target locked",

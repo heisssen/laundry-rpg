@@ -33,7 +33,8 @@ export class LaundryItem extends Item {
         const attrName  = this.system.attribute ?? "mind";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = this.system.training ?? 0;
-        const pool      = attrValue + training;
+        const focus     = this.system.focus ?? 0;
+        const pool      = attrValue + training + focus;
 
         return rollDice({
             pool,
@@ -65,7 +66,8 @@ export class LaundryItem extends Item {
         const attrName  = linkedSkill?.system.attribute ?? "body";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = linkedSkill?.system.training ?? 0;
-        const pool      = attrValue + training;
+        const focusValue = linkedSkill?.system.focus ?? 0;
+        const pool      = attrValue + training + focusValue;
         const complexity = 1;
 
         const attackContext = getWeaponAttackContext({
@@ -87,6 +89,8 @@ export class LaundryItem extends Item {
         });
 
         if (!attackSelection) return null;
+        const actionSpent = await game.laundry?.consumeCombatAction?.(actor, { warn: true });
+        if (actionSpent === false) return null;
 
         if (attackSelection.spendFocus) {
             if (!linkedSkill) {
@@ -128,7 +132,7 @@ export class LaundryItem extends Item {
                 mode: modeLabel
             }),
             damage: this.system.damage,
-            damageBonus: attackSelection.damageBonus ?? 0,
+            damageBonus: 0,
             isWeaponAttack: true,
             actorId: actor.id,
             focusItemId: linkedSkill?.id,
@@ -141,6 +145,8 @@ export class LaundryItem extends Item {
                 attackerRating: attackContext.attackerRating,
                 defenceRating: attackContext.defenceRating,
                 ladderDelta: attackContext.ladderDelta,
+                defencePenalty: attackContext.defencePenalty ?? 0,
+                weaponTraits: String(this.system?.traits ?? ""),
                 focusSpentPreRoll: Boolean(attackSelection.spendFocus),
                 adrenalineSpentPreRoll: Boolean(attackSelection.spendAdrenaline)
             },
@@ -168,12 +174,15 @@ export class LaundryItem extends Item {
         const attrName  = magicSkill?.system.attribute ?? "mind";
         const attrValue = actor.system.attributes[attrName]?.value ?? 1;
         const training  = magicSkill?.system.training ?? 0;
-        const pool      = attrValue + training;
+        const focus     = magicSkill?.system.focus ?? 0;
+        const pool      = attrValue + training + focus;
         const dn = Math.max(2, Math.min(6, Math.trunc(Number(this.system.dn ?? 4) || 4)));
         const complexity = Math.max(
             1,
             Math.trunc(Number(this.system.complexity ?? this.system.level ?? 1) || 1)
         );
+        const actionSpent = await game.laundry?.consumeCombatAction?.(actor, { warn: true });
+        if (actionSpent === false) return null;
 
         return rollDice({
             pool,

@@ -121,8 +121,8 @@ export class LaundryAttackDialog extends Application {
             complexity: this.complexity,
             spendFocus,
             spendAdrenaline,
-            poolBonus: spendFocus ? 1 : 0,
-            damageBonus: spendAdrenaline ? 1 : 0,
+            poolBonus: (spendFocus ? 1 : 0) + (spendAdrenaline ? 1 : 0),
+            damageBonus: 0,
             target: this.attackContext?.target ?? null,
             attackContext: this.attackContext
         });

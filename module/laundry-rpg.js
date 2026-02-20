@@ -73,6 +73,7 @@ const LAUNDRY_STATUS_EFFECTS = [
     { id: "stunned", name: "Stunned", img: "icons/svg/daze.svg" },
     { id: "weakened", name: "Weakened", img: "icons/svg/downgrade.svg" }
 ];
+const TURN_ECONOMY_FLAG = "turnEconomy";
 
 Hooks.once("init", async function () {
     console.log("Laundry RPG | Initialising The Laundry RPG System");
@@ -83,6 +84,10 @@ Hooks.once("init", async function () {
         LaundryCharacterBuilder,
         LaundryGMTracker,
         config: LAUNDRY,
+        getCombatTurnEconomy: (actor) => getCombatTurnEconomy(actor),
+        consumeCombatAction: (actor, options = {}) => consumeCombatAction(actor, options),
+        consumeCombatMove: (actor, options = {}) => consumeCombatMove(actor, options),
+        spendAdrenalineForExtraAction: (actor) => spendAdrenalineForExtraAction(actor),
         openGMTracker: () => {
             if (!game.user?.isGM) return null;
             const existing = Object.values(ui.windows).find(app =>
@@ -166,8 +171,19 @@ Hooks.on("renderCombatTracker", (_app, html) => {
     decorateCombatTracker(html);
 });
 
-Hooks.on("updateCombat", (combat, changed) => {
+Hooks.on("updateCombat", async (combat, changed) => {
     if (!_isTurnUpdate(changed)) return;
+    await initializeTurnEconomyForActiveCombatant(combat);
+    refreshCombatDrivenUIs();
+});
+
+Hooks.on("combatStart", async (combat) => {
+    await initializeTurnEconomyForActiveCombatant(combat);
+    refreshCombatDrivenUIs();
+});
+
+Hooks.on("updateCombatant", (_combatant, changed) => {
+    if (!foundry.utils.hasProperty(changed, `flags.laundry-rpg.${TURN_ECONOMY_FLAG}`)) return;
     refreshCombatDrivenUIs();
 });
 
@@ -297,4 +313,190 @@ function refreshCombatDrivenUIs() {
             app.render(false);
         }
     }
+}
+
+function _getTurnKey(combat) {
+    const round = Math.max(0, Math.trunc(Number(combat?.round ?? 0) || 0));
+    const turn = Math.max(0, Math.trunc(Number(combat?.turn ?? 0) || 0));
+    return `${round}:${turn}`;
+}
+
+function _getActorCombatant(actor, combat = game.combat) {
+    const actorId = actor?.id ?? actor;
+    if (!actorId || !combat) return null;
+    return combat.combatants.find(entry => entry.actorId === actorId) ?? null;
+}
+
+function _normalizeTurnEconomyState(combat, state = null) {
+    const turnKey = _getTurnKey(combat);
+    const actionFallback = combat?.started ? 1 : 0;
+    const normalized = state?.turnKey === turnKey
+        ? state
+        : {
+            turnKey,
+            actionsRemaining: actionFallback,
+            moveRemaining: combat?.started ? 1 : 0
+        };
+
+    return {
+        turnKey,
+        actionsRemaining: Math.max(0, Math.trunc(Number(normalized?.actionsRemaining) || 0)),
+        moveRemaining: Math.max(0, Math.trunc(Number(normalized?.moveRemaining) || 0))
+    };
+}
+
+function _collectActorStatuses(actor) {
+    const statuses = new Set();
+    if (!actor) return statuses;
+    for (const effect of actor.effects ?? []) {
+        const effectStatuses = effect?.statuses instanceof Set
+            ? Array.from(effect.statuses)
+            : Array.isArray(effect?.statuses) ? effect.statuses : [];
+        for (const statusId of effectStatuses) {
+            if (statusId) statuses.add(String(statusId));
+        }
+        const legacyStatus = effect.getFlag?.("core", "statusId");
+        if (legacyStatus) statuses.add(String(legacyStatus));
+    }
+    return statuses;
+}
+
+async function _removeActorStatus(actor, statusId) {
+    if (!actor || !statusId) return;
+    const toDelete = actor.effects
+        .filter(effect => {
+            const effectStatuses = effect?.statuses instanceof Set
+                ? Array.from(effect.statuses)
+                : Array.isArray(effect?.statuses) ? effect.statuses : [];
+            if (effectStatuses.includes(statusId)) return true;
+            return effect.getFlag?.("core", "statusId") === statusId;
+        })
+        .map(effect => effect.id);
+    if (!toDelete.length) return;
+    await actor.deleteEmbeddedDocuments("ActiveEffect", toDelete);
+}
+
+export function getCombatTurnEconomy(actor) {
+    const combat = game.combat;
+    const combatant = _getActorCombatant(actor, combat);
+    if (!combat || !combatant) {
+        return {
+            tracked: false,
+            isActorTurn: false,
+            actionsRemaining: 0,
+            moveRemaining: 0,
+            turnKey: null
+        };
+    }
+
+    const state = _normalizeTurnEconomyState(
+        combat,
+        combatant.getFlag("laundry-rpg", TURN_ECONOMY_FLAG)
+    );
+
+    return {
+        tracked: true,
+        isActorTurn: combat.combatant?.id === combatant.id,
+        actionsRemaining: state.actionsRemaining,
+        moveRemaining: state.moveRemaining,
+        turnKey: state.turnKey
+    };
+}
+
+export async function consumeCombatAction(actor, { amount = 1, warn = true } = {}) {
+    const combat = game.combat;
+    const combatant = _getActorCombatant(actor, combat);
+    if (!combat || !combatant) return true;
+    if (combat.combatant?.id !== combatant.id) return true;
+
+    const spend = Math.max(1, Math.trunc(Number(amount) || 1));
+    const state = _normalizeTurnEconomyState(
+        combat,
+        combatant.getFlag("laundry-rpg", TURN_ECONOMY_FLAG)
+    );
+
+    if (state.actionsRemaining < spend) {
+        if (warn) ui.notifications.warn("No Actions remaining this turn.");
+        return false;
+    }
+
+    state.actionsRemaining -= spend;
+    await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, state);
+    return true;
+}
+
+export async function consumeCombatMove(actor, { amount = 1, warn = true } = {}) {
+    const combat = game.combat;
+    const combatant = _getActorCombatant(actor, combat);
+    if (!combat || !combatant) return true;
+    if (combat.combatant?.id !== combatant.id) return true;
+
+    const spend = Math.max(1, Math.trunc(Number(amount) || 1));
+    const state = _normalizeTurnEconomyState(
+        combat,
+        combatant.getFlag("laundry-rpg", TURN_ECONOMY_FLAG)
+    );
+
+    if (state.moveRemaining < spend) {
+        if (warn) ui.notifications.warn("No Move remaining this turn.");
+        return false;
+    }
+
+    state.moveRemaining -= spend;
+    await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, state);
+    return true;
+}
+
+export async function spendAdrenalineForExtraAction(actor) {
+    const combat = game.combat;
+    const combatant = _getActorCombatant(actor, combat);
+    if (!combat || !combatant) {
+        ui.notifications.warn("Extra Actions from Adrenaline are tracked in combat only.");
+        return false;
+    }
+    if (combat.combatant?.id !== combatant.id) {
+        ui.notifications.warn("You can only gain an extra Action during your turn.");
+        return false;
+    }
+
+    const currentAdrenaline = Math.max(0, Math.trunc(Number(actor?.system?.derived?.adrenaline?.value) || 0));
+    if (currentAdrenaline <= 0) {
+        ui.notifications.warn("No Adrenaline available.");
+        return false;
+    }
+
+    await actor.update({ "system.derived.adrenaline.value": currentAdrenaline - 1 });
+
+    const state = _normalizeTurnEconomyState(
+        combat,
+        combatant.getFlag("laundry-rpg", TURN_ECONOMY_FLAG)
+    );
+    state.actionsRemaining += 1;
+    await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, state);
+
+    ui.notifications.info("Adrenaline spent: +1 Action this turn.");
+    return true;
+}
+
+async function initializeTurnEconomyForActiveCombatant(combat) {
+    if (!game.user?.isGM) return;
+    if (!combat?.started) return;
+    const combatant = combat.combatant;
+    const actor = combatant?.actor;
+    if (!combatant || !actor) return;
+
+    const existing = combatant.getFlag("laundry-rpg", TURN_ECONOMY_FLAG);
+    const normalized = _normalizeTurnEconomyState(combat, existing);
+    if (existing?.turnKey === normalized.turnKey) return;
+
+    if (_collectActorStatuses(actor).has("stunned")) {
+        normalized.actionsRemaining = 0;
+        await _removeActorStatus(actor, "stunned");
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: `<p><strong>${foundry.utils.escapeHTML(actor.name ?? "Agent")}</strong> is Stunned and loses their Action this turn.</p>`
+        });
+    }
+
+    await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, normalized);
 }

@@ -292,8 +292,19 @@
 
                 <section class="panel">
                     <h3 class="section-header stamp-red">Quick Actions</h3>
+                    {{#if combat.canTrackTurnEconomy}}
+                    <div class="combat-turn-economy">
+                        <span><strong>Actions:</strong> {{combat.turnEconomy.actionsRemaining}}</span>
+                        <span><strong>Move:</strong> {{combat.turnEconomy.moveRemaining}}</span>
+                    </div>
+                    {{/if}}
                     <div class="combat-quick-actions">
                         <button type="button" class="combat-roll-initiative">Roll Initiative</button>
+                        {{#if combat.canManageTurnEconomy}}
+                        <button type="button" class="combat-use-action">Use Action</button>
+                        <button type="button" class="combat-use-move">Use Move</button>
+                        <button type="button" class="combat-adrenaline-action">Spend Adrenaline (+1 Action)</button>
+                        {{/if}}
                         <button type="button" class="take-breather">Take a Breather</button>
                         <button type="button" class="standard-rest">Standard Rest</button>
                         {{#if combat.canEndTurn}}

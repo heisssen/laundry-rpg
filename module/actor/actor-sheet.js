@@ -141,6 +141,12 @@ export class LaundryActorSheet extends ActorSheet {
 
         const activeCombatant = game.combat?.combatant ?? null;
         const isActorTurn = Boolean(activeCombatant?.actor?.id === this.actor.id);
+        const turnEconomy = game.laundry?.getCombatTurnEconomy?.(this.actor) ?? {
+            tracked: false,
+            isActorTurn: false,
+            actionsRemaining: 0,
+            moveRemaining: 0
+        };
         const statusIds = ["blinded", "prone", "stunned", "weakened"];
         const actorStatusSet = this._getActorStatusSet();
         const conditionConfigs = statusIds.map(id => this._getConditionConfig(id));
@@ -196,6 +202,9 @@ export class LaundryActorSheet extends ActorSheet {
                 ? activeConditions.map(entry => entry.name).join(", ")
                 : "No active conditions.",
             hasLoadout: equippedWeapons.length > 0 || equippedArmour.length > 0,
+            turnEconomy,
+            canTrackTurnEconomy: Boolean(turnEconomy.tracked),
+            canManageTurnEconomy: Boolean(turnEconomy.tracked && turnEconomy.isActorTurn && (game.user?.isGM || this.actor.isOwner)),
             canOpenGmTracker: Boolean(game.user?.isGM && game.laundry?.openGMTracker),
             gmTrackerHint: "GM monitoring: Threat, Team Luck, BAU prompts and party overview are in GM Tracker."
         };
@@ -264,6 +273,9 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".combat-roll-initiative").click(this._onCombatRollInitiative.bind(this));
         html.find(".combat-status-toggle").click(this._onCombatStatusToggle.bind(this));
         html.find(".combat-open-gm-tracker").click(this._onCombatOpenGmTracker.bind(this));
+        html.find(".combat-use-action").click(this._onCombatUseAction.bind(this));
+        html.find(".combat-use-move").click(this._onCombatUseMove.bind(this));
+        html.find(".combat-adrenaline-action").click(this._onCombatAdrenalineAction.bind(this));
         html.find(".take-breather").click(this._onTakeBreather.bind(this));
         html.find(".standard-rest").click(this._onStandardRest.bind(this));
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
@@ -554,6 +566,10 @@ export class LaundryActorSheet extends ActorSheet {
             .map(effect => effect.id);
 
         if (toDelete.length) {
+            if (statusId === "prone") {
+                const spentMove = await game.laundry?.consumeCombatMove?.(this.actor, { warn: true });
+                if (spentMove === false) return;
+            }
             await this.actor.deleteEmbeddedDocuments("ActiveEffect", toDelete);
             this.render(false);
             return;
@@ -574,6 +590,21 @@ export class LaundryActorSheet extends ActorSheet {
         ev.preventDefault();
         if (!game.user?.isGM) return;
         game.laundry?.openGMTracker?.();
+    }
+
+    async _onCombatUseAction(ev) {
+        ev.preventDefault();
+        await game.laundry?.consumeCombatAction?.(this.actor, { warn: true });
+    }
+
+    async _onCombatUseMove(ev) {
+        ev.preventDefault();
+        await game.laundry?.consumeCombatMove?.(this.actor, { warn: true });
+    }
+
+    async _onCombatAdrenalineAction(ev) {
+        ev.preventDefault();
+        await game.laundry?.spendAdrenalineForExtraAction?.(this.actor);
     }
 
     async _onTakeBreather(ev) {

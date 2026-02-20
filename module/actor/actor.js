@@ -48,8 +48,6 @@ export class LaundryActor extends Actor {
         const rangedTraining = this._getSkillTraining("Ranged");
         const reflexesTraining = this._getSkillTraining("Reflexes");
         const awarenessTraining = this._getSkillTraining("Awareness");
-        const conditionedToFightCount = this._getTalentCount("Conditioned to Fight");
-        const combatReadyCount = this._getTalentCount("Combat Ready");
 
         // Toughness tracks current value via persisted damage while deriving max from attributes.
         const rawToughnessDamage = Number(sys.derived.toughness.damage ?? 0);
@@ -79,13 +77,7 @@ export class LaundryActor extends Actor {
         const meleeValue = body + closeCombatTraining;
         const accuracyValue = mind + rangedTraining;
         const defenceValue = body + reflexesTraining;
-        const initiativeBaseAttribute = conditionedToFightCount > 0
-            ? Math.max(mind, body)
-            : mind;
-        const initiativeValue = initiativeBaseAttribute
-            + awarenessTraining
-            + reflexesTraining
-            + (combatReadyCount * 2);
+        const initiativeValue = mind + awarenessTraining + reflexesTraining;
         const naturalAwarenessValue = Math.ceil((mind + awarenessTraining) / 2);
         const armourValue = this.items
             .filter(i => i.type === "armour" && i.system?.equipped === true)

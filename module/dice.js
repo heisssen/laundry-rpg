@@ -24,9 +24,11 @@ export function getWeaponAttackContext({ actor, weapon, linkedSkillName = "" } =
         ) || 0)
     );
     const hasTarget = Boolean(targetActor);
-    const defenceRating = hasTarget
+    const baseDefence = hasTarget
         ? Math.max(0, Math.trunc(Number(targetActor?.system?.derived?.defence?.value) || 0))
         : 0;
+    const defencePenalty = _actorHasStatus(targetActor, "blinded") ? 1 : 0;
+    const defenceRating = Math.max(0, baseDefence - defencePenalty);
     const ladderDelta = hasTarget ? (attackerRating - defenceRating) : 0;
 
     return {
@@ -36,6 +38,7 @@ export function getWeaponAttackContext({ actor, weapon, linkedSkillName = "" } =
         attackerRating,
         defenceRating,
         ladderDelta,
+        defencePenalty,
         dn: hasTarget ? _mapAttackDnFromDelta(ladderDelta) : 4
     };
 }
@@ -183,6 +186,12 @@ export function bindDiceChatControls(message, html) {
         await _rerollFailuresWithLuck(message, state);
     });
 
+    html.find(".spend-adrenaline-die").off("click.laundry-adrenaline-die").on("click.laundry-adrenaline-die", async (ev) => {
+        ev.preventDefault();
+        if (!message.isOwner || state.isLuckTest) return;
+        await _spendAdrenalineDie(message, state);
+    });
+
     html.find(".apply-damage").off("click.laundry-apply-damage").on("click.laundry-apply-damage", async (ev) => {
         ev.preventDefault();
         await _applyDamage(message);
@@ -255,6 +264,10 @@ async function _executeRoll({
         const focusItem = actor?.items?.get(focusItemId);
         focusAvailable = Number(focusItem?.system?.focus ?? 0);
     }
+    const adrenalineAvailable = Math.max(
+        0,
+        Math.trunc(Number(actor?.system?.derived?.adrenaline?.value) || 0)
+    );
 
     const damageData = await _evaluateDamage({
         damage,
@@ -296,6 +309,9 @@ async function _executeRoll({
         focusSpent: 0,
         focusAvailable,
         focusRemaining: focusAvailable,
+        adrenalineAvailable,
+        adrenalineRemaining: adrenalineAvailable,
+        adrenalineSpent: 0,
         allowFocusControls: !isLuckTest && allowPostRollFocus !== false,
         actorId: actorId ?? null,
         focusItemId: !isLuckTest ? (focusItemId ?? null) : null,
@@ -401,6 +417,7 @@ function _renderDiceContent(state) {
 
     const focusSection = (state.isLuckTest || state.allowFocusControls === false) ? "" : _renderFocusControls(state);
     const luckSection = _renderLuckControls(state, teamLuck, teamLuckMax);
+    const adrenalineSection = _renderAdrenalineControls(state);
 
     const skillPreset = state.showDifficultyPreset ? _getDifficultyPresetLabel(state.difficultyPreset) : "";
     const presetSuffix = skillPreset ? ` | ${skillPreset}` : "";
@@ -430,6 +447,7 @@ function _renderDiceContent(state) {
         ${mishapSection}
         ${focusSection}
         ${luckSection}
+        ${adrenalineSection}
         <div class="dice-outcome ${outcome.cssClass}">
             <strong>${outcome.label}</strong>
             <span class="success-count">${successSummary}</span>
@@ -513,6 +531,7 @@ function _renderAttackMetaSection(state) {
             <div><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.AttackMode"))}:</strong> ${_escapeHtml(modeLabel)}</div>
             <div><strong>${_escapeHtml(attackerLabel)}:</strong> ${Math.max(0, Math.trunc(attackerRating || 0))} | <strong>${_escapeHtml(game.i18n.localize("LAUNDRY.TargetDefence"))}:</strong> ${Math.max(0, Math.trunc(defenceRating || 0))}</div>
             <div><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.LadderDifference"))}:</strong> ${_escapeHtml(ladderLabel)} | <strong>${_escapeHtml(game.i18n.localize("LAUNDRY.AttackAutoDN"))}:</strong> ${Math.max(2, Math.min(6, Number(state.dn ?? 4) || 4))}</div>
+            ${Number(meta.defencePenalty ?? 0) > 0 ? `<div class="attack-pre-spend">Target Blinded: Defence -${Math.max(0, Math.trunc(Number(meta.defencePenalty) || 0))}</div>` : ""}
             ${meta.focusSpentPreRoll ? `<div class="attack-pre-spend">${_escapeHtml(game.i18n.localize("LAUNDRY.SpendFocusBoost"))}</div>` : ""}
             ${meta.adrenalineSpentPreRoll ? `<div class="attack-pre-spend">${_escapeHtml(game.i18n.localize("LAUNDRY.SpendAdrenalineBoost"))}</div>` : ""}
         </div>`;
@@ -572,7 +591,9 @@ function _renderDamageSection(state) {
     }
 
     const hasTarget = Boolean(String(state.targetName ?? "").trim());
-    const buttonDisabled = !hasTarget || !hasRolledTotal;
+    const outcome = _buildOutcome(state, _buildResults(state));
+    const hasHit = outcome.successes >= outcome.complexity;
+    const buttonDisabled = !hasTarget || !hasRolledTotal || !hasHit;
     const breakdown = !hasFormula
         ? game.i18n.localize("LAUNDRY.NoDamageFormula")
         : (hasRolledTotal
@@ -580,9 +601,11 @@ function _renderDamageSection(state) {
                 ? `${escapedFormula} = ${Math.max(0, Math.trunc(baseTotal))} + ${bonus} (${_escapeHtml(game.i18n.localize("LAUNDRY.Adrenaline"))}) = <strong class="damage-total">${Math.max(0, Math.trunc(total))}</strong>`
                 : `${escapedFormula} = <strong class="damage-total">${Math.max(0, Math.trunc(total))}</strong>`)
             : `${escapedFormula} (${_escapeHtml(game.i18n.localize("LAUNDRY.DamageNotRollable"))})`);
-    const buttonTitle = hasTarget
-        ? game.i18n.localize("LAUNDRY.ApplyDamageTooltip")
-        : game.i18n.localize("LAUNDRY.SelectTargetForDamage");
+    const buttonTitle = !hasTarget
+        ? game.i18n.localize("LAUNDRY.SelectTargetForDamage")
+        : (!hasHit
+            ? "Attack did not hit; damage cannot be applied."
+            : game.i18n.localize("LAUNDRY.ApplyDamageTooltip"));
 
     return `
         <div class="damage-section weapon-damage-section">
@@ -622,6 +645,18 @@ function _renderLuckControls(state, teamLuck, teamLuckMax) {
         <div class="laundry-focus-controls">
             <button type="button" class="luck-reroll-failures spend-focus" ${disabled ? "disabled" : ""}>Reroll Failures (Luck)</button>
             <span class="laundry-focus-meta">Team Luck: ${teamLuck}/${teamLuckMax}${state.isLuckTest ? " | Luck spending disabled on Luck Tests" : ""}</span>
+        </div>`;
+}
+
+function _renderAdrenalineControls(state) {
+    if (state.isLuckTest || !state.actorId) return "";
+    const remaining = Math.max(0, Math.trunc(Number(state.adrenalineRemaining ?? state.adrenalineAvailable ?? 0) || 0));
+    const spent = Math.max(0, Math.trunc(Number(state.adrenalineSpent ?? 0) || 0));
+    const disabled = remaining <= 0;
+    return `
+        <div class="laundry-focus-controls">
+            <button type="button" class="spend-adrenaline-die spend-focus" ${disabled ? "disabled" : ""}>Spend Adrenaline (+1d6)</button>
+            <span class="laundry-focus-meta">Adrenaline: ${remaining} | Spent on this roll: ${spent}</span>
         </div>`;
 }
 
@@ -736,6 +771,35 @@ async function _rerollFailuresWithLuck(message, state) {
     await _updateDiceMessage(message, state);
 }
 
+async function _spendAdrenalineDie(message, state) {
+    const actor = state.actorId ? game.actors?.get(state.actorId) : null;
+    if (!actor) {
+        ui.notifications.warn("Roll is not linked to an actor.");
+        return;
+    }
+
+    const current = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value) || 0));
+    if (current <= 0) {
+        ui.notifications.warn("No Adrenaline remaining.");
+        return;
+    }
+
+    await actor.update({ "system.derived.adrenaline.value": current - 1 });
+
+    const bonusRoll = new Roll("1d6");
+    await bonusRoll.evaluate();
+    const bonusDie = _clampDie(Number(bonusRoll.total ?? 1));
+
+    state.rawDice = Array.isArray(state.rawDice) ? state.rawDice : [];
+    state.rawDice.push(bonusDie);
+    state.pool = Math.max(1, Math.trunc(Number(state.pool) || 0) + 1);
+    state.adrenalineSpent = Math.max(0, Math.trunc(Number(state.adrenalineSpent ?? 0) || 0) + 1);
+    state.adrenalineRemaining = Math.max(0, current - 1);
+
+    await _refreshLuckSnapshot(state);
+    await _updateDiceMessage(message, state);
+}
+
 async function _updateDiceMessage(message, state) {
     await message.update({
         content: _renderDiceContent(state),
@@ -762,6 +826,13 @@ async function _applyDamage(message) {
         return;
     }
 
+    const results = _buildResults(state);
+    const outcome = _buildOutcome(state, results);
+    if (outcome.successes < outcome.complexity) {
+        ui.notifications.warn("Attack missed (insufficient successes). No damage applied.");
+        return;
+    }
+
     const rawDamage = Number(state.damageTotal);
     if (!Number.isFinite(rawDamage)) {
         ui.notifications.warn(game.i18n.localize("LAUNDRY.DamageNotRollable"));
@@ -769,8 +840,27 @@ async function _applyDamage(message) {
     }
 
     const rolledDamage = Math.max(0, Math.trunc(rawDamage));
+    const traits = _extractWeaponTraits(state);
+    const criticals = results.filter(result => result.rawValue === 6).length;
     const armour = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.armour?.value ?? 0)));
-    const appliedDamage = Math.max(0, rolledDamage - armour);
+    const armourIgnored = traits.piercing ? criticals : 0;
+    const effectiveArmour = Math.max(0, armour - armourIgnored);
+    let appliedDamage = Math.max(0, rolledDamage - effectiveArmour);
+    let adrenalineReduced = false;
+    let nextAdrenaline = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.adrenaline?.value ?? 0)));
+
+    if (appliedDamage > 0 && nextAdrenaline > 0) {
+        const spendAdrenaline = await Dialog.confirm({
+            title: "Adrenaline Reaction",
+            content: `<p><strong>${_escapeHtml(targetActor.name ?? "Agent")}</strong> can spend 1 Adrenaline to halve incoming damage.</p>`
+        });
+        if (spendAdrenaline) {
+            nextAdrenaline = Math.max(0, nextAdrenaline - 1);
+            appliedDamage = Math.floor(appliedDamage / 2);
+            adrenalineReduced = true;
+        }
+    }
+
     const currentToughness = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.toughness?.value ?? 0)));
     const maxToughness = Math.max(
         currentToughness,
@@ -778,35 +868,54 @@ async function _applyDamage(message) {
     );
     const newToughness = Math.max(0, currentToughness - appliedDamage);
     const newDamageTaken = Math.max(0, maxToughness - newToughness);
+    const overflowDamage = Math.max(0, appliedDamage - currentToughness);
 
-    await targetActor.update({
+    const updateData = {
         "system.derived.toughness.value": newToughness,
         "system.derived.toughness.damage": newDamageTaken
-    });
+    };
+    if (adrenalineReduced) {
+        updateData["system.derived.adrenaline.value"] = nextAdrenaline;
+    }
+
+    await targetActor.update(updateData);
+
+    if (traits.crushing && appliedDamage > 0) {
+        await _applyStatusToActor(targetActor, "stunned");
+    }
 
     ui.notifications.info(game.i18n.format("LAUNDRY.DamageApplied", {
         name: targetActor.name,
         rolled: rolledDamage,
-        armour,
+        armour: effectiveArmour,
         applied: appliedDamage,
         from: currentToughness,
         to: newToughness
     }));
+    if (armourIgnored > 0) {
+        ui.notifications.info(`Piercing: ignored ${armourIgnored} armour from ${criticals} critical(s).`);
+    }
+    if (adrenalineReduced) {
+        ui.notifications.info("Adrenaline reaction used: incoming damage halved.");
+    }
+    if (traits.crushing && appliedDamage > 0) {
+        ui.notifications.info("Crushing effect: target is Stunned.");
+    }
 
     if (appliedDamage > 0 && currentToughness > 0 && newToughness <= 0) {
         await _postCriticalWoundPrompt({
             targetActor,
-            damageTaken: appliedDamage
+            damageTaken: overflowDamage
         });
     }
 }
 
 function _resolveTargetActor(state) {
-    const tokenId = state?.targetTokenId;
+    const tokenId = state?.targetTokenId ?? state?.tokenId;
     const tokenActor = tokenId ? canvas.tokens?.get(tokenId)?.actor : null;
     if (tokenActor) return tokenActor;
 
-    const actorId = state?.targetActorId;
+    const actorId = state?.targetActorId ?? state?.actorId;
     if (!actorId) return null;
     return game.actors?.get(actorId) ?? null;
 }
@@ -814,6 +923,33 @@ function _resolveTargetActor(state) {
 function _canCurrentUserApplyDamage(state) {
     const targetActor = _resolveTargetActor(state);
     return Boolean(game.user?.isGM || targetActor?.isOwner);
+}
+
+function _extractWeaponTraits(state) {
+    const rawTraits = String(state?.attackMeta?.weaponTraits ?? "").trim().toLowerCase();
+    const tokens = rawTraits
+        .split(/[,\n;]+/g)
+        .map(entry => entry.trim())
+        .filter(Boolean);
+    const asBlob = tokens.join(" ");
+    return {
+        piercing: tokens.includes("piercing") || /\bpiercing\b/.test(asBlob),
+        crushing: tokens.includes("crushing") || /\bcrushing\b/.test(asBlob)
+    };
+}
+
+async function _applyStatusToActor(actor, statusId) {
+    if (!actor || !statusId) return;
+    if (_actorHasStatus(actor, statusId)) return;
+
+    const config = (CONFIG.statusEffects ?? []).find(entry => entry.id === statusId);
+    await actor.createEmbeddedDocuments("ActiveEffect", [{
+        name: config?.name ?? statusId,
+        img: config?.img ?? "icons/svg/daze.svg",
+        statuses: [statusId],
+        disabled: false,
+        origin: actor.uuid
+    }]);
 }
 
 function _findAutoFocusDie(state) {
@@ -884,6 +1020,11 @@ function _collectActorStatuses(actor) {
     return statuses;
 }
 
+function _actorHasStatus(actor, statusId) {
+    if (!actor || !statusId) return false;
+    return _collectActorStatuses(actor).has(String(statusId));
+}
+
 function _getStatusRollModifiers({ actor, targetActor, rollContext, isWeaponAttack }) {
     const own = _collectActorStatuses(actor);
     const target = _collectActorStatuses(targetActor);
@@ -898,25 +1039,14 @@ function _getStatusRollModifiers({ actor, targetActor, rollContext, isWeaponAtta
     const attackMode = String(rollContext?.attackMode ?? "").toLowerCase();
 
     const isVisionRoll = isWeaponAttack || ["awareness", "ranged", "reflexes", "stealth", "close combat"].includes(skillName);
-    const isMovementRoll = isWeaponAttack || ["athletics", "reflexes", "stealth", "ranged"].includes(skillName);
     const isBodyRoll = isWeaponAttack
         || attribute === "body"
         || sourceType === "attribute" && sourceName === "body"
         || ["athletics", "might", "fortitude", "close combat", "ranged", "reflexes", "survival", "stealth"].includes(skillName);
 
-    if (own.has("stunned")) {
-        shiftDelta += 1;
-        notes.push("Stunned: +1 DN shift.");
-    }
-
     if (own.has("blinded") && isVisionRoll) {
-        shiftDelta += 1;
-        notes.push("Blinded: +1 DN shift on vision-dependent actions.");
-    }
-
-    if (own.has("prone") && isMovementRoll) {
-        shiftDelta += 1;
-        notes.push("Prone: +1 DN shift on movement/ranged actions.");
+        poolDelta -= 1;
+        notes.push("Blinded: Disadvantage on vision checks (-1d6).");
     }
 
     if (own.has("weakened") && isBodyRoll) {
@@ -925,18 +1055,13 @@ function _getStatusRollModifiers({ actor, targetActor, rollContext, isWeaponAtta
     }
 
     if (isWeaponAttack) {
-        if (target.has("stunned")) {
-            shiftDelta -= 1;
-            notes.push("Target Stunned: -1 DN shift.");
-        }
-
         if (target.has("prone")) {
             if (attackMode === "melee") {
-                shiftDelta -= 1;
-                notes.push("Target Prone vs melee: -1 DN shift.");
+                poolDelta += 1;
+                notes.push("Target Prone: melee Advantage (+1d6).");
             } else {
-                shiftDelta += 1;
-                notes.push("Target Prone vs ranged: +1 DN shift.");
+                poolDelta -= 1;
+                notes.push("Target Prone: ranged Disadvantage (-1d6).");
             }
         }
     }
@@ -1021,7 +1146,6 @@ async function _rollInjuryFromButton(ev) {
 
 function _getInjuryOutcome(total) {
     const n = Math.max(0, Math.trunc(Number(total) || 0));
-    if (n <= 1) return "Grazed";
     if (n <= 3) return "Stunned";
     if (n <= 5) return "Bleeding";
     return "Incapacitated / Lethal";
@@ -1298,6 +1422,14 @@ function _escapeHtml(value) {
 async function _refreshLuckSnapshot(state) {
     state.teamLuck = await _getTeamLuck();
     state.teamLuckMax = await _getTeamLuckMax();
+    if (state?.actorId) {
+        const actor = game.actors?.get(state.actorId);
+        if (actor) {
+            const current = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value) || 0));
+            state.adrenalineAvailable = current;
+            state.adrenalineRemaining = current;
+        }
+    }
 }
 
 async function _spendTeamLuck(amount = 1) {
