@@ -42,12 +42,20 @@ export async function applyThreatBuffsToCurrentScene({ scene = canvas?.scene, th
     await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
         content: `
-            <div class="laundry-threat-card">
-                <strong>THREAT BUFFS APPLIED</strong>
-                <p>Threat Level: <strong>${resolvedThreat}</strong></p>
-                <p>Hostile NPC/Exonome actors updated: <strong>${affectedActors.length}</strong></p>
-                <p>Mechanical buffs: +${resolvedThreat} Armour, +${resolvedThreat} Defence, +${resolvedThreat} Toughness regen/round, +${resolvedThreat} Adrenaline gain/round.</p>
-                <p>GM guidance: ${manualHints.map(note => foundry.utils.escapeHTML(note)).join(" ")}</p>
+            <div class="laundry-chat-card laundry-threat-card">
+                <div class="laundry-chat-header">
+                    <div class="laundry-chat-title">
+                        <strong>Threat Buffs Applied</strong>
+                        <span class="laundry-chat-subtitle">Hostile actors updated</span>
+                    </div>
+                    <span class="laundry-chat-stamp">THREAT ${resolvedThreat}</span>
+                </div>
+                <div class="laundry-chat-rows">
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Threat Level</span><span class="laundry-chat-value">${resolvedThreat}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Updated Actors</span><span class="laundry-chat-value">${affectedActors.length}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Mechanical Buffs</span><span class="laundry-chat-value">+${resolvedThreat} Armour, +${resolvedThreat} Defence, +${resolvedThreat} Toughness regen/round, +${resolvedThreat} Adrenaline gain/round</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">GM Guidance</span><span class="laundry-chat-value">${manualHints.map(note => foundry.utils.escapeHTML(note)).join(" ")}</span></div>
+                </div>
             </div>`
     });
 
@@ -104,7 +112,20 @@ export async function applyThreatRoundRegeneration(combat) {
         const safeName = foundry.utils.escapeHTML(actor.name ?? "Hostile Entity");
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor }),
-            content: `<p><strong>${safeName}</strong> feeds on Threat: Toughness ${toughnessCurrent} -> ${nextToughness}, Adrenaline ${adrenalineCurrent} -> ${nextAdrenaline}.</p>`
+            content: `
+                <div class="laundry-chat-card laundry-threat-card">
+                    <div class="laundry-chat-header">
+                        <div class="laundry-chat-title">
+                            <strong>${safeName}</strong>
+                            <span class="laundry-chat-subtitle">Threat regeneration tick</span>
+                        </div>
+                        <span class="laundry-chat-stamp">ROUND TICK</span>
+                    </div>
+                    <div class="laundry-chat-rows">
+                        <div class="laundry-chat-row"><span class="laundry-chat-label">Toughness</span><span class="laundry-chat-value">${toughnessCurrent} -> ${nextToughness}</span></div>
+                        <div class="laundry-chat-row"><span class="laundry-chat-label">Adrenaline</span><span class="laundry-chat-value">${adrenalineCurrent} -> ${nextAdrenaline}</span></div>
+                    </div>
+                </div>`
         });
     }
 
@@ -183,4 +204,3 @@ async function _upsertThreatBuffEffect(actor, { threatLevel = 0, sceneId = "", t
         lastRoundTick: ""
     });
 }
-

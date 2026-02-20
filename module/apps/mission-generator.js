@@ -169,22 +169,26 @@ export async function postMissionBriefingToChat(mission) {
     return ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
         content: `
-            <div class="laundry-mission-card">
-                <div class="laundry-mission-header">
-                    <strong>TOP SECRET // EYES ONLY</strong>
-                    <span>SUPERVISOR BRIEFING</span>
+            <div class="laundry-chat-card laundry-mission-card">
+                <div class="laundry-chat-header">
+                    <div class="laundry-chat-title">
+                        <strong>OPERATION: ${safeOperation}</strong>
+                        <span class="laundry-chat-subtitle">Supervisor Briefing</span>
+                    </div>
+                    <span class="laundry-chat-stamp">TOP SECRET</span>
                 </div>
-                <h3>OPERATION: ${safeOperation}</h3>
-                <p class="laundry-mission-line"><strong>Codename Marker:</strong> ${safeModifier}</p>
-                <p class="laundry-mission-line"><strong>Location:</strong> ${safeLocation}</p>
-                <p class="laundry-mission-line"><strong>Objective:</strong> ${safeObjective}</p>
-                <p class="laundry-mission-line"><strong>Suspect:</strong> ${safeSuspect}</p>
-                <p class="laundry-mission-line"><strong>Culprit:</strong> ${safeCulprit}</p>
-                <p class="laundry-mission-line"><strong>Motive:</strong> ${safeMotive}</p>
-                <p class="laundry-mission-line"><strong>Complication:</strong> ${safeComplication}</p>
-                <p class="laundry-mission-line"><strong>Relevant Intel:</strong> ${safeIntel}</p>
-                <p class="laundry-mission-line"><strong>People of Interest:</strong> Asset ${safeAsset}; Civilian ${safeCivilian}.</p>
-                <p class="laundry-mission-line"><strong>Escalation Path:</strong> ${safeGroundZero} -> ${safeCrisis}</p>
+                <div class="laundry-chat-rows">
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Codename</span><span class="laundry-chat-value">${safeModifier}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Location</span><span class="laundry-chat-value">${safeLocation}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Objective</span><span class="laundry-chat-value">${safeObjective}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Suspect</span><span class="laundry-chat-value">${safeSuspect}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Culprit</span><span class="laundry-chat-value">${safeCulprit}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Motive</span><span class="laundry-chat-value">${safeMotive}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Complication</span><span class="laundry-chat-value">${safeComplication}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Intel</span><span class="laundry-chat-value">${safeIntel}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">POI</span><span class="laundry-chat-value">Asset ${safeAsset}; Civilian ${safeCivilian}</span></div>
+                    <div class="laundry-chat-row"><span class="laundry-chat-label">Escalation</span><span class="laundry-chat-value">${safeGroundZero} -> ${safeCrisis}</span></div>
+                </div>
             </div>`
     });
 }

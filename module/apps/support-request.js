@@ -438,29 +438,36 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
         const safeGranted = grantedItems
             .map(name => `<li>${foundry.utils.escapeHTML(name)}</li>`)
             .join("");
+        const safeRequirementsRow = safeRequirements || "None";
+        const issuedSection = safeGranted
+            ? `<div class="laundry-chat-section"><div class="laundry-chat-section-title">Issued</div><ul class="laundry-chat-list">${safeGranted}</ul></div>`
+            : (approved && request.isGear
+                ? `<div class="laundry-chat-note">Issued: No matching inventory items found; bundle logged for GM handling.</div>`
+                : "");
 
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor: this.actor }),
             content: `
-                <div class="laundry-bureau-card laundry-support-card ${verdictClass}">
-                    <div class="laundry-card-header">
-                        <strong>${heading}: ${safeRequestName}</strong>
-                        <span class="laundry-card-stamp">${verdict}</span>
+                <div class="laundry-chat-card laundry-bureau-card laundry-support-card ${verdictClass}">
+                    <div class="laundry-chat-header">
+                        <div class="laundry-chat-title">
+                            <strong>${heading}: ${safeRequestName}</strong>
+                            <span class="laundry-chat-subtitle">${safeCategory}</span>
+                        </div>
+                        <span class="laundry-chat-stamp">${verdict}</span>
                     </div>
-                    <div class="laundry-card-body">
-                        <p><strong>Requester:</strong> ${safeName}</p>
-                        <p><strong>Line:</strong> ${safeCategory}</p>
-                        <p><strong>Method:</strong> ${safeMethod}</p>
-                        <p><strong>Test:</strong> Mind (${safeTestSkill}) DN ${requestEntry.dn}:${requestEntry.complexity}</p>
-                        <p><strong>Pool:</strong> ${pool}d6 (${rollText})</p>
-                        <p><strong>Successes:</strong> ${successes}${consumedPaperworkBonus ? " + 1 paperwork bonus" : ""} = ${totalSuccesses}</p>
-                        ${safeRequirements ? `<p><strong>Requirements:</strong> ${safeRequirements}</p>` : ""}
-                        <p><strong>Effect:</strong> ${safeSummary}</p>
-                        ${safeLines ? `<p><strong>Requested Bundle:</strong></p><ul>${safeLines}</ul>` : ""}
-                        ${safeGranted ? `<p><strong>Issued:</strong></p><ul>${safeGranted}</ul>` : (approved && request.isGear ? "<p><strong>Issued:</strong> No matching inventory items found; bundle logged for GM handling.</p>" : "")}
-                        <p>${foundry.utils.escapeHTML(freeSuccessText)}</p>
-                        ${safeSource ? `<p class="laundry-card-reference">${safeSource}</p>` : ""}
+                    <div class="laundry-chat-meta">Mind (${safeTestSkill}) DN ${requestEntry.dn}:${requestEntry.complexity} // Pool ${pool}d6 (${rollText})</div>
+                    <div class="laundry-chat-rows">
+                        <div class="laundry-chat-row"><span class="laundry-chat-label">Requester</span><span class="laundry-chat-value">${safeName}</span></div>
+                        <div class="laundry-chat-row"><span class="laundry-chat-label">Method</span><span class="laundry-chat-value">${safeMethod}</span></div>
+                        <div class="laundry-chat-row"><span class="laundry-chat-label">Successes</span><span class="laundry-chat-value">${successes}${consumedPaperworkBonus ? " + 1 paperwork bonus" : ""} = ${totalSuccesses}</span></div>
+                        <div class="laundry-chat-row"><span class="laundry-chat-label">Requirements</span><span class="laundry-chat-value">${safeRequirementsRow}</span></div>
+                        <div class="laundry-chat-row"><span class="laundry-chat-label">Effect</span><span class="laundry-chat-value">${safeSummary}</span></div>
                     </div>
+                    ${safeLines ? `<div class="laundry-chat-section"><div class="laundry-chat-section-title">Requested Bundle</div><ul class="laundry-chat-list">${safeLines}</ul></div>` : ""}
+                    ${issuedSection}
+                    <div class="laundry-chat-note">${foundry.utils.escapeHTML(freeSuccessText)}</div>
+                    ${safeSource ? `<p class="laundry-chat-reference">${safeSource}</p>` : ""}
                 </div>`,
             rolls: [roll],
             sound: CONFIG.sounds?.dice

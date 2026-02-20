@@ -2917,91 +2917,145 @@
     flex: 1 1 180px;
 }
 
+.laundry-rpg .laundry-chat-card,
+.laundry-rpg .laundry-bureau-card,
 .laundry-rpg .laundry-mission-card,
 .laundry-rpg .laundry-threat-card,
 .laundry-rpg .laundry-support-card,
 .laundry-rpg .laundry-endeavour-card {
-    border: 1px solid #6f6758;
-    background: linear-gradient(180deg, #efe8d8 0%, #e4dccb 100%);
-    padding: 0.55rem 0.65rem;
-    border-radius: 3px;
-}
-
-.laundry-rpg .laundry-bureau-card {
     position: relative;
-    border: 1px solid #6f6758;
+    font-family: var(--laundry-font, "Courier New", monospace);
+    border: 1px solid var(--laundry-line-dark);
     border-left: 4px solid #7b2e22;
-    background: linear-gradient(180deg, #f1ebde 0%, #e3dac7 100%);
-    border-radius: 3px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
-    padding: 0.45rem 0.6rem 0.5rem;
+    background: linear-gradient(180deg, #f3ede1 0%, #e3d9c7 100%);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    padding: 0.52rem 0.6rem;
 }
 
-.laundry-rpg .laundry-card-header {
+.laundry-rpg .laundry-chat-header,
+.laundry-rpg .laundry-card-header,
+.laundry-rpg .laundry-mission-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 0.4rem;
-    margin-bottom: 0.35rem;
+    gap: 0.45rem;
+    margin-bottom: 0.32rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.045em;
 }
 
+.laundry-rpg .laundry-chat-title {
+    display: grid;
+    gap: 0.08rem;
+}
+
+.laundry-rpg .laundry-chat-title strong,
 .laundry-rpg .laundry-card-header strong {
-    font-size: 0.86rem;
+    font-size: 0.85rem;
     color: #4f261e;
+    line-height: 1.2;
 }
 
+.laundry-rpg .laundry-chat-subtitle {
+    font-size: 0.68rem;
+    color: #6a5b43;
+}
+
+.laundry-rpg .laundry-chat-stamp,
 .laundry-rpg .laundry-card-stamp {
     display: inline-block;
     border: 1px solid #7b2e22;
     color: #7b2e22;
     background: rgba(123, 46, 34, 0.08);
-    font-size: 0.63rem;
+    font-size: 0.62rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    padding: 0.05rem 0.28rem;
+    padding: 0.06rem 0.3rem;
     transform: rotate(-3deg);
     white-space: nowrap;
 }
 
-.laundry-rpg .laundry-card-body p {
-    margin: 0.16rem 0;
-}
-
-.laundry-rpg .laundry-card-reference {
-    margin-top: 0.35rem;
+.laundry-rpg .laundry-chat-meta {
     font-size: 0.72rem;
-    color: #6c604a;
+    color: #5e503b;
+    border: 1px dashed rgba(94, 80, 59, 0.45);
+    background: rgba(255, 255, 255, 0.36);
+    border-radius: 3px;
+    padding: 0.2rem 0.32rem;
+    margin-bottom: 0.3rem;
 }
 
-.laundry-rpg .laundry-mission-card h3 {
-    margin: 0.3rem 0 0.45rem;
-    font-size: 1.05rem;
-    letter-spacing: 0.03em;
+.laundry-rpg .laundry-chat-rows {
+    display: grid;
+    gap: 0.22rem;
 }
 
-.laundry-rpg .laundry-mission-header {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.5rem;
-    align-items: center;
-    margin-bottom: 0.35rem;
+.laundry-rpg .laundry-chat-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 0.38rem;
+    align-items: baseline;
+}
+
+.laundry-rpg .laundry-chat-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #6a5a43;
     text-transform: uppercase;
-    font-size: 0.78rem;
-    color: #612d20;
+    letter-spacing: 0.06em;
 }
 
-.laundry-rpg .laundry-mission-line {
-    margin: 0.2rem 0;
+.laundry-rpg .laundry-chat-value {
+    font-size: 0.75rem;
+    color: #2f2a21;
+    line-height: 1.3;
+}
+
+.laundry-rpg .laundry-chat-section {
+    margin-top: 0.35rem;
+    border-top: 1px dashed rgba(95, 84, 64, 0.45);
+    padding-top: 0.24rem;
+}
+
+.laundry-rpg .laundry-chat-section-title {
+    font-size: 0.67rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6a5a43;
+    margin-bottom: 0.1rem;
+}
+
+.laundry-rpg .laundry-chat-list {
+    margin: 0.15rem 0 0.06rem;
+    padding-left: 1.1rem;
+}
+
+.laundry-rpg .laundry-chat-list li {
+    margin: 0.08rem 0;
+    font-size: 0.74rem;
+}
+
+.laundry-rpg .laundry-chat-note {
+    margin-top: 0.33rem;
+    font-size: 0.73rem;
+    color: #5d5140;
+}
+
+.laundry-rpg .laundry-chat-reference,
+.laundry-rpg .laundry-card-reference {
+    margin-top: 0.32rem;
+    font-size: 0.7rem;
+    color: #6b614f;
 }
 
 .laundry-rpg .laundry-support-card.laundry-support-approved,
 .laundry-rpg .laundry-endeavour-card.laundry-endeavour-pass {
-    border-color: #2f6b3d;
+    border-left-color: #2f6b3d;
 }
 
-.laundry-rpg .laundry-support-card.laundry-support-approved .laundry-card-stamp {
+.laundry-rpg .laundry-support-card.laundry-support-approved .laundry-chat-stamp {
     border-color: #2f6b3d;
     color: #2f6b3d;
     background: rgba(47, 107, 61, 0.12);
@@ -3009,13 +3063,34 @@
 
 .laundry-rpg .laundry-support-card.laundry-support-denied,
 .laundry-rpg .laundry-endeavour-card.laundry-endeavour-fail {
-    border-color: #7a2f2f;
+    border-left-color: #7a2f2f;
 }
 
-.laundry-rpg .laundry-support-card.laundry-support-denied .laundry-card-stamp {
+.laundry-rpg .laundry-support-card.laundry-support-denied .laundry-chat-stamp {
     border-color: #7a2f2f;
     color: #7a2f2f;
     background: rgba(122, 47, 47, 0.12);
+}
+
+.laundry-rpg .laundry-mission-card {
+    border-left-color: #2f4a5d;
+}
+
+.laundry-rpg .laundry-mission-card .laundry-chat-stamp {
+    border-color: #2f4a5d;
+    color: #2f4a5d;
+    background: rgba(47, 74, 93, 0.12);
+}
+
+.laundry-rpg .laundry-threat-card {
+    border-left-color: #8b0000;
+    background: linear-gradient(180deg, #f3e5e5 0%, #e6d4d4 100%);
+}
+
+.laundry-rpg .laundry-threat-card .laundry-chat-stamp {
+    border-color: #8b0000;
+    color: #8b0000;
+    background: rgba(139, 0, 0, 0.12);
 }
 
 .laundry-mission-generator-app,
@@ -3184,6 +3259,11 @@
 
     .laundry-support-request-app .laundry-critical-columns {
         grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .laundry-chat-row {
+        grid-template-columns: 1fr;
+        gap: 0.06rem;
     }
 
     .laundry-rpg .combat-panel-grid,

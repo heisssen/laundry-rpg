@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.18.1 - 2026-02-21
+
+### Changed
+- Unified chat-card visual language across Requisition, Support, Endeavours, Mission Briefing, and Threat automation messages to match the polished dossier style used in core skill-check roll cards.
+- Requisition/support result cards now use structured rows, standardized stamps/meta lines, and consistent list/section formatting for better readability in chat.
+- Endeavour, mission, and threat chat outputs now share the same typography, spacing, and status-stamp treatment for one coherent system-wide presentation.
+- Added responsive behavior for compact chat-card row layout on narrow widths so the same style remains legible on smaller viewports.
+
 ## 1.18.0 - 2026-02-21
 
 ### Added

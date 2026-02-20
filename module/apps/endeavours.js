@@ -1182,14 +1182,36 @@ async function _postEndeavourCard({
         .map(line => foundry.utils.escapeHTML(String(line ?? "").trim()))
         .filter(Boolean);
     const whisperIds = Array.isArray(whisper) ? whisper.filter(Boolean) : [];
+    const cardRows = safeLines
+        .map(line => {
+            const splitIndex = line.indexOf(":");
+            if (splitIndex <= 0) {
+                return {
+                    label: "Detail",
+                    value: line
+                };
+            }
+            return {
+                label: line.slice(0, splitIndex).trim() || "Detail",
+                value: line.slice(splitIndex + 1).trim()
+            };
+        })
+        .filter(row => row.value);
     const content = `
-        <div class="laundry-bureau-card laundry-endeavour-card">
-            <div class="laundry-card-header">
-                <strong>${safeTitle}</strong>
-                ${safeSubtitle ? `<span>${safeSubtitle}</span>` : ""}
+        <div class="laundry-chat-card laundry-bureau-card laundry-endeavour-card">
+            <div class="laundry-chat-header">
+                <div class="laundry-chat-title">
+                    <strong>${safeTitle}</strong>
+                    ${safeSubtitle ? `<span class="laundry-chat-subtitle">${safeSubtitle}</span>` : ""}
+                </div>
+                <span class="laundry-chat-stamp">END</span>
             </div>
-            <div class="laundry-card-body">
-                ${safeLines.map(line => `<p>${line}</p>`).join("")}
+            <div class="laundry-chat-rows">
+                ${cardRows.map(row => `
+                    <div class="laundry-chat-row">
+                        <span class="laundry-chat-label">${row.label}</span>
+                        <span class="laundry-chat-value">${row.value}</span>
+                    </div>`).join("")}
             </div>
         </div>`;
 
