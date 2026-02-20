@@ -59,8 +59,12 @@
         <h3>NPC Rapid Spawn</h3>
         <div class="gm-spawn-grid">
             <select name="spawnPreset">
-                {{#each npcPresets as |preset|}}
-                <option value="{{preset.id}}">{{preset.name}}</option>
+                {{#each npcPresetGroups as |group|}}
+                <optgroup label="{{group.name}}">
+                    {{#each group.entries as |preset|}}
+                    <option value="{{preset.id}}">{{preset.name}}</option>
+                    {{/each}}
+                </optgroup>
                 {{/each}}
             </select>
             <input type="text" name="spawnName" placeholder="Name (optional)" />

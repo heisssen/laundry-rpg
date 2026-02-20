@@ -14,8 +14,21 @@
         </select>
     </div>
 
-    {{#if isTrainingCourse}}
     <div class="laundry-endeavour-details">
+        <p><strong>Rules Summary:</strong> {{summary}}</p>
+
+        {{#if showApproachPicker}}
+        <div class="form-group">
+            <label>Approach</label>
+            <select name="approachId">
+                {{#each approaches as |approach|}}
+                <option value="{{approach.id}}" {{#if approach.selected}}selected{{/if}}>{{approach.label}}</option>
+                {{/each}}
+            </select>
+        </div>
+        {{/if}}
+
+        {{#if showSkillPicker}}
         <div class="form-group">
             <label>Skill</label>
             <select name="skillName">
@@ -24,6 +37,9 @@
                 {{/each}}
             </select>
         </div>
+        {{/if}}
+
+        {{#if showTrainingStat}}
         <div class="form-group">
             <label>Increase</label>
             <select name="trainingStat">
@@ -32,12 +48,42 @@
                 {{/each}}
             </select>
         </div>
-        <p>Mechanics: deduct 5 XP, increase selected stat by 1, then set training refund pending flag (+1 XP on pass).</p>
+        {{/if}}
+
+        {{#if showTargetPicker}}
+        <div class="form-group">
+            <label>Treatment Target</label>
+            <select name="targetActorId">
+                {{#each targetActors as |entry|}}
+                <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.name}}</option>
+                {{/each}}
+            </select>
+        </div>
+        {{/if}}
+
+        {{#if showDepartmentField}}
+        <div class="form-group">
+            <label>Department Name</label>
+            <input type="text" name="departmentName" value="{{departmentName}}" placeholder="e.g. Internal Logistics" />
+        </div>
+        {{/if}}
+
+        {{#if showFactionField}}
+        <div class="form-group">
+            <label>In-Group Faction</label>
+            <input type="text" name="factionName" value="{{factionName}}" placeholder="e.g. Arcana Analysis old guard" />
+        </div>
+        {{/if}}
+
+        {{#if showTravelToggle}}
+        <label class="laundry-checkbox-line">
+            <input type="checkbox" name="travelAbroad" {{#if travelAbroad}}checked{{/if}} />
+            Foreign travel involved (roll Spirit/Resolve check).
+        </label>
+        {{/if}}
     </div>
-    {{/if}}
 
     <div class="laundry-endeavour-actions">
         <button type="button" data-action="submit-endeavour">File Endeavour</button>
     </div>
 </section>
-

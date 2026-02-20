@@ -1,9 +1,21 @@
 <section class="laundry-support-request-app">
     <header class="laundry-support-head">
-        <h2>Departmental Requisition Support</h2>
+        <h2>FORM RQ-42 // Requisition & Support</h2>
         <p>Requester: <strong>{{actorName}}</strong></p>
     </header>
 
+    <div class="form-group">
+        <label>Request Line</label>
+        <select name="requestType">
+            {{#each requestTypes as |entry|}}
+            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
+                {{entry.label}}
+            </option>
+            {{/each}}
+        </select>
+    </div>
+
+    {{#if (laundryEq requestType "department")}}
     <div class="form-group">
         <label>Department</label>
         <select name="departmentId">
@@ -14,17 +26,49 @@
             {{/each}}
         </select>
     </div>
+    {{else}}
+    <div class="form-group">
+        <label>Requested Item</label>
+        <select name="gearId">
+            {{#each gearCategories as |group|}}
+            <optgroup label="{{group.name}}">
+                {{#each group.entries as |entry|}}
+                <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
+                    {{entry.name}} (DN {{entry.dn}}:{{entry.complexity}})
+                </option>
+                {{/each}}
+            </optgroup>
+            {{/each}}
+        </select>
+    </div>
+    {{/if}}
+
+    {{#if showMethodSelector}}
+    <div class="form-group">
+        <label>Request Method</label>
+        <select name="requestMethod">
+            {{#each methodOptions as |entry|}}
+            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
+                {{entry.label}}
+            </option>
+            {{/each}}
+        </select>
+    </div>
+    {{/if}}
 
     {{#if selected}}
     <div class="laundry-support-preview">
-        <p><strong>Test:</strong> Mind (Bureaucracy) DN {{selected.dn}}:{{selected.complexity}}</p>
+        <p><strong>Target:</strong> {{selected.name}}</p>
+        <p><strong>Test:</strong> Mind (Bureaucracy/Presence) DN {{selected.dn}}:{{selected.complexity}}</p>
+        {{#if selected.requirements}}
+        <p><strong>Requirements:</strong> {{selected.requirements}}</p>
+        {{/if}}
         <p><strong>On Success:</strong> {{selected.summary}}</p>
         <p><strong>Source:</strong> {{selected.source}}</p>
     </div>
     {{/if}}
 
     <div class="laundry-support-actions">
-        <button type="button" data-action="request-support">Roll Support Request</button>
+        <button type="button" data-action="request-support">Process Request</button>
     </div>
 </section>
-

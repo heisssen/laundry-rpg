@@ -104,6 +104,7 @@ export class LaundryGMTracker extends Application {
             noActions: combatantsWithHints.filter(entry => entry.noActionsLeft).length,
             noMove: combatantsWithHints.filter(entry => entry.noMoveLeft).length
         };
+        const npcPresetGroups = _groupNpcPresetsByCategory(NPC_PRESETS);
 
         return {
             ...data,
@@ -115,7 +116,7 @@ export class LaundryGMTracker extends Application {
             hasCombat: Boolean(combat && combat.started && combatantsWithHints.length),
             combatants: combatantsWithHints,
             combatSummary,
-            npcPresets: NPC_PRESETS.map(entry => ({ id: entry.id, name: entry.name }))
+            npcPresetGroups
         };
     }
 
@@ -474,5 +475,23 @@ function _getActorOwners(actor) {
 function _getPlayerCharacters() {
     return game.actors
         .filter(actor => actor.type === "character" && actor.hasPlayerOwner)
+        .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function _groupNpcPresetsByCategory(presets) {
+    const byCategory = new Map();
+    for (const preset of presets) {
+        const category = String(preset?.category ?? "Other").trim() || "Other";
+        if (!byCategory.has(category)) byCategory.set(category, []);
+        byCategory.get(category).push({
+            id: preset.id,
+            name: preset.name
+        });
+    }
+    return Array.from(byCategory.entries())
+        .map(([name, entries]) => ({
+            name,
+            entries: entries.sort((a, b) => a.name.localeCompare(b.name))
+        }))
         .sort((a, b) => a.name.localeCompare(b.name));
 }

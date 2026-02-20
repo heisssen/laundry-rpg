@@ -2920,6 +2920,54 @@
     border-radius: 3px;
 }
 
+.laundry-rpg .laundry-bureau-card {
+    position: relative;
+    border: 1px solid #6f6758;
+    border-left: 4px solid #7b2e22;
+    background: linear-gradient(180deg, #f1ebde 0%, #e3dac7 100%);
+    border-radius: 3px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+    padding: 0.45rem 0.6rem 0.5rem;
+}
+
+.laundry-rpg .laundry-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.laundry-rpg .laundry-card-header strong {
+    font-size: 0.86rem;
+    color: #4f261e;
+}
+
+.laundry-rpg .laundry-card-stamp {
+    display: inline-block;
+    border: 1px solid #7b2e22;
+    color: #7b2e22;
+    background: rgba(123, 46, 34, 0.08);
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 0.05rem 0.28rem;
+    transform: rotate(-3deg);
+    white-space: nowrap;
+}
+
+.laundry-rpg .laundry-card-body p {
+    margin: 0.16rem 0;
+}
+
+.laundry-rpg .laundry-card-reference {
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+    color: #6c604a;
+}
+
 .laundry-rpg .laundry-mission-card h3 {
     margin: 0.3rem 0 0.45rem;
     font-size: 1.05rem;
@@ -2946,9 +2994,21 @@
     border-color: #2f6b3d;
 }
 
+.laundry-rpg .laundry-support-card.laundry-support-approved .laundry-card-stamp {
+    border-color: #2f6b3d;
+    color: #2f6b3d;
+    background: rgba(47, 107, 61, 0.12);
+}
+
 .laundry-rpg .laundry-support-card.laundry-support-denied,
 .laundry-rpg .laundry-endeavour-card.laundry-endeavour-fail {
     border-color: #7a2f2f;
+}
+
+.laundry-rpg .laundry-support-card.laundry-support-denied .laundry-card-stamp {
+    border-color: #7a2f2f;
+    color: #7a2f2f;
+    background: rgba(122, 47, 47, 0.12);
 }
 
 .laundry-mission-generator-app,
@@ -2998,6 +3058,13 @@
     background: #f2ece0;
     border-radius: 3px;
     padding: 0.45rem 0.55rem;
+}
+
+.laundry-rpg .laundry-checkbox-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
 }
 
 @media (max-width: 700px) {

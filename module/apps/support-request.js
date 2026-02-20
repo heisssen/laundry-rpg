@@ -1,4 +1,7 @@
-import { DEPARTMENT_SUPPORT_TABLE } from "../utils/supervisors-guide-data.js";
+import {
+    DEPARTMENT_SUPPORT_TABLE,
+    GEAR_REQUISITION_TABLE
+} from "../utils/supervisors-guide-data.js";
 
 const APP_API = foundry.applications?.api ?? {};
 const BaseApplication = APP_API.ApplicationV2 ?? Application;
@@ -13,8 +16,8 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
             id: "laundry-support-request",
             classes: ["laundry-rpg", "laundry-dialog", "laundry-support-request"],
             tag: "section",
-            window: { title: "Departmental Requisition Support" },
-            position: { width: 520, height: "auto" }
+            window: { title: "Requisition & Support" },
+            position: { width: 620, height: "auto" }
         },
         { inplace: false }
     );
@@ -30,8 +33,8 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
             id: "laundry-support-request",
             classes: ["laundry-rpg", "laundry-dialog", "laundry-support-request"],
             template: "systems/laundry-rpg/templates/apps/support-request.html",
-            title: "Departmental Requisition Support",
-            width: 520,
+            title: "Requisition & Support",
+            width: 620,
             height: "auto",
             resizable: true
         });
@@ -40,7 +43,10 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
     constructor(actor, options = {}) {
         super(options);
         this.actor = actor ?? null;
+        this._requestType = "department";
         this._selectedDepartment = DEPARTMENT_SUPPORT_TABLE[0]?.id ?? "";
+        this._selectedGear = GEAR_REQUISITION_TABLE[0]?.id ?? "";
+        this._requestMethod = "paperwork";
     }
 
     async _prepareContext(_options) {
@@ -52,14 +58,42 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
     }
 
     _buildContext() {
+        const requestTypes = [
+            { id: "department", label: "Department Support", selected: this._requestType === "department" },
+            { id: "gear", label: "Gear Requisition", selected: this._requestType === "gear" }
+        ];
+
         const departments = DEPARTMENT_SUPPORT_TABLE.map(entry => ({
             ...entry,
             selected: entry.id === this._selectedDepartment
         }));
-        const selected = departments.find(entry => entry.id === this._selectedDepartment) ?? departments[0] ?? null;
+        const selectedDepartment = departments.find(entry => entry.id === this._selectedDepartment) ?? departments[0] ?? null;
+
+        const gearRows = GEAR_REQUISITION_TABLE.map(entry => ({
+            ...entry,
+            selected: entry.id === this._selectedGear
+        }));
+        const selectedGear = gearRows.find(entry => entry.id === this._selectedGear) ?? gearRows[0] ?? null;
+
+        const gearCategories = Array.from(new Set(gearRows.map(entry => entry.category))).map(category => ({
+            name: category,
+            entries: gearRows.filter(entry => entry.category === category)
+        }));
+
+        const selected = this._requestType === "gear" ? selectedGear : selectedDepartment;
+        const methodOptions = [
+            { id: "paperwork", label: "Paperwork // Mind (Bureaucracy)", selected: this._requestMethod === "paperwork" },
+            { id: "in-person", label: "In-Person // Mind (Presence)", selected: this._requestMethod === "in-person" }
+        ];
+
         return {
             actorName: this.actor?.name ?? "Unknown Agent",
+            requestTypes,
+            requestType: this._requestType,
+            showMethodSelector: this._requestType === "gear",
+            methodOptions,
             departments,
+            gearCategories,
             selected
         };
     }
@@ -88,6 +122,31 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
             });
         }
 
+        const requestType = root.querySelector('[name="requestType"]');
+        if (requestType) {
+            requestType.addEventListener("change", async (ev) => {
+                const next = String(ev.currentTarget?.value ?? "").trim().toLowerCase();
+                this._requestType = next === "gear" ? "gear" : "department";
+                await _rerenderApp(this);
+            });
+        }
+
+        const gearSelect = root.querySelector('[name="gearId"]');
+        if (gearSelect) {
+            gearSelect.addEventListener("change", async (ev) => {
+                this._selectedGear = String(ev.currentTarget?.value ?? "").trim();
+                await _rerenderApp(this);
+            });
+        }
+
+        const methodSelect = root.querySelector('[name="requestMethod"]');
+        if (methodSelect) {
+            methodSelect.addEventListener("change", (ev) => {
+                const next = String(ev.currentTarget?.value ?? "").trim().toLowerCase();
+                this._requestMethod = next === "in-person" ? "in-person" : "paperwork";
+            });
+        }
+
         root.querySelectorAll('[data-action="request-support"]').forEach(button => {
             button.addEventListener("click", async (ev) => {
                 ev.preventDefault();
@@ -103,76 +162,117 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
             return;
         }
 
-        const department = DEPARTMENT_SUPPORT_TABLE.find(entry => entry.id === this._selectedDepartment) ?? null;
-        if (!department) {
-            ui.notifications.warn("Select a department first.");
+        const requestEntry = this._resolveSelectedEntry();
+        if (!requestEntry) {
+            ui.notifications.warn("Select a support line first.");
             return;
         }
 
+        const testSkill = this._resolveTestSkillName();
+        const testMethodLabel = this._requestType === "gear"
+            ? (this._requestMethod === "in-person" ? "In-Person Requisition" : "Paperwork Requisition")
+            : "Department Support Request";
+
         const mind = Math.max(1, Math.trunc(Number(this.actor.system?.attributes?.mind?.value) || 1));
-        const bureaucracy = this.actor.items.find(item =>
-            item.type === "skill" && String(item.name ?? "").toLowerCase() === "bureaucracy"
+        const skillItem = this.actor.items.find(item =>
+            item.type === "skill" && String(item.name ?? "").toLowerCase() === testSkill.toLowerCase()
         );
-        const training = Math.max(0, Math.trunc(Number(bureaucracy?.system?.training) || 0));
+        const training = Math.max(0, Math.trunc(Number(skillItem?.system?.training) || 0));
         const pool = Math.max(1, mind + training);
 
         const roll = new Roll(`${pool}d6`);
         await roll.evaluate();
         const dieResults = _extractRollDieValues(roll);
-        const successes = dieResults.filter(value => value >= department.dn).length;
+        const successes = dieResults.filter(value => value >= requestEntry.dn).length;
         const endeavourFlags = this.actor.getFlag(FLAG_SCOPE, ENDEAVOURS_FLAG) ?? {};
         const consumedPaperworkBonus = Boolean(endeavourFlags?.paperwork_bonus);
         const totalSuccesses = successes + (consumedPaperworkBonus ? 1 : 0);
-        const approved = totalSuccesses >= department.complexity;
+        const approved = totalSuccesses >= requestEntry.complexity;
 
         const updatedFlags = {
             ...endeavourFlags,
             paperwork_bonus: false,
             last_support_request: {
                 at: Date.now(),
-                departmentId: department.id,
-                departmentName: department.name,
-                dn: department.dn,
-                complexity: department.complexity,
+                requestType: this._requestType,
+                requestId: requestEntry.id,
+                requestName: requestEntry.name,
+                category: requestEntry.category ?? "Department Support",
+                dn: requestEntry.dn,
+                complexity: requestEntry.complexity,
+                testSkill,
+                testMethodLabel,
                 pool,
                 roll: dieResults,
                 successes,
                 bonusSuccess: consumedPaperworkBonus ? 1 : 0,
                 totalSuccesses,
-                approved
+                approved,
+                requirements: requestEntry.requirements ?? "",
+                source: requestEntry.source ?? ""
             }
         };
         await this.actor.setFlag(FLAG_SCOPE, ENDEAVOURS_FLAG, updatedFlags);
 
         const safeName = foundry.utils.escapeHTML(this.actor.name ?? "Agent");
-        const safeDepartment = foundry.utils.escapeHTML(department.name);
-        const safeSummary = foundry.utils.escapeHTML(department.summary);
+        const safeRequestName = foundry.utils.escapeHTML(requestEntry.name);
+        const safeSummary = foundry.utils.escapeHTML(requestEntry.summary ?? "");
+        const safeCategory = foundry.utils.escapeHTML(requestEntry.category ?? "Department Support");
+        const safeRequirements = foundry.utils.escapeHTML(requestEntry.requirements ?? "");
+        const safeSource = foundry.utils.escapeHTML(requestEntry.source ?? "");
+        const safeMethod = foundry.utils.escapeHTML(testMethodLabel);
+        const safeTestSkill = foundry.utils.escapeHTML(testSkill);
         const rollText = dieResults.join(", ") || "-";
         const verdict = approved ? "APPROVED" : "DENIED";
         const verdictClass = approved ? "laundry-support-approved" : "laundry-support-denied";
         const freeSuccessText = consumedPaperworkBonus
             ? "Filing Paperwork bonus consumed: +1 automatic success."
             : "No Filing Paperwork bonus available.";
+        const heading = this._requestType === "gear"
+            ? "GEAR REQUISITION ORDER"
+            : "DEPARTMENTAL SUPPORT REQUEST";
 
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor: this.actor }),
             content: `
-                <div class="laundry-support-card ${verdictClass}">
-                    <strong>DEPARTMENTAL SUPPORT REQUEST: ${safeDepartment}</strong>
-                    <p><strong>Requester:</strong> ${safeName}</p>
-                    <p><strong>Test:</strong> Mind (Bureaucracy) DN ${department.dn}:${department.complexity}</p>
-                    <p><strong>Pool:</strong> ${pool}d6 (${rollText})</p>
-                    <p><strong>Successes:</strong> ${successes}${consumedPaperworkBonus ? " + 1 paperwork bonus" : ""} = ${totalSuccesses}</p>
-                    <p><strong>Outcome:</strong> ${verdict}</p>
-                    <p><strong>Department Effect:</strong> ${safeSummary}</p>
-                    <p>${foundry.utils.escapeHTML(freeSuccessText)}</p>
+                <div class="laundry-bureau-card laundry-support-card ${verdictClass}">
+                    <div class="laundry-card-header">
+                        <strong>${heading}: ${safeRequestName}</strong>
+                        <span class="laundry-card-stamp">${verdict}</span>
+                    </div>
+                    <div class="laundry-card-body">
+                        <p><strong>Requester:</strong> ${safeName}</p>
+                        <p><strong>Line:</strong> ${safeCategory}</p>
+                        <p><strong>Method:</strong> ${safeMethod}</p>
+                        <p><strong>Test:</strong> Mind (${safeTestSkill}) DN ${requestEntry.dn}:${requestEntry.complexity}</p>
+                        <p><strong>Pool:</strong> ${pool}d6 (${rollText})</p>
+                        <p><strong>Successes:</strong> ${successes}${consumedPaperworkBonus ? " + 1 paperwork bonus" : ""} = ${totalSuccesses}</p>
+                        ${safeRequirements ? `<p><strong>Requirements:</strong> ${safeRequirements}</p>` : ""}
+                        <p><strong>Effect:</strong> ${safeSummary}</p>
+                        <p>${foundry.utils.escapeHTML(freeSuccessText)}</p>
+                        ${safeSource ? `<p class="laundry-card-reference">${safeSource}</p>` : ""}
+                    </div>
                 </div>`,
             rolls: [roll],
             sound: CONFIG.sounds?.dice
         });
 
-        ui.notifications.info(`${department.name}: ${approved ? "support approved." : "support denied."}`);
+        ui.notifications.info(`${requestEntry.name}: ${approved ? "approved." : "denied."}`);
         await _rerenderApp(this);
+    }
+
+    _resolveSelectedEntry() {
+        if (this._requestType === "gear") {
+            return GEAR_REQUISITION_TABLE.find(entry => entry.id === this._selectedGear) ?? GEAR_REQUISITION_TABLE[0] ?? null;
+        }
+        return DEPARTMENT_SUPPORT_TABLE.find(entry => entry.id === this._selectedDepartment) ?? DEPARTMENT_SUPPORT_TABLE[0] ?? null;
+    }
+
+    _resolveTestSkillName() {
+        if (this._requestType === "gear" && this._requestMethod === "in-person") {
+            return "Presence";
+        }
+        return "Bureaucracy";
     }
 }
 
