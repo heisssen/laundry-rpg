@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.20.4 - 2026-02-21
+
+### Fixed
+- The character builder's "Apply Preset" feature for skills now uses a more robust loop that ensures all possible XP is spent, removing a fixed guard against infinite loops that could cause it to terminate prematurely.
+
 ## 1.20.3 - 2026-02-21
 
 ### Changed
