@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.20.2 - 2026-02-21
+
+### Fixed
+- GM manual XP edits now sync deterministically: changing total XP adjusts unspent XP by delta, changing unspent XP can raise total XP, and sheet change handling no longer drops/neutralizes updates.
+
+### Changed
+- KPI tab/workspace layout, archive toggles, and actor/workbench structure were streamlined for a denser and cleaner cross-device sheet flow.
+
 ## 1.20.0 - 2026-02-21
 
 ### Fixed
