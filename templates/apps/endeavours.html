@@ -11,8 +11,8 @@
             <div class="laundry-endeavour-cards">
                 {{#each endeavours as |entry|}}
                 <button type="button" class="endeavour-select {{#if entry.selected}}is-selected{{/if}}" data-endeavour-id="{{entry.id}}">
-                    <strong>{{entry.label}}</strong>
-                    <span>{{entry.summary}}</span>
+                    <strong class="endeavour-select-title">{{entry.label}}</strong>
+                    <span class="endeavour-select-summary">{{entry.summary}}</span>
                 </button>
                 {{/each}}
             </div>
@@ -25,75 +25,85 @@
             </div>
             <div class="laundry-endeavour-details">
                 <h4>Activity Preview</h4>
-                <p><strong>Selected:</strong> {{selectedEndeavourLabel}}</p>
-                <p><strong>Rules Summary:</strong> {{summary}}</p>
-
-                <div class="form-group">
-                    <label>Downtime Activity (Dropdown Fallback)</label>
-                    <select name="endeavourId">
-                        {{#each endeavours as |entry|}}
-                        <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.label}}</option>
-                        {{/each}}
-                    </select>
+                <div class="laundry-endeavour-brief">
+                    <div class="laundry-endeavour-brief-item">
+                        <span class="brief-label">Selected</span>
+                        <strong class="brief-value">{{selectedEndeavourLabel}}</strong>
+                    </div>
+                    <div class="laundry-endeavour-brief-item">
+                        <span class="brief-label">Rules Summary</span>
+                        <span class="brief-value">{{summary}}</span>
+                    </div>
                 </div>
 
-                {{#if showApproachPicker}}
-                <div class="form-group">
-                    <label>Approach</label>
-                    <select name="approachId">
-                        {{#each approaches as |approach|}}
-                        <option value="{{approach.id}}" {{#if approach.selected}}selected{{/if}}>{{approach.label}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-                {{/if}}
+                <div class="laundry-endeavour-config-grid">
+                    <div class="form-group">
+                        <label>Downtime Activity (Dropdown Fallback)</label>
+                        <select name="endeavourId">
+                            {{#each endeavours as |entry|}}
+                            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.label}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
 
-                {{#if showSkillPicker}}
-                <div class="form-group">
-                    <label>Skill</label>
-                    <select name="skillName">
-                        {{#each skills as |skill|}}
-                        <option value="{{skill.name}}" {{#if skill.selected}}selected{{/if}}>{{skill.name}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-                {{/if}}
+                    {{#if showApproachPicker}}
+                    <div class="form-group">
+                        <label>Approach</label>
+                        <select name="approachId">
+                            {{#each approaches as |approach|}}
+                            <option value="{{approach.id}}" {{#if approach.selected}}selected{{/if}}>{{approach.label}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    {{/if}}
 
-                {{#if showTrainingStat}}
-                <div class="form-group">
-                    <label>Increase</label>
-                    <select name="trainingStat">
-                        {{#each trainingStatOptions as |opt|}}
-                        <option value="{{opt.id}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-                {{/if}}
+                    {{#if showSkillPicker}}
+                    <div class="form-group">
+                        <label>Skill</label>
+                        <select name="skillName">
+                            {{#each skills as |skill|}}
+                            <option value="{{skill.name}}" {{#if skill.selected}}selected{{/if}}>{{skill.name}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    {{/if}}
 
-                {{#if showTargetPicker}}
-                <div class="form-group">
-                    <label>Treatment Target</label>
-                    <select name="targetActorId">
-                        {{#each targetActors as |entry|}}
-                        <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.name}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-                {{/if}}
+                    {{#if showTrainingStat}}
+                    <div class="form-group">
+                        <label>Increase</label>
+                        <select name="trainingStat">
+                            {{#each trainingStatOptions as |opt|}}
+                            <option value="{{opt.id}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    {{/if}}
 
-                {{#if showDepartmentField}}
-                <div class="form-group">
-                    <label>Department Name</label>
-                    <input type="text" name="departmentName" value="{{departmentName}}" placeholder="e.g. Internal Logistics" />
-                </div>
-                {{/if}}
+                    {{#if showTargetPicker}}
+                    <div class="form-group">
+                        <label>Treatment Target</label>
+                        <select name="targetActorId">
+                            {{#each targetActors as |entry|}}
+                            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.name}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    {{/if}}
 
-                {{#if showFactionField}}
-                <div class="form-group">
-                    <label>In-Group Faction</label>
-                    <input type="text" name="factionName" value="{{factionName}}" placeholder="e.g. Arcana Analysis old guard" />
+                    {{#if showDepartmentField}}
+                    <div class="form-group">
+                        <label>Department Name</label>
+                        <input type="text" name="departmentName" value="{{departmentName}}" placeholder="e.g. Internal Logistics" />
+                    </div>
+                    {{/if}}
+
+                    {{#if showFactionField}}
+                    <div class="form-group">
+                        <label>In-Group Faction</label>
+                        <input type="text" name="factionName" value="{{factionName}}" placeholder="e.g. Arcana Analysis old guard" />
+                    </div>
+                    {{/if}}
                 </div>
-                {{/if}}
 
                 {{#if showTravelToggle}}
                 <label class="laundry-checkbox-line">

@@ -19,6 +19,28 @@ const SOURCES = {
     enemies: "enemies.json"
 };
 
+const ICON_REQUIRED_JSON = [
+    "skills.json",
+    "talents.json",
+    "assignments.json",
+    "weapons.json",
+    "spells.json",
+    "armour.json",
+    "gear.json",
+    "enemies.json"
+];
+
+const ICON_REQUIRED_PACKS = [
+    "skills.db",
+    "talents.db",
+    "assignments.db",
+    "weapons.db",
+    "spells.db",
+    "armour.db",
+    "gear.db",
+    "enemies.db"
+];
+
 function readJson(filename) {
     const fullPath = resolveSourcePath(filename);
     const payload = fs.readFileSync(fullPath, "utf8");
@@ -41,6 +63,43 @@ function writeJson(filename, value) {
 
 function asArray(value) {
     return Array.isArray(value) ? value : [];
+}
+
+function resolveSystemImageToFile(imgPath) {
+    const raw = String(imgPath ?? "").trim();
+    if (!raw.startsWith("systems/laundry-rpg/")) return null;
+    const rel = raw.replace(/^systems\/laundry-rpg\//, "");
+    return path.join(ROOT, rel);
+}
+
+function collectIconErrors({ sourceLabel, docs, errors }) {
+    for (const doc of asArray(docs)) {
+        const name = String(doc?.name ?? "").trim() || "<unnamed>";
+        const img = String(doc?.img ?? "").trim();
+        if (!img) {
+            errors.push(`${sourceLabel} entry "${name}" is missing img.`);
+            continue;
+        }
+        if (!img.startsWith("systems/laundry-rpg/icons/generated/")) {
+            errors.push(`${sourceLabel} entry "${name}" must use generated system icon path (found "${img}").`);
+            continue;
+        }
+        const filePath = resolveSystemImageToFile(img);
+        if (!filePath || !fs.existsSync(filePath)) {
+            errors.push(`${sourceLabel} entry "${name}" references missing icon file "${img}".`);
+        }
+    }
+}
+
+function readJsonLines(filename) {
+    const fullPath = path.join(ROOT, "packs", filename);
+    if (!fs.existsSync(fullPath)) return [];
+    const payload = fs.readFileSync(fullPath, "utf8");
+    return payload
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => JSON.parse(line));
 }
 
 function splitCsv(value) {
@@ -97,6 +156,21 @@ function main() {
     const armour = assertArray("armour.json", readJson(SOURCES.armour), errors);
     const gear = assertArray("gear.json", readJson(SOURCES.gear), errors);
     const enemies = assertArray("enemies.json", readJson(SOURCES.enemies), errors);
+
+    for (const jsonFile of ICON_REQUIRED_JSON) {
+        collectIconErrors({
+            sourceLabel: jsonFile,
+            docs: readJson(jsonFile),
+            errors
+        });
+    }
+    for (const packFile of ICON_REQUIRED_PACKS) {
+        collectIconErrors({
+            sourceLabel: `packs/${packFile}`,
+            docs: readJsonLines(packFile),
+            errors
+        });
+    }
 
     const skillNames = new Set();
     for (const skill of skills) {
