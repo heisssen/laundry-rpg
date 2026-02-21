@@ -19,12 +19,14 @@ const PHYSICAL_EFFECT_ICON = "icons/svg/blood.svg";
 const PSYCHOLOGICAL_EFFECT_ICON = "icons/svg/terror.svg";
 const SUPPORTED_OUTCOME_STATUS_IDS = new Set([
     "prone",
+    "restrained",
     "stunned",
     "blinded",
     "deafened",
     "unconscious",
     "incapacitated",
     "frightened",
+    "terrified",
     "bleeding",
     "weakened"
 ]);
@@ -166,6 +168,10 @@ export function getWeaponAttackContext({ actor, weapon, linkedSkillName = "" } =
     const target = _getPrimaryTargetSnapshot();
     const targetActor = _resolveTargetActor(target);
     const isMelee = _isMeleeWeapon({ weapon, linkedSkillName });
+    const closeRangeAttack = !isMelee && _isTargetWithinCloseRange(actor, target);
+    const hasCloseTrait = /\bclose\b/i.test(String(weapon?.system?.traits ?? ""));
+    const attackerStatuses = _collectActorStatuses(actor);
+    const targetStatuses = _collectActorStatuses(targetActor);
     const attackerRating = Math.max(
         0,
         Math.trunc(Number(
@@ -178,19 +184,34 @@ export function getWeaponAttackContext({ actor, weapon, linkedSkillName = "" } =
     const baseDefence = hasTarget
         ? Math.max(0, Math.trunc(Number(targetActor?.system?.derived?.defence?.value) || 0))
         : 0;
-    const defencePenalty = _actorHasStatus(targetActor, "blinded") ? 1 : 0;
+    let attackerPenalty = 0;
+    if (attackerStatuses.has("blinded")) attackerPenalty += 1;
+    if (attackerStatuses.has("prone")) attackerPenalty += 1;
+    if (attackerStatuses.has("restrained")) attackerPenalty += 1;
+    if (closeRangeAttack && !hasCloseTrait) attackerPenalty += 1;
+
+    let defencePenalty = 0;
+    if (targetStatuses.has("blinded")) defencePenalty += 1;
+    if (targetStatuses.has("stunned")) defencePenalty += 1;
+    if (targetStatuses.has("restrained")) defencePenalty += 1;
+
+    const effectiveAttackerRating = Math.max(0, attackerRating - attackerPenalty);
     const defenceRating = Math.max(0, baseDefence - defencePenalty);
-    const ladderDelta = hasTarget ? (attackerRating - defenceRating) : 0;
+    const ladderDelta = hasTarget ? (effectiveAttackerRating - defenceRating) : 0;
+    const targetLockedDn = hasTarget && (targetStatuses.has("incapacitated") || targetStatuses.has("unconscious"))
+        ? 2
+        : null;
 
     return {
         target,
         isMelee,
+        closeRangeAttack,
         hasTarget,
-        attackerRating,
+        attackerRating: effectiveAttackerRating,
         defenceRating,
         ladderDelta,
         defencePenalty,
-        dn: hasTarget ? _mapAttackDnFromDelta(ladderDelta) : 4
+        dn: hasTarget ? (targetLockedDn ?? _mapAttackDnFromDelta(ladderDelta)) : 4
     };
 }
 
@@ -546,7 +567,7 @@ async function _executeRoll({
     const payloadRolls = [roll, damageData.roll].filter(Boolean);
     if (payloadRolls.length) payload.rolls = payloadRolls;
 
-    await ChatMessage.create(payload);
+    return ChatMessage.create(payload);
 }
 
 function _getDiceState(message) {
@@ -813,6 +834,7 @@ function _renderDamageSection(state) {
     const formula = String(state.damage ?? "").trim();
     const isWeaponAttack = Boolean(state.isWeaponAttack);
     const hasFormula = Boolean(formula);
+    const hasSuccessToken = /\bS\b/i.test(formula);
 
     if (!hasFormula && !isWeaponAttack) return "";
 
@@ -822,22 +844,28 @@ function _renderDamageSection(state) {
     const bonus = Math.max(0, Math.trunc(Number(state.damageBonus ?? 0) || 0));
     const hasRolledTotal = Number.isFinite(total);
     const hasBaseTotal = Number.isFinite(baseTotal);
+    const outcome = _buildOutcome(state, _buildResults(state));
+    const successBonus = Math.max(0, Math.trunc(Number(outcome.successes) || 0));
+    const totalWithSuccesses = hasRolledTotal
+        ? Math.max(0, Math.trunc(total + successBonus))
+        : null;
 
     if (!isWeaponAttack) {
         return `<div class="damage-section"><strong>${_escapeHtml(game.i18n.localize("LAUNDRY.Damage"))}:</strong> ${escapedFormula}</div>`;
     }
 
     const hasTarget = Boolean(String(state.targetName ?? "").trim());
-    const outcome = _buildOutcome(state, _buildResults(state));
     const hasHit = outcome.successes >= outcome.complexity;
-    const buttonDisabled = !hasTarget || !hasRolledTotal || !hasHit;
+    const buttonDisabled = !hasTarget || !hasFormula || !hasHit;
     const breakdown = !hasFormula
         ? game.i18n.localize("LAUNDRY.NoDamageFormula")
-        : (hasRolledTotal
+        : (hasSuccessToken
+            ? `${escapedFormula} (S = ${successBonus}; resolved on Apply Damage)`
+            : (hasRolledTotal
             ? (bonus > 0 && hasBaseTotal
-                ? `${escapedFormula} = ${Math.max(0, Math.trunc(baseTotal))} + ${bonus} (${_escapeHtml(game.i18n.localize("LAUNDRY.Adrenaline"))}) = <strong class="damage-total">${Math.max(0, Math.trunc(total))}</strong>`
-                : `${escapedFormula} = <strong class="damage-total">${Math.max(0, Math.trunc(total))}</strong>`)
-            : `${escapedFormula} (${_escapeHtml(game.i18n.localize("LAUNDRY.DamageNotRollable"))})`);
+                ? `${escapedFormula} = ${Math.max(0, Math.trunc(baseTotal))} + ${bonus} (${_escapeHtml(game.i18n.localize("LAUNDRY.Adrenaline"))}) + ${successBonus} (Successes) = <strong class="damage-total">${totalWithSuccesses}</strong>`
+                : `${escapedFormula} + ${successBonus} (Successes) = <strong class="damage-total">${totalWithSuccesses}</strong>`)
+            : `${escapedFormula} (${_escapeHtml(game.i18n.localize("LAUNDRY.DamageNotRollable"))})`));
     const buttonTitle = !hasTarget
         ? game.i18n.localize("LAUNDRY.SelectTargetForDamage")
         : (!hasHit
@@ -1197,13 +1225,13 @@ async function _applyDamage(message) {
         return;
     }
 
-    const rawDamage = Number(state.damageTotal);
-    if (!Number.isFinite(rawDamage)) {
+    const resolvedDamage = await _resolveAttackDamageTotal({ state, outcome });
+    if (!Number.isFinite(resolvedDamage)) {
         ui.notifications.warn(game.i18n.localize("LAUNDRY.DamageNotRollable"));
         return;
     }
 
-    const rolledDamage = Math.max(0, Math.trunc(rawDamage));
+    const rolledDamage = Math.max(0, Math.trunc(Number(resolvedDamage) || 0));
     const traits = _extractWeaponTraits(state);
     const attackMeta = state.attackMeta ?? {};
     const isAreaAttack = Boolean(traits.area || attackMeta.areaMode);
@@ -1213,9 +1241,11 @@ async function _applyDamage(message) {
         : [allTargets[0]];
     const criticals = results.filter(result => result.rawValue === 6).length;
     const summaries = [];
-    const armourIgnored = traits.piercing ? criticals : 0;
+    const armourIgnored = (traits.piercing ? criticals : 0) + (traits.penetrating ? 1 : 0);
+    const attackSuccesses = Math.max(0, Math.trunc(Number(outcome.successes) || 0));
+    const primaryDefence = Math.max(0, Math.trunc(Number(targets[0]?.system?.derived?.defence?.value ?? 0) || 0));
 
-    for (const targetActor of targets) {
+    for (const [index, targetActor] of targets.entries()) {
         if (!targetActor) continue;
         const isNpc = targetActor.type === "npc";
         const npcData = isNpc ? (targetActor.system?.npc ?? {}) : {};
@@ -1223,10 +1253,26 @@ async function _applyDamage(message) {
         const npcFastDamage = Boolean(npcData.fastDamage ?? true);
         const npcTrackInjuries = Boolean(npcData.trackInjuries ?? false);
         const npcMobSize = Math.max(1, Math.trunc(Number(npcData.mobSize) || 1));
+        const targetDamage = traits.spread && index > 0
+            ? Math.floor(rolledDamage / 2)
+            : rolledDamage;
+        let spreadEvaded = false;
+        if (traits.spread && index > 0 && targetDamage > 0) {
+            const targetDefence = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.defence?.value ?? 0) || 0));
+            if (targetDefence > primaryDefence) {
+                spreadEvaded = await _attemptSpreadEvasion({
+                    targetActor,
+                    attackSuccesses
+                });
+            }
+        }
 
         const armour = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.armour?.value ?? 0)));
-        const effectiveArmour = Math.max(0, armour - armourIgnored);
-        let appliedDamage = Math.max(0, rolledDamage - effectiveArmour);
+        const adjustedArmour = traits.ineffective ? armour * 2 : armour;
+        const effectiveArmour = Math.max(0, adjustedArmour - armourIgnored);
+        let appliedDamage = spreadEvaded
+            ? 0
+            : Math.max(0, targetDamage - effectiveArmour);
         let adrenalineReduced = false;
         let nextAdrenaline = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.adrenaline?.value ?? 0)));
 
@@ -1251,7 +1297,9 @@ async function _applyDamage(message) {
         );
         let newToughness = Math.max(0, currentToughness - appliedDamage);
         let newDamageTaken = Math.max(0, maxToughness - newToughness);
-        const overflowDamage = Math.max(0, appliedDamage - currentToughness);
+        const injuryDamage = currentToughness > 0
+            ? Math.max(0, appliedDamage - currentToughness)
+            : Math.max(0, appliedDamage);
         let casualties = 0;
         let mobRemaining = npcMobSize;
         let npcDefeated = false;
@@ -1276,7 +1324,7 @@ async function _applyDamage(message) {
             npcDefeated = true;
         }
 
-        if (isNpc && newToughness <= 0) {
+        if (isNpc && newToughness <= 0 && (npcFastDamage || npcClass === "minion" || !npcTrackInjuries)) {
             npcDefeated = true;
         }
 
@@ -1285,8 +1333,6 @@ async function _applyDamage(message) {
             newDamageTaken = Math.max(0, maxToughness);
             mobRemaining = Math.max(1, mobRemaining);
         }
-
-        const becameIncapacitated = currentToughness > 0 && newToughness <= 0;
 
         const updateData = {
             "system.derived.toughness.value": newToughness,
@@ -1301,8 +1347,11 @@ async function _applyDamage(message) {
         }
         await targetActor.update(updateData);
 
-        if (traits.crushing && appliedDamage > 0 && (!isNpc || !npcDefeated)) {
-            await _applyConditionToActor(targetActor, "stunned", { durationRounds: 1, source: "weapon-crushing" });
+        if (traits.stunning && !spreadEvaded && criticals > 0 && (!isNpc || !npcDefeated)) {
+            await _applyConditionToActor(targetActor, "stunned", { durationRounds: 1, source: "weapon-stunning" });
+        }
+        if (traits.restraining && !spreadEvaded && appliedDamage > 0 && (!isNpc || !npcDefeated)) {
+            await _applyConditionToActor(targetActor, "restrained", { durationRounds: 0, source: "weapon-restraining" });
         }
         if ((traits.suppressive || attackMeta.suppressiveMode) && (!isNpc || !npcDefeated)) {
             await _applyConditionToActor(targetActor, "weakened", { durationRounds: 1, source: "weapon-suppressive" });
@@ -1310,7 +1359,7 @@ async function _applyDamage(message) {
 
         summaries.push({
             name: targetActor.name,
-            rolled: rolledDamage,
+            rolled: targetDamage,
             armour: effectiveArmour,
             applied: appliedDamage,
             from: currentToughness,
@@ -1320,20 +1369,28 @@ async function _applyDamage(message) {
             mobBefore: npcMobSize,
             mobAfter: Math.max(1, mobRemaining),
             casualties,
-            defeated: npcDefeated
+            defeated: npcDefeated,
+            evadedSpread: spreadEvaded
         });
 
-        if (appliedDamage > 0 && becameIncapacitated) {
+        if (injuryDamage > 0) {
             if (isNpc && (npcFastDamage || !npcTrackInjuries)) {
                 await _postDeathNotice({
                     targetActor,
-                    damageTaken: overflowDamage,
+                    damageTaken: injuryDamage,
                     appliedDamage
                 });
             } else {
+                const severity = _resolveInjurySeverity({
+                    injuryDamage,
+                    brutal: traits.brutal,
+                    forceMinor: traits.ineffective
+                });
                 await _postCriticalWoundPrompt({
                     targetActor,
-                    damageTaken: overflowDamage
+                    injuryDamage,
+                    injuryType: "physical",
+                    severity
                 });
             }
         }
@@ -1357,22 +1414,89 @@ async function _applyDamage(message) {
         const mobSummary = summary.isNpc && summary.mobBefore > 1
             ? ` | Mob ${summary.mobBefore} -> ${summary.mobAfter}`
             : "";
+        const evadeSummary = summary.evadedSpread ? " | EVADED SPREAD" : "";
         const defeatedSummary = summary.defeated ? " | DEFEATED" : "";
-        ui.notifications.info(`${baseSummary}${mobSummary}${defeatedSummary}`);
+        ui.notifications.info(`${baseSummary}${mobSummary}${evadeSummary}${defeatedSummary}`);
     } else {
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker(),
             content: `<p><strong>Area Damage Applied:</strong> ${summaries.map(summary =>
                 `${_escapeHtml(summary.name)} (${summary.from} -> ${summary.to}, -${summary.applied})`
                 + `${summary.isNpc && summary.mobBefore > 1 ? ` [Mob ${summary.mobBefore} -> ${summary.mobAfter}]` : ""}`
+                + `${summary.evadedSpread ? " [EVADED]" : ""}`
                 + `${summary.defeated ? " [DEFEATED]" : ""}`
             ).join(" | ")}</p>`
         });
     }
 
     if (armourIgnored > 0) {
-        ui.notifications.info(`Piercing: ignored ${armourIgnored} armour from ${criticals} critical(s).`);
+        ui.notifications.info(`Armour ignored: ${armourIgnored} (${traits.penetrating ? "Penetrating + " : ""}${traits.piercing ? `${criticals} Piercing critical(s)` : "no Piercing criticals"}).`);
     }
+}
+
+async function _resolveAttackDamageTotal({ state, outcome } = {}) {
+    const formula = String(state?.damage ?? "").trim();
+    const successes = Math.max(0, Math.trunc(Number(outcome?.successes) || 0));
+    const hasSuccessToken = /\bS\b/i.test(formula);
+    const rolledTotal = Number(state?.damageTotal);
+
+    if (hasSuccessToken) {
+        const expression = formula.replace(/\bS\b/gi, String(successes));
+        try {
+            const roll = new Roll(expression);
+            await roll.evaluate();
+            const total = Number(roll.total);
+            return Number.isFinite(total) ? Math.max(0, Math.trunc(total)) : null;
+        } catch (_err) {
+            const fallback = Number(expression);
+            if (Number.isFinite(fallback)) return Math.max(0, Math.trunc(fallback));
+            return null;
+        }
+    }
+
+    if (Number.isFinite(rolledTotal)) {
+        return Math.max(0, Math.trunc(rolledTotal + successes));
+    }
+
+    const numeric = Number(formula);
+    if (Number.isFinite(numeric)) {
+        return Math.max(0, Math.trunc(numeric + successes));
+    }
+
+    return null;
+}
+
+function _resolveInjurySeverity({ injuryDamage = 0, brutal = false, forceMinor = false } = {}) {
+    if (forceMinor) {
+        return { tier: "minor", diceCount: 1, trackSpaces: 1 };
+    }
+    const amount = Math.max(0, Math.trunc(Number(injuryDamage) || 0));
+    let tier = "minor";
+    if (amount >= 5) tier = "deadly";
+    else if (amount >= 2) tier = "serious";
+
+    if (brutal && tier === "minor") tier = "serious";
+
+    if (tier === "deadly") return { tier, diceCount: 3, trackSpaces: 3 };
+    if (tier === "serious") return { tier, diceCount: 2, trackSpaces: 2 };
+    return { tier, diceCount: 1, trackSpaces: 1 };
+}
+
+async function _attemptSpreadEvasion({ targetActor, attackSuccesses = 0 } = {}) {
+    if (!targetActor) return false;
+    const safeAttackSuccesses = Math.max(0, Math.trunc(Number(attackSuccesses) || 0));
+    if (safeAttackSuccesses <= 0) return false;
+
+    const pool = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.defence?.value ?? 0) || 0));
+    if (pool <= 0) return false;
+
+    const roll = new Roll(`${pool}d6`);
+    await roll.evaluate();
+    const values = Array.isArray(roll.terms?.[0]?.results)
+        ? roll.terms[0].results.map(result => _clampDie(Number(result?.result ?? 1)))
+        : [];
+    const successes = values.filter(value => value >= 4).length;
+    return successes >= safeAttackSuccesses;
 }
 
 function _resolveTargetActor(state) {
@@ -1463,14 +1587,23 @@ function _extractWeaponTraits(state) {
         .map(entry => entry.trim())
         .filter(Boolean);
     const asBlob = tokens.join(" ");
+    const has = (label) => tokens.includes(label) || new RegExp(`\\b${label}\\b`).test(asBlob);
     return {
-        piercing: tokens.includes("piercing") || /\bpiercing\b/.test(asBlob),
-        crushing: tokens.includes("crushing") || /\bcrushing\b/.test(asBlob),
-        burst: tokens.includes("burst") || /\bburst\b/.test(asBlob),
-        automatic: tokens.includes("automatic") || tokens.includes("auto") || /\bautomatic\b/.test(asBlob) || /\bauto\b/.test(asBlob),
-        suppressive: tokens.includes("suppressive") || /\bsuppressive\b/.test(asBlob),
-        area: tokens.includes("area") || tokens.includes("blast") || tokens.includes("spread") || /\barea\b/.test(asBlob) || /\bblast\b/.test(asBlob) || /\bspread\b/.test(asBlob),
-        reload: tokens.includes("reload") || /\breload\b/.test(asBlob)
+        piercing: has("piercing"),
+        penetrating: has("penetrating"),
+        crushing: has("crushing"),
+        stunning: has("stunning") || has("stun"),
+        restraining: has("restraining") || has("restrained"),
+        ineffective: has("ineffective"),
+        brutal: has("brutal") || has("devastating"),
+        rend: has("rend"),
+        spread: has("spread"),
+        blast: has("blast"),
+        burst: has("burst"),
+        automatic: has("automatic") || has("auto"),
+        suppressive: has("suppressive"),
+        area: has("area") || has("blast") || has("spread"),
+        reload: has("reload")
     };
 }
 
@@ -1584,10 +1717,10 @@ function _collectActorStatuses(actor) {
             ? Array.from(effect.statuses)
             : Array.isArray(effect?.statuses) ? effect.statuses : [];
         for (const statusId of effectStatuses) {
-            if (statusId) statuses.add(String(statusId));
+            if (statusId) statuses.add(String(statusId).trim().toLowerCase());
         }
         const legacyStatus = effect.getFlag?.("core", "statusId");
-        if (legacyStatus) statuses.add(String(legacyStatus));
+        if (legacyStatus) statuses.add(String(legacyStatus).trim().toLowerCase());
     }
     return statuses;
 }
@@ -1607,48 +1740,66 @@ function _getStatusRollModifiers({ actor, targetActor, rollContext, isWeaponAtta
     const sourceType = String(rollContext?.sourceType ?? "").toLowerCase();
     const sourceName = String(rollContext?.sourceName ?? "").toLowerCase();
     const skillName = String(rollContext?.skillName ?? sourceName).toLowerCase();
-    const attribute = String(rollContext?.attribute ?? "").toLowerCase();
     const attackMode = String(rollContext?.attackMode ?? "").toLowerCase();
-
+    const isAwarenessRoll = sourceType === "skill" && skillName === "awareness";
     const isVisionRoll = isWeaponAttack || ["awareness", "ranged", "reflexes", "stealth", "close combat"].includes(skillName);
-    const isBodyRoll = isWeaponAttack
-        || attribute === "body"
-        || sourceType === "attribute" && sourceName === "body"
-        || ["athletics", "might", "fortitude", "close combat", "ranged", "reflexes", "survival", "stealth"].includes(skillName);
-    const isMindSpiritRoll = attribute === "mind"
-        || attribute === "spirit"
-        || sourceType === "attribute" && (sourceName === "mind" || sourceName === "spirit")
-        || ["academics", "awareness", "bureaucracy", "computers", "engineering", "intuition", "magic", "medicine", "occult", "presence", "resolve", "science", "technology", "zeal", "fast talk"].includes(skillName);
+    const distanceMeta = _getActorDistanceMeta(actor, targetActor);
 
-    if (own.has("blinded") && isVisionRoll) {
+    if (own.has("weakened")) {
         poolDelta -= 1;
-        notes.push("Blinded: Disadvantage on vision checks (-1d6).");
+        notes.push("Weakened: dice pool -1 on all Tests.");
     }
 
-    if (own.has("weakened") && isBodyRoll) {
+    if (own.has("frightened")) {
         poolDelta -= 1;
-        notes.push("Weakened: -1 die on Body/physical actions.");
+        notes.push("Frightened: dice pool -1 on all Tests.");
     }
 
-    if (own.has("bleeding") && isBodyRoll) {
-        poolDelta -= 1;
-        notes.push("Bleeding: -1 die on strenuous physical actions.");
+    if (own.has("terrified")) {
+        poolDelta -= 2;
+        notes.push("Terrified: dice pool -2 on all Tests.");
     }
 
-    if (own.has("frightened") && (isMindSpiritRoll || isWeaponAttack)) {
-        poolDelta -= 1;
-        notes.push("Frightened: -1 die on attacks and Mind/Spirit actions.");
+    if (own.has("blinded")) {
+        if (isVisionRoll) {
+            poolDelta -= 1;
+            notes.push("Blinded: reduced effectiveness on sight-dependent checks.");
+        }
+        if (isAwarenessRoll) {
+            shiftDelta += 2;
+            notes.push("Blinded: Mind (Awareness) tests relying on sight are +2 Difficulty.");
+        }
     }
 
-    if (isWeaponAttack) {
-        if (target.has("prone")) {
-            if (attackMode === "melee") {
-                poolDelta += 1;
-                notes.push("Target Prone: melee Advantage (+1d6).");
-            } else {
-                poolDelta -= 1;
-                notes.push("Target Prone: ranged Disadvantage (-1d6).");
-            }
+    if (own.has("deafened") && isAwarenessRoll) {
+        shiftDelta += 2;
+        notes.push("Deafened: Mind (Awareness) tests relying on hearing are +2 Difficulty.");
+    }
+
+    if (own.has("prone") && isWeaponAttack) {
+        poolDelta -= 1;
+        notes.push("Prone: attacker Melee/Accuracy reduced one step.");
+    }
+
+    if (own.has("restrained") && isWeaponAttack) {
+        poolDelta -= 1;
+        notes.push("Restrained: attacker Melee/Accuracy reduced one step.");
+    }
+
+    if (isWeaponAttack && target.has("prone")) {
+        const treatAsClose = distanceMeta.available
+            ? distanceMeta.isClose
+            : attackMode === "melee";
+        if (treatAsClose) {
+            poolDelta += 1;
+            notes.push("Target Prone: attacks from Close Range gain one step.");
+        } else {
+            const penaltySteps = Math.max(1, Math.trunc(Number(distanceMeta.outsideCloseZones) || 1));
+            poolDelta -= penaltySteps;
+            const penaltyLabel = penaltySteps === 1
+                ? "1 step penalty"
+                : `${penaltySteps} step penalties`;
+            notes.push(`Target Prone: ranged attacks outside Close Range suffer ${penaltyLabel}.`);
         }
     }
 
@@ -1692,33 +1843,60 @@ function _normalizeRollContext({ rollContext, actor, focusItemId, flavor }) {
     };
 }
 
-async function _postCriticalWoundPrompt({ targetActor, damageTaken = 0 } = {}) {
+async function _postCriticalWoundPrompt({
+    targetActor,
+    injuryDamage = 0,
+    injuryType = "physical",
+    severity = null
+} = {}) {
     if (!targetActor) return;
     const safeName = _escapeHtml(targetActor.name ?? "Unknown");
-    const applied = Math.max(0, Math.trunc(Number(damageTaken) || 0));
+    const safeInjuryDamage = Math.max(0, Math.trunc(Number(injuryDamage) || 0));
+    const resolvedSeverity = severity && typeof severity === "object"
+        ? severity
+        : _resolveInjurySeverity({ injuryDamage: safeInjuryDamage, brutal: false });
+    const diceCount = Math.max(1, Math.trunc(Number(resolvedSeverity?.diceCount) || 1));
+    const trackSpaces = Math.max(1, Math.trunc(Number(resolvedSeverity?.trackSpaces) || 1));
+    const tier = String(resolvedSeverity?.tier ?? "minor").trim().toLowerCase() || "minor";
+    const selectedType = String(injuryType ?? "physical").trim().toLowerCase().startsWith("psy")
+        ? "psychological"
+        : "physical";
+    const physicalLabel = selectedType === "physical"
+        ? "Roll Physical Injury (Recommended)"
+        : "Roll Physical Injury";
+    const psychologicalLabel = selectedType === "psychological"
+        ? "Roll Psychological Injury (Recommended)"
+        : "Roll Psychological Injury";
 
     await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor: targetActor }),
         content: `
             <div class="laundry-critical-wound-card">
-                <div class="critical-wound-title"><strong>CRITICAL WOUND: ${safeName}</strong></div>
+                <div class="critical-wound-title"><strong>CRITICAL INJURY: ${safeName}</strong></div>
+                <div class="critical-wound-title">Severity: ${_escapeHtml(tier)} | Injury damage: ${safeInjuryDamage} | Roll: ${diceCount}d6 | Track: +${trackSpaces}</div>
                 <div class="critical-wound-actions">
                     <button
                         type="button"
                         class="roll-injury"
                         data-injury-type="physical"
-                        data-damage-taken="${applied}"
+                        data-injury-damage="${safeInjuryDamage}"
+                        data-injury-tier="${_escapeHtml(tier)}"
+                        data-injury-dice-count="${diceCount}"
+                        data-injury-track-spaces="${trackSpaces}"
                         data-target-name="${safeName}"
                         data-target-actor-id="${targetActor.id}"
-                    >Roll Physical Injury</button>
+                    >${physicalLabel}</button>
                     <button
                         type="button"
                         class="roll-injury"
                         data-injury-type="psychological"
-                        data-damage-taken="${applied}"
+                        data-injury-damage="${safeInjuryDamage}"
+                        data-injury-tier="${_escapeHtml(tier)}"
+                        data-injury-dice-count="${diceCount}"
+                        data-injury-track-spaces="${trackSpaces}"
                         data-target-name="${safeName}"
                         data-target-actor-id="${targetActor.id}"
-                    >Roll Psychological Injury</button>
+                    >${psychologicalLabel}</button>
                 </div>
             </div>`
     });
@@ -1742,14 +1920,23 @@ async function _postDeathNotice({ targetActor, damageTaken = 0, appliedDamage = 
 
 async function _rollInjuryFromButton(ev) {
     const button = ev?.currentTarget;
-    const damageTaken = Math.max(0, Math.trunc(Number(button?.dataset?.damageTaken ?? 0) || 0));
+    const injuryDamage = Math.max(0, Math.trunc(Number(button?.dataset?.injuryDamage ?? 0) || 0));
     const targetName = String(button?.dataset?.targetName ?? "").trim();
     const targetActorId = String(button?.dataset?.targetActorId ?? "").trim();
     const targetActor = targetActorId ? game.actors?.get(targetActorId) ?? null : null;
     const injuryType = String(button?.dataset?.injuryType ?? "physical").trim().toLowerCase();
+    const tier = String(button?.dataset?.injuryTier ?? "").trim().toLowerCase();
+    const requestedDiceCount = Math.max(0, Math.trunc(Number(button?.dataset?.injuryDiceCount) || 0));
+    const requestedTrackSpaces = Math.max(0, Math.trunc(Number(button?.dataset?.injuryTrackSpaces) || 0));
+    const fallbackSeverity = _resolveInjurySeverity({
+        injuryDamage,
+        brutal: tier === "deadly" && injuryDamage <= 0
+    });
+    const diceCount = Math.max(1, requestedDiceCount || Math.trunc(Number(fallbackSeverity.diceCount) || 1));
+    const trackSpaces = Math.max(1, requestedTrackSpaces || Math.trunc(Number(fallbackSeverity.trackSpaces) || 1));
     const injuryLabel = injuryType.startsWith("psy") ? "Psychological Injury" : "Physical Injury";
-    const injuryTrack = await _markCriticalInjuryOnTrack(targetActor);
-    const roll = new Roll(`1d6 + ${damageTaken}`);
+    const injuryTrack = await _markCriticalInjuryOnTrack(targetActor, { spaces: trackSpaces });
+    const roll = new Roll(`${diceCount}d6`);
     await roll.evaluate();
     const total = Math.max(0, Math.trunc(Number(roll.total ?? 0) || 0));
     const resolved = await _resolveOutcomeFromCriticalTables({
@@ -1760,6 +1947,7 @@ async function _rollInjuryFromButton(ev) {
     const outcome = resolved?.text ?? _getInjuryOutcome(total);
     const targetLabel = targetName ? ` for ${_escapeHtml(targetName)}` : "";
     const statusId = _normalizeOutcomeStatusId(resolved?.statusId, outcome, "injury");
+    const statusIds = _collectOutcomeStatusIds(statusId, outcome, "injury");
     const durationRounds = Math.max(0, Math.trunc(Number(resolved?.durationRounds) || 0));
     const modifierChanges = _mergeDifficultyModifierChanges([
         ..._sanitizeModifierChanges(resolved?.modifierChanges),
@@ -1783,26 +1971,12 @@ async function _rollInjuryFromButton(ev) {
         effectName: finalEffectName,
         outcomeText: outcome,
         statusId,
+        statusIds,
         durationRounds,
         sourceTag: "injury-table",
         tableName: resolved?.tableName ?? "",
         modifierChanges
     });
-    const lethalThresholdReached = total >= 6;
-
-    if (targetActor?.type === "npc" && lethalThresholdReached) {
-        const toughnessMax = Math.max(0, Math.trunc(Number(targetActor.system?.derived?.toughness?.max) || 0));
-        await targetActor.update({
-            "system.npc.defeated": true,
-            "system.derived.toughness.value": 0,
-            "system.derived.toughness.damage": toughnessMax
-        });
-        await _postDeathNotice({
-            targetActor,
-            damageTaken,
-            appliedDamage: damageTaken
-        });
-    }
 
     await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
@@ -1810,10 +1984,11 @@ async function _rollInjuryFromButton(ev) {
             <div class="laundry-injury-result-card">
                 <strong>INJURY RESULT${targetLabel}:</strong>
                 <div class="injury-outcome">${_escapeHtml(injuryLabel)}</div>
-                1d6 + ${damageTaken} = <strong>${total}</strong>
+                ${diceCount}d6 = <strong>${total}</strong>
                 <span class="injury-outcome">(${_escapeHtml(outcome)})</span>
+                <div class="injury-outcome">Severity: ${_escapeHtml(tier || fallbackSeverity.tier)} | Injury spaces: +${trackSpaces}</div>
                 ${resolved?.tableName ? `<div class="injury-outcome">Table: ${_escapeHtml(resolved.tableName)}</div>` : ""}
-                ${statusId ? `<div class="injury-outcome">Condition: ${_escapeHtml(statusId)}</div>` : ""}
+                ${statusIds.length ? `<div class="injury-outcome">Condition: ${_escapeHtml(statusIds.join(", "))}</div>` : ""}
                 ${injuryTrack ? `<div class="injury-outcome">Injury Track: ${injuryTrack.before} -> ${injuryTrack.after}${injuryTrack.atCap ? " (MAX)" : ""}</div>` : ""}
                 ${modifierChanges.length ? `<div class="injury-outcome">${_escapeHtml(_formatDifficultyModifierSummary(modifierChanges))}</div>` : ""}
                 ${applyButton}
@@ -1823,17 +1998,18 @@ async function _rollInjuryFromButton(ev) {
     });
 }
 
-async function _markCriticalInjuryOnTrack(actor) {
+async function _markCriticalInjuryOnTrack(actor, { spaces = 1 } = {}) {
     if (!actor) return null;
     const isNpc = actor.type === "npc";
     const canTrack = actor.type === "character"
         || (isNpc && Boolean(actor.system?.npc?.trackInjuries));
     if (!canTrack) return null;
+    const delta = Math.max(1, Math.trunc(Number(spaces) || 1));
 
     const state = computeInjuryTrackUpdate({
         current: Number(actor.system?.derived?.injuries?.value ?? 0),
         max: Number(actor.system?.derived?.injuries?.max ?? 0),
-        delta: 1
+        delta
     });
     if (state.max <= 0) return null;
     if (state.changed) {
@@ -1849,9 +2025,14 @@ async function _markCriticalInjuryOnTrack(actor) {
 
 function _getInjuryOutcome(total) {
     const n = Math.max(0, Math.trunc(Number(total) || 0));
-    if (n <= 3) return "Stunned";
-    if (n <= 5) return "Bleeding";
-    return "Incapacitated / Lethal";
+    if (n <= 2) return "Arm Wound";
+    if (n <= 4) return "Leg Wound";
+    if (n <= 8) return "Head Wound";
+    if (n <= 10) return "Internal Injury";
+    if (n <= 12) return "Broken Arm";
+    if (n <= 14) return "Broken Leg";
+    if (n <= 17) return "Brain Injury";
+    return "Instant Death / Broken Mind";
 }
 
 async function _rollMishapFromButton(ev) {
@@ -1869,6 +2050,7 @@ async function _rollMishapFromButton(ev) {
     });
     const outcome = resolved?.text ?? _getMishapOutcome(total);
     const statusId = _normalizeOutcomeStatusId(resolved?.statusId, outcome, "mishap");
+    const statusIds = _collectOutcomeStatusIds(statusId, outcome, "mishap");
     const durationRounds = Math.max(0, Math.trunc(Number(resolved?.durationRounds) || 0));
     const modifierChanges = _mergeDifficultyModifierChanges([
         ..._sanitizeModifierChanges(resolved?.modifierChanges),
@@ -1892,6 +2074,7 @@ async function _rollMishapFromButton(ev) {
         effectName: finalEffectName,
         outcomeText: outcome,
         statusId,
+        statusIds,
         durationRounds,
         sourceTag: "mishap-table",
         tableName: resolved?.tableName ?? "",
@@ -1906,7 +2089,7 @@ async function _rollMishapFromButton(ev) {
                 <strong>${total}</strong>
                 <span class="mishap-outcome">- ${_escapeHtml(outcome)}</span>
                 ${resolved?.tableName ? `<div class="mishap-outcome">Table: ${_escapeHtml(resolved.tableName)}</div>` : ""}
-                ${statusId ? `<div class="mishap-outcome">Condition: ${_escapeHtml(statusId)}</div>` : ""}
+                ${statusIds.length ? `<div class="mishap-outcome">Condition: ${_escapeHtml(statusIds.join(", "))}</div>` : ""}
                 ${modifierChanges.length ? `<div class="mishap-outcome">${_escapeHtml(_formatDifficultyModifierSummary(modifierChanges))}</div>` : ""}
                 ${applyButton}
             </div>`,
@@ -2060,9 +2243,9 @@ function _resolveOutcomeFromLocalCriticalTables({ tableType = "", total = 0, inj
 }
 
 async function _resolveOutcomeFromCriticalTables({ tableType = "", total = 0, injuryType = "physical" } = {}) {
-    const local = _resolveOutcomeFromLocalCriticalTables({ tableType, total, injuryType });
-    if (local) return local;
-    return _resolveOutcomeFromAutomationTable({ tableType, total });
+    const automated = await _resolveOutcomeFromAutomationTable({ tableType, total, injuryType });
+    if (automated) return automated;
+    return _resolveOutcomeFromLocalCriticalTables({ tableType, total, injuryType });
 }
 
 function _renderOutcomeApplyButton({
@@ -2072,6 +2255,7 @@ function _renderOutcomeApplyButton({
     effectName = "",
     outcomeText = "",
     statusId = "",
+    statusIds = [],
     durationRounds = 0,
     sourceTag = "",
     tableName = "",
@@ -2091,6 +2275,7 @@ function _renderOutcomeApplyButton({
         data-effect-name="${_escapeHtml(_encodeDataValue(effectName))}"
         data-outcome-text="${_escapeHtml(_encodeDataValue(outcomeText))}"
         data-status-id="${_escapeHtml(String(statusId ?? "").trim().toLowerCase())}"
+        data-status-ids="${_escapeHtml(_encodeDataValue(JSON.stringify(statusIds)))}"
         data-duration-rounds="${Math.max(0, Math.trunc(Number(durationRounds) || 0))}"
         data-source-tag="${_escapeHtml(String(sourceTag ?? "").trim())}"
         data-table-name="${_escapeHtml(_encodeDataValue(tableName))}"
@@ -2132,6 +2317,10 @@ async function _applyOutcomeEffectFromButton(ev) {
         ..._extractDifficultyModifierChangesFromText(outcomeText)
     ]);
     const statusId = _normalizeOutcomeStatusId(button.dataset?.statusId ?? "", outcomeText, effectType);
+    const parsedStatusIds = _safeParseJsonArray(_decodeDataValue(button.dataset?.statusIds ?? ""))
+        .map(value => _normalizeOutcomeStatusId(value, outcomeText, effectType))
+        .filter(Boolean);
+    const statusIds = _collectOutcomeStatusIds(parsedStatusIds.length ? parsedStatusIds : statusId, outcomeText, effectType);
     const durationRounds = Math.max(0, Math.trunc(Number(button.dataset?.durationRounds) || 0));
     const effectName = effectNameRaw || _deriveOutcomeEffectName({
         effectType,
@@ -2160,20 +2349,23 @@ async function _applyOutcomeEffectFromButton(ev) {
     });
     const duplicateEffect = Boolean(effectResult?.duplicate);
 
-    let statusApplied = false;
-    if (statusId) {
-        statusApplied = await _applyStatusEffectToActor(actor, statusId, {
+    let statusAppliedCount = 0;
+    for (const statusKey of statusIds) {
+        const applied = await _applyStatusEffectToActor(actor, statusKey, {
             durationRounds,
             sourceTag
         });
+        if (applied) statusAppliedCount += 1;
     }
 
     const modifierSummary = modifierChanges.length
         ? _formatDifficultyModifierSummary(modifierChanges)
         : "";
-    const statusSummary = statusApplied
-        ? `Status: ${statusId}.`
-        : (statusId ? `Status marker requested: ${statusId}.` : "No status marker.");
+    const statusSummary = statusIds.length
+        ? (statusAppliedCount > 0
+            ? `Status: ${statusIds.join(", ")}.`
+            : `Status marker requested: ${statusIds.join(", ")}.`)
+        : "No status marker.";
     const extra = modifierSummary ? ` ${modifierSummary}` : "";
     const applySummary = duplicateEffect
         ? `already has ${effectName}; skipped duplicate effect.`
@@ -2289,6 +2481,14 @@ async function _applyStatusEffectToActor(actor, statusId, { durationRounds = 0, 
     const safeStatusId = String(statusId ?? "").trim().toLowerCase();
     if (!actor || !safeStatusId) return false;
 
+    if (typeof game.laundry?.applyCondition === "function") {
+        return Boolean(await game.laundry.applyCondition(actor, safeStatusId, {
+            durationRounds,
+            source: sourceTag,
+            suppressChat: true
+        }));
+    }
+
     if (typeof actor.toggleStatusEffect === "function") {
         try {
             await actor.toggleStatusEffect(safeStatusId, { active: true });
@@ -2296,14 +2496,6 @@ async function _applyStatusEffectToActor(actor, statusId, { durationRounds = 0, 
         } catch (err) {
             console.warn(`Laundry RPG | Failed to toggle status '${safeStatusId}' via actor.toggleStatusEffect`, err);
         }
-    }
-
-    if (typeof game.laundry?.applyCondition === "function") {
-        return Boolean(await game.laundry.applyCondition(actor, safeStatusId, {
-            durationRounds,
-            source: sourceTag,
-            suppressChat: true
-        }));
     }
 
     return false;
@@ -2342,10 +2534,12 @@ function _normalizeOutcomeStatusId(statusId, outcomeText = "", effectType = "") 
     const text = String(outcomeText ?? "").toLowerCase();
     if (/\bunconscious\b/.test(text)) return "unconscious";
     if (/\bincapacitated\b/.test(text)) return "incapacitated";
+    if (/\brestrained\b/.test(text)) return "restrained";
     if (/\bdeafened\b/.test(text)) return "deafened";
     if (/\bblinded\b/.test(text)) return "blinded";
     if (/\bprone\b/.test(text)) return "prone";
     if (/\bstunned\b/.test(text)) return "stunned";
+    if (/\bterrified\b/.test(text)) return "terrified";
     if (/\bterrified\b|\bfrightened\b|\bphobia\b/.test(text)) return "frightened";
     if (/\bbleeding\b/.test(text)) return "bleeding";
     if (/\bweakened\b/.test(text)) return "weakened";
@@ -2355,6 +2549,33 @@ function _normalizeOutcomeStatusId(statusId, outcomeText = "", effectType = "") 
         return "";
     }
     return "";
+}
+
+function _collectOutcomeStatusIds(statusIdOrIds, outcomeText = "", effectType = "") {
+    const provided = Array.isArray(statusIdOrIds) ? statusIdOrIds : [statusIdOrIds];
+    const statuses = new Set();
+    for (const raw of provided) {
+        const key = _normalizeModifierToken(raw);
+        if (SUPPORTED_OUTCOME_STATUS_IDS.has(key)) statuses.add(key);
+    }
+
+    const normalizedText = String(outcomeText ?? "").toLowerCase();
+    if (/\bunconscious\b/.test(normalizedText)) statuses.add("unconscious");
+    if (/\bincapacitated\b/.test(normalizedText)) statuses.add("incapacitated");
+    if (/\brestrained\b/.test(normalizedText)) statuses.add("restrained");
+    if (/\bdeafened\b/.test(normalizedText)) statuses.add("deafened");
+    if (/\bblinded\b/.test(normalizedText)) statuses.add("blinded");
+    if (/\bprone\b/.test(normalizedText)) statuses.add("prone");
+    if (/\bstunned\b/.test(normalizedText)) statuses.add("stunned");
+    if (/\bterrified\b/.test(normalizedText)) statuses.add("terrified");
+    if (!statuses.has("terrified") && /\bfrightened\b|\bphobia\b/.test(normalizedText)) statuses.add("frightened");
+    if (/\bbleeding\b/.test(normalizedText)) statuses.add("bleeding");
+    if (/\bweakened\b/.test(normalizedText)) statuses.add("weakened");
+
+    const fallback = _normalizeOutcomeStatusId("", normalizedText, effectType);
+    if (fallback) statuses.add(fallback);
+
+    return Array.from(statuses).filter(status => SUPPORTED_OUTCOME_STATUS_IDS.has(status));
 }
 
 function _extractDifficultyModifierChangesFromText(outcomeText) {
@@ -2576,11 +2797,32 @@ function _formatDifficultyModifierSummary(changes = []) {
     return `Difficulty Modifiers: ${parts.join("; ")}.`;
 }
 
-async function _resolveOutcomeFromAutomationTable({ tableType, total } = {}) {
+async function _resolveOutcomeFromAutomationTable({ tableType, total, injuryType = "physical" } = {}) {
     const table = await game.laundry?.getAutomationTable?.(tableType);
     if (!table) return null;
 
-    const results = Array.from(table.results ?? []);
+    const allResults = Array.from(table.results ?? []);
+    const normalizedType = String(tableType ?? "").trim().toLowerCase();
+    const normalizedInjuryType = String(injuryType ?? "physical").trim().toLowerCase().startsWith("psy")
+        ? "psychological"
+        : "physical";
+    let results = allResults;
+    if (normalizedType === "injury") {
+        const typedRows = allResults.filter(result => {
+            const laundryFlags = result.flags?.["laundry-rpg"] ?? {};
+            const flagData = result.getFlag?.("laundry-rpg", "conditionData")
+                ?? laundryFlags?.conditionData
+                ?? laundryFlags
+                ?? {};
+            const rowType = String(flagData?.injuryType ?? laundryFlags?.injuryType ?? "")
+                .trim()
+                .toLowerCase();
+            return rowType === normalizedInjuryType;
+        });
+        if (typedRows.length) {
+            results = typedRows;
+        }
+    }
     if (!results.length) return null;
     const picked = _pickTableResultByTotal(results, total);
     if (!picked) return null;
@@ -2596,6 +2838,7 @@ async function _resolveOutcomeFromAutomationTable({ tableType, total } = {}) {
     ]);
     return {
         tableName: String(table.name ?? "").trim(),
+        effectName: String(flagData?.effectName ?? laundryFlags?.effectName ?? "").trim(),
         text: _extractTableResultText(picked),
         statusId: String(flagData?.statusId ?? "").trim().toLowerCase(),
         durationRounds: Math.max(0, Math.trunc(Number(flagData?.durationRounds) || 0)),
@@ -2685,6 +2928,69 @@ function _isMeleeWeapon({ weapon, linkedSkillName = "" } = {}) {
     return rangeText.includes("close") || rangeText.includes("touch");
 }
 
+function _getActorTokenInCurrentScene(actor) {
+    if (!actor || !canvas?.scene) return null;
+    return canvas.tokens?.placeables?.find(token =>
+        token?.actor?.id === actor.id && token.document?.hidden !== true
+    ) ?? null;
+}
+
+function _measureTokenDistance(attackerToken, targetToken) {
+    if (!attackerToken?.center || !targetToken?.center || !canvas?.scene) return Number.POSITIVE_INFINITY;
+    const gridDistance = Number(canvas.scene.grid?.distance) || 1;
+    const ray = new Ray(attackerToken.center, targetToken.center);
+    const measured = canvas.grid?.measureDistances
+        ? canvas.grid.measureDistances([{ ray }], { gridSpaces: true })?.[0]
+        : null;
+    if (Number.isFinite(Number(measured))) return Number(measured);
+    return (ray.distance / (Number(canvas.scene.grid?.size) || 100)) * gridDistance;
+}
+
+function _getActorDistanceMeta(attackerActor, targetActor) {
+    const attackerToken = _getActorTokenInCurrentScene(attackerActor);
+    const targetToken = _getActorTokenInCurrentScene(targetActor);
+    if (!attackerToken || !targetToken || !canvas?.scene) {
+        return {
+            available: false,
+            isClose: false,
+            outsideCloseZones: 1,
+            distance: Number.POSITIVE_INFINITY
+        };
+    }
+
+    const closeDistance = Number(canvas.scene.grid?.distance) || 1;
+    const measured = _measureTokenDistance(attackerToken, targetToken);
+    if (!Number.isFinite(measured)) {
+        return {
+            available: false,
+            isClose: false,
+            outsideCloseZones: 1,
+            distance: Number.POSITIVE_INFINITY
+        };
+    }
+
+    const isClose = measured <= closeDistance;
+    const zoneSteps = Math.max(1, Math.ceil(measured / closeDistance));
+    return {
+        available: true,
+        isClose,
+        outsideCloseZones: isClose ? 0 : Math.min(3, Math.max(1, zoneSteps - 1)),
+        distance: measured
+    };
+}
+
+function _isTargetWithinCloseRange(actor, targetSnapshot) {
+    const targetTokenId = String(targetSnapshot?.tokenId ?? "").trim();
+    if (!targetTokenId || !canvas?.scene) return false;
+    const targetToken = canvas.tokens?.get(targetTokenId) ?? null;
+    if (!targetToken?.center) return false;
+    const actorToken = _getActorTokenInCurrentScene(actor);
+    if (!actorToken?.center) return false;
+    const gridDistance = Number(canvas.scene.grid?.distance) || 1;
+    const measured = _measureTokenDistance(actorToken, targetToken);
+    return Number.isFinite(measured) && measured <= gridDistance;
+}
+
 function _mapAttackDnFromDelta(delta = 0) {
     const diff = Math.trunc(Number(delta) || 0);
     if (diff >= 2) return 2;
@@ -2704,6 +3010,16 @@ async function _evaluateDamage({ damage, isWeaponAttack, actor, damageBonus = 0 
             bonus,
             total: null,
             result: "",
+            roll: null
+        };
+    }
+    if (/\bS\b/i.test(formula)) {
+        return {
+            formula,
+            baseTotal: null,
+            bonus,
+            total: null,
+            result: formula,
             roll: null
         };
     }

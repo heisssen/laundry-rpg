@@ -1,5 +1,5 @@
 import { rollDice } from "../dice.js";
-import { LaundryCharacterBuilder } from "./character-builder.js";
+import { LaundryCharacterBuilder, applyAssignmentToActor } from "./character-builder.js";
 import { openSupportRequestApp } from "../apps/support-request.js";
 import { openEndeavoursApp } from "../apps/endeavours.js";
 import {
@@ -1010,62 +1010,14 @@ export class LaundryActorSheet extends ActorSheet {
     }
 
     async _applyAssignment(assignmentData) {
-        const sys = assignmentData.system;
-
-        // Attributes
-        await this.actor.update({
-            "system.attributes.body.value":   sys.attributes.body,
-            "system.attributes.mind.value":   sys.attributes.mind,
-            "system.attributes.spirit.value": sys.attributes.spirit,
-            "system.details.assignment":      assignmentData.name
+        await applyAssignmentToActor(this.actor, assignmentData, {
+            chosenTalents: [],
+            skillAllocations: {},
+            profileDraft: this.actor.system?.details?.profile ?? {},
+            biographyDraft: String(this.actor.system?.biography ?? "").trim(),
+            applyBiography: false,
+            overwriteBiography: false
         });
-
-        // Skills
-        const skillNames = typeof sys.coreSkills === "string"
-            ? sys.coreSkills.split(",").map(s => s.trim()).filter(Boolean)
-            : (Array.isArray(sys.coreSkills) ? sys.coreSkills : []);
-
-        const existingSkillNames = new Set(this.actor.items
-            .filter(i => i.type === "skill")
-            .map(i => i.name));
-        for (const skillName of skillNames) {
-            if (existingSkillNames.has(skillName)) continue;
-            const pack  = game.packs.get("laundry-rpg.skills");
-            let skillItem = null;
-
-            if (pack) {
-                const index = await pack.getIndex();
-                const entry = index.find(e => e.name === skillName);
-                if (entry) skillItem = (await pack.getDocument(entry._id)).toObject();
-            }
-
-            skillItem ??= {
-                name: skillName, type: "skill",
-                img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
-                system: { training: 1, focus: 0, attribute: "mind" }
-            };
-
-            await this.actor.createEmbeddedDocuments("Item", [skillItem]);
-            existingSkillNames.add(skillName);
-        }
-
-        // Equipment
-        if (sys.equipment) {
-            const equipList = sys.equipment.split(",").map(s => s.trim()).filter(Boolean);
-            const existingGear = new Set(this.actor.items
-                .filter(i => ["gear", "weapon", "armour"].includes(i.type))
-                .map(i => i.name.toLowerCase()));
-            const items = equipList
-                .filter(name => !existingGear.has(name.toLowerCase()))
-                .map(name => ({
-                name, type: "gear",
-                img: "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
-                system: { quantity: 1, weight: 0 }
-                }));
-            if (items.length) await this.actor.createEmbeddedDocuments("Item", items);
-        }
-
-        ui.notifications.info(`Laundry RPG | Applied Assignment: ${assignmentData.name}`);
     }
 }
 

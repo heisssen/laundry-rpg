@@ -16,6 +16,9 @@
     <section class="gm-tracker-block">
         <h3>{{localize "LAUNDRY.GMQuickActions"}}</h3>
         <button type="button" class="award-luck">{{localize "LAUNDRY.AwardLuckAll"}}</button>
+        <button type="button" class="sync-team-luck">{{localize "LAUNDRY.TeamLuckSyncMax"}}</button>
+        <button type="button" class="reset-team-luck" data-mode="max">{{localize "LAUNDRY.TeamLuckResetToMax"}}</button>
+        <button type="button" class="reset-team-luck" data-mode="zero">{{localize "LAUNDRY.TeamLuckResetToZero"}}</button>
         <button type="button" class="open-mission-generator">Mission Generator</button>
         <button type="button" class="apply-threat-buffs">Apply Threat Buffs</button>
         <button type="button" class="max-adrenaline">{{localize "LAUNDRY.MaxAdrenalineAll"}}</button>
@@ -24,6 +27,7 @@
         </button>
         <button type="button" class="open-rules">{{localize "LAUNDRY.OpenRulesDossier"}}</button>
         <button type="button" class="open-spells">{{localize "LAUNDRY.OpenSpellsCompendium"}}</button>
+        <p class="notes">{{localize "LAUNDRY.TeamLuck"}}: <strong>{{teamLuck}}/{{teamLuckMax}}</strong> | Auto-sync: <strong>{{#if teamLuckAutoSync}}ON{{else}}OFF{{/if}}</strong></p>
         <p class="notes">{{localize "LAUNDRY.Target"}}: <strong>{{targetName}}</strong></p>
     </section>
 

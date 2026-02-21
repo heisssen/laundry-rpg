@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.19.0 - 2026-02-21
+
+### Added
+- Team Luck GM QoL controls in Operations Threat Tracker: quick `Sync Max`, `Reset to Max`, and `Reset to 0` actions with live pool display and auto-sync visibility.
+- Fear source tracking for `Frightened` and `Terrified` conditions (`fearSourceActorId`, `fearSourceTokenId`, `fearSourceName`) to support movement restrictions tied to the source of fear.
+- Movement-gating automation for fear conditions during combat: when the fear source is in line of sight, moving closer now prompts and requires Spirit (Resolve) checks (DN 5:1 for Frightened, DN 6:1 for Terrified), matching PDF condition rules.
+- Multi-status application from injury/mishap outcomes so compound effects (for example `Blinded` + `Deafened`) are both applied from one result card.
+
+### Changed
+- Weapon damage automation aligned further to Operative's Handbook combat traits: `Ineffective` now forces Minor Injury severity, `Brutal` escalates only Minor to Serious, `Stunning` triggers from any natural 6 on the hit pool, and `Spread` adds Reflexes evasion for tougher nearby targets.
+- Prone targeting automation now scales ranged penalties by distance outside Close Range (1/2/3 steps by zone), while preserving close-range advantage handling.
+- Team Luck maximum sync now allows a true zero-player state (no forced minimum of 1).
+
 ## 1.18.3 - 2026-02-21
 
 ### Changed

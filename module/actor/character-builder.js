@@ -837,7 +837,7 @@ export class LaundryCharacterBuilder extends Application {
     }
 }
 
-async function applyAssignmentToActor(actor, assignment, selected = {}) {
+export async function applyAssignmentToActor(actor, assignment, selected = {}) {
     const sys = assignment.system ?? {};
     const attributes = sys.attributes ?? {};
     const parsed = _parseAssignmentSystem(sys);
@@ -954,6 +954,7 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     }
 
     const nonSkillPending = [];
+    const gearQuantityUpdates = [];
     const skippedTalents = [];
 
     for (const talentItem of talents) {
@@ -973,7 +974,21 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
     for (const item of equipment) {
         if (!item) continue;
         const key = `${item.type}:${item.name.toLowerCase()}`;
-        if (existingByTypeAndName.has(key)) continue;
+        const existing = existingByTypeAndName.get(key);
+        if (existing) {
+            if (item.type === "gear") {
+                const currentQty = Math.max(0, Math.trunc(Number(existing.system?.quantity) || 0));
+                const addQty = Math.max(1, Math.trunc(Number(item.system?.quantity) || 1));
+                const nextQty = currentQty + addQty;
+                if (nextQty !== currentQty) {
+                    gearQuantityUpdates.push({
+                        _id: existing.id,
+                        "system.quantity": nextQty
+                    });
+                }
+            }
+            continue;
+        }
         nonSkillPending.push(item);
     }
 
@@ -987,6 +1002,9 @@ async function applyAssignmentToActor(actor, assignment, selected = {}) {
 
     if (toCreate.length) {
         await actor.createEmbeddedDocuments("Item", toCreate);
+    }
+    if (gearQuantityUpdates.length) {
+        await actor.updateEmbeddedDocuments("Item", gearQuantityUpdates);
     }
     if (skippedTalents.length) {
         const details = skippedTalents.slice(0, 3).join(" | ");
@@ -1291,9 +1309,9 @@ function _stubGear(name) {
 function _findCompendiumMatch(index, name) {
     const normalized = String(name ?? "").trim().toLowerCase();
     if (!normalized) return null;
-    return index.find(e =>
-        String(e?.name ?? "").toLowerCase().includes(normalized)
-    ) ?? null;
+    const exact = index.find(e => String(e?.name ?? "").trim().toLowerCase() === normalized);
+    if (exact) return exact;
+    return index.find(e => String(e?.name ?? "").trim().toLowerCase().includes(normalized)) ?? null;
 }
 
 function _stripHtml(value) {

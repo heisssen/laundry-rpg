@@ -292,6 +292,11 @@ def _parse_csv(value) -> list[str]:
     return [str(part).strip() for part in parts if str(part).strip()]
 
 
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", str(value or "").casefold())
+    return slug.strip("-")
+
+
 def _unique_preserve(values: list[str]) -> list[str]:
     out = []
     seen = set()
@@ -428,6 +433,89 @@ def build_gear() -> list[dict]:
         return []
     data = _read_source("gear.json")
     return [_normalize_item(item) for item in data]
+
+
+def build_assignment_issued_gear(
+    assignments: list[dict],
+    existing_collections: list[list[dict]] | None = None
+) -> list[dict]:
+    existing_collections = existing_collections or []
+    existing_names: set[str] = set()
+    for collection in existing_collections:
+        for item in collection:
+            name = str(item.get("name") or "").strip()
+            if not name:
+                continue
+            existing_names.add(name.casefold())
+
+    issued_index: dict[str, dict[str, object]] = {}
+    for assignment in assignments:
+        assignment_name = str(assignment.get("name") or "").strip()
+        system = assignment.get("system") if isinstance(assignment.get("system"), dict) else {}
+        equipment_items = _parse_csv(system.get("equipment")) if isinstance(system, dict) else []
+
+        for raw_name in equipment_items:
+            key = raw_name.casefold()
+            if not key:
+                continue
+            entry = issued_index.get(key)
+            if not entry:
+                entry = {
+                    "name": raw_name,
+                    "assignments": set()
+                }
+                issued_index[key] = entry
+            if assignment_name:
+                entry["assignments"].add(assignment_name)
+
+    docs: list[dict] = []
+    for key in sorted(issued_index.keys()):
+        if key in existing_names:
+            continue
+
+        entry = issued_index[key]
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+
+        assignment_names = sorted(str(v).strip() for v in entry.get("assignments", set()) if str(v).strip())
+        preview_assignments = assignment_names[:4]
+        preview_text = ", ".join(preview_assignments)
+        if len(assignment_names) > 4:
+            preview_text = f"{preview_text}, +{len(assignment_names) - 4} more"
+
+        description = "Standard issue equipment granted during assignment-based character generation."
+        if preview_text:
+            description = f"{description} Commonly issued by: {preview_text}."
+
+        docs.append(_normalize_item({
+            "name": name,
+            "type": "gear",
+            "img": DEFAULT_ICON_BY_TYPE["gear"],
+            "system": {
+                "quantity": 1,
+                "weight": 0,
+                "description": description,
+                "category": "Issued Equipment",
+                "requisition": {
+                    "id": f"issued-{_slugify(name)}",
+                    "dn": 2,
+                    "complexity": 1,
+                    "requirements": "Laundry assignment",
+                    "source": "Assignment starter equipment",
+                    "sourcePage": "generated"
+                },
+                "tags": [
+                    "gear",
+                    "issued",
+                    "assignment loadout",
+                    "Issued Equipment"
+                ],
+                "searchKeywords": [name, "Issued Equipment", "assignment loadout", *assignment_names]
+            }
+        }))
+
+    return docs
 
 
 def _normalize_enemy_action(action: dict | None = None) -> dict:
@@ -696,6 +784,9 @@ def main() -> None:
     skills = build_skills()
     spells = build_spells()
     gear = build_gear()
+    issued_gear = build_assignment_issued_gear(assignments, [weapons, armour, gear])
+    if issued_gear:
+        gear = build_all_items([gear, issued_gear])
     enemies = build_enemies()
     all_items = build_all_items([
         skills,

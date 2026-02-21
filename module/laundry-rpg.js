@@ -9,7 +9,7 @@ import { openEndeavoursApp, applyMissionStartEndeavourEffects } from "./apps/end
 import { bindTokenHudControls } from "./apps/token-hud.js";
 import { LaundryItem } from "./item/item.js";
 import { LaundryItemSheet } from "./item/item-sheet.js";
-import { bindDiceChatControls } from "./dice.js";
+import { bindDiceChatControls, rollDice } from "./dice.js";
 import { migrateWorld } from "./migration.js";
 import { applyThreatBuffsToCurrentScene, applyThreatRoundRegeneration } from "./utils/threat-integration.js";
 
@@ -123,6 +123,20 @@ const LAUNDRY_CONDITIONS = {
         defaultDurationRounds: 1,
         clearAtTurnStart: false
     },
+    terrified: {
+        id: "terrified",
+        name: "Terrified",
+        img: "icons/svg/terror.svg",
+        defaultDurationRounds: 1,
+        clearAtTurnStart: false
+    },
+    restrained: {
+        id: "restrained",
+        name: "Restrained",
+        img: "icons/svg/net.svg",
+        defaultDurationRounds: 0,
+        clearAtTurnStart: false
+    },
     incapacitated: {
         id: "incapacitated",
         name: "Incapacitated",
@@ -147,6 +161,7 @@ const LAUNDRY_STATUS_IDS = new Set(Object.keys(LAUNDRY_CONDITIONS));
 const TURN_ECONOMY_FLAG = "turnEconomy";
 const INJURY_TABLE_SETTING = "injuryTableUuid";
 const MISHAP_TABLE_SETTING = "mishapTableUuid";
+const TEAM_LUCK_AUTO_SYNC_SETTING = "teamLuckAutoSync";
 
 Hooks.once("init", async function () {
     console.log("Laundry RPG | Initialising The Laundry RPG System");
@@ -170,6 +185,8 @@ Hooks.once("init", async function () {
         setAutomationTable: (tableType, tableUuid) => setAutomationTable(tableType, tableUuid),
         resetAutomationTable: (tableType) => resetAutomationTable(tableType),
         ensureAutomationTables: () => ensureAutomationRollTables(),
+        syncTeamLuckMax: (options = {}) => syncTeamLuckMaxWithPlayers(options),
+        resetTeamLuck: ({ toMax = true } = {}) => resetTeamLuck({ toMax }),
         openMissionGenerator: () => openMissionGenerator(),
         openSupportRequest: (actor) => openSupportRequestApp(actor),
         openEndeavours: (actor) => openEndeavoursApp(actor),
@@ -245,6 +262,24 @@ Hooks.once("ready", async function () {
     } catch (err) {
         console.error("Laundry RPG | Migration failed", err);
     }
+});
+
+Hooks.on("createActor", async (actor) => {
+    await _syncTeamLuckForActorLifecycle(actor);
+});
+
+Hooks.on("deleteActor", async (actor) => {
+    await _syncTeamLuckForActorLifecycle(actor);
+});
+
+Hooks.on("updateActor", async (actor, changed) => {
+    if (!game.user?.isGM) return;
+    if (actor?.type !== "character") return;
+    const ownershipChanged = Object.prototype.hasOwnProperty.call(changed ?? {}, "ownership");
+    const typeChanged = Object.prototype.hasOwnProperty.call(changed ?? {}, "type");
+    const playerOwnerChanged = Object.prototype.hasOwnProperty.call(changed ?? {}, "hasPlayerOwner");
+    if (!ownershipChanged && !typeChanged && !playerOwnerChanged) return;
+    await syncTeamLuckMaxWithPlayers();
 });
 
 Hooks.on("renderChatMessage", (message, html) => {
@@ -350,6 +385,15 @@ function registerSystemSettings() {
         default: 0
     });
 
+    game.settings.register("laundry-rpg", TEAM_LUCK_AUTO_SYNC_SETTING, {
+        name: "Auto-sync Team Luck Max",
+        hint: "Automatically keep Team Luck max aligned to current player-owned characters.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
     game.settings.register("laundry-rpg", "threatLevel", {
         name: "Threat Level",
         hint: "Global occult threat pressure used by the GM tracker.",
@@ -379,22 +423,50 @@ function registerSystemSettings() {
 }
 
 async function initializeTeamLuckDefaults() {
-    const current = Number(game.settings.get("laundry-rpg", "teamLuck")) || 0;
-    let max = Number(game.settings.get("laundry-rpg", "teamLuckMax")) || 0;
+    await syncTeamLuckMaxWithPlayers({ force: true });
+}
 
-    if (max <= 0) {
-        const inferred = Math.max(
-            1,
-            game.actors.filter(a => a.type === "character" && a.hasPlayerOwner).length
-        );
-        max = inferred;
-        await game.settings.set("laundry-rpg", "teamLuckMax", max);
+function _countPlayerCharacters() {
+    return Math.max(0, game.actors.filter(actor => actor.type === "character" && actor.hasPlayerOwner).length);
+}
+
+async function syncTeamLuckMaxWithPlayers({ force = false } = {}) {
+    if (!game.user?.isGM) return null;
+    const autoSync = Boolean(game.settings.get("laundry-rpg", TEAM_LUCK_AUTO_SYNC_SETTING));
+    if (!force && !autoSync) return null;
+
+    const nextMax = _countPlayerCharacters();
+    const currentMax = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuckMax")) || 0));
+    const currentLuck = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuck")) || 0));
+    const clampedLuck = Math.max(0, Math.min(nextMax, currentLuck));
+
+    if (currentMax !== nextMax) {
+        await game.settings.set("laundry-rpg", "teamLuckMax", nextMax);
+    }
+    if (clampedLuck !== currentLuck) {
+        await game.settings.set("laundry-rpg", "teamLuck", clampedLuck);
     }
 
-    const clampedCurrent = Math.max(0, Math.min(max, current));
-    if (clampedCurrent !== current) {
-        await game.settings.set("laundry-rpg", "teamLuck", clampedCurrent);
-    }
+    return {
+        max: nextMax,
+        luck: clampedLuck,
+        changedMax: currentMax !== nextMax,
+        changedLuck: clampedLuck !== currentLuck
+    };
+}
+
+async function resetTeamLuck({ toMax = true } = {}) {
+    if (!game.user?.isGM) return null;
+    const max = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuckMax")) || 0));
+    const next = toMax ? max : 0;
+    await game.settings.set("laundry-rpg", "teamLuck", next);
+    return { luck: next, max };
+}
+
+async function _syncTeamLuckForActorLifecycle(actor) {
+    if (!game.user?.isGM) return;
+    if (!actor || actor.type !== "character") return;
+    await syncTeamLuckMaxWithPlayers();
 }
 
 async function getAutomationTable(tableType) {
@@ -477,113 +549,264 @@ function _getAutomationSettingKey(tableType) {
     return null;
 }
 
+const PDF_PHYSICAL_INJURY_ROWS = [
+    {
+        roll: "1-2",
+        injury: "Arm Wound",
+        effect: "You drop an object you're carrying. Until this injury is healed, you increase the Difficulty of all Body (Dexterity) Tests you make by 1.",
+        statusId: "",
+        durationRounds: 0
+    },
+    {
+        roll: "3-4",
+        injury: "Leg Wound",
+        effect: "You are knocked Prone. Until this injury is healed, you increase the Difficulty of all Body (Athletics) Tests you make by 1.",
+        statusId: "prone",
+        durationRounds: 0
+    },
+    {
+        roll: "5-8",
+        injury: "Head Wound",
+        effect: "You are Stunned until the end of your next turn. Until this injury is healed, you increase the Difficulty of all Body (Reflexes) Tests you make by 1.",
+        statusId: "stunned",
+        durationRounds: 1
+    },
+    {
+        roll: "9-10",
+        injury: "Internal Injury",
+        effect: "You are Incapacitated until the end of your next turn. Until this injury is healed, you increase the Difficulty of all Body (Fortitude and Might) Tests you make by 1.",
+        statusId: "incapacitated",
+        durationRounds: 1
+    },
+    {
+        roll: "11-12",
+        injury: "Broken Arm",
+        effect: "You drop an object that you're carrying. Until this injury is healed, you reduce your Melee and Accuracy by one step. Additionally, you increase the Difficulty of all Tests which would require the use of two arms by 1.",
+        statusId: "",
+        durationRounds: 0
+    },
+    {
+        roll: "13-14",
+        injury: "Broken Leg",
+        effect: "You are knocked Prone. Until this injury is healed, reduce your Speed by 1 step, and increase the Difficulty of all Body (Athletics and Stealth) Tests you make by 1.",
+        statusId: "prone",
+        durationRounds: 0
+    },
+    {
+        roll: "15-17",
+        injury: "Brain Injury",
+        effect: "You fall Unconscious until the end of your next turn. Until this injury is healed, you always go last in the turn order, and you increase the Difficulty of all Body Tests you make by 1.",
+        statusId: "unconscious",
+        durationRounds: 1
+    },
+    {
+        roll: "18+",
+        injury: "Instant Death",
+        effect: "You instantly die a gruesome death!",
+        statusId: "incapacitated",
+        durationRounds: 0
+    }
+];
+
+const PDF_PSYCHOLOGICAL_INJURY_ROWS = [
+    {
+        roll: "1-2",
+        injury: "Shocked",
+        effect: "You let out a loud shout, yelp, or scream. Until this Injury is healed, increase the Difficulty of all Mind (Intuition) Tests you make by 1.",
+        statusId: "",
+        durationRounds: 0
+    },
+    {
+        roll: "3-4",
+        injury: "Phobia",
+        effect: "Until this Injury is healed, you are Frightened of the cause of this Injury.",
+        statusId: "frightened",
+        durationRounds: 0
+    },
+    {
+        roll: "5-8",
+        injury: "Confused",
+        effect: "You are Stunned until the end of your next turn. Until this Injury is healed, increase the Difficulty of all Mind (Awareness) Tests you make by 1.",
+        statusId: "stunned",
+        durationRounds: 1
+    },
+    {
+        roll: "9-10",
+        injury: "Existential Dread",
+        effect: "You are Incapacitated until the end of your next turn. Until this Injury is healed, you increase the Difficulty of all Spirit (Resolve) Tests you make by 1.",
+        statusId: "incapacitated",
+        durationRounds: 1
+    },
+    {
+        roll: "11-12",
+        injury: "Reality Denial",
+        effect: "You are Blinded and Deafened until the end of your next turn. Until this Injury is healed, you increase the Difficulty of all Spirit (Zeal) and Mind (Magic) Tests by 1.",
+        statusId: "blinded",
+        durationRounds: 1
+    },
+    {
+        roll: "13-14",
+        injury: "Traumatised",
+        effect: "Until this Injury is healed, you are Terrified of the cause of this Injury.",
+        statusId: "terrified",
+        durationRounds: 0
+    },
+    {
+        roll: "15-17",
+        injury: "Hallucinations",
+        effect: "You fall Unconscious until the end of your next turn. Until this Injury is healed, you cannot make Extended Tests, and you increase the Difficulty of all Mind and Spirit Tests you make by 1.",
+        statusId: "unconscious",
+        durationRounds: 1
+    },
+    {
+        roll: "18+",
+        injury: "Broken Mind",
+        effect: "Your mind completely crumbles and you are plunged into an unwaking coma.",
+        statusId: "unconscious",
+        durationRounds: 0
+    }
+];
+
+const PDF_MISHAP_ROWS = [
+    {
+        roll: "2-3",
+        effect: "Incursion",
+        description: "The caster opens a Level 4 Dimensional Gateway, with one portal in their Zone, and the other in an unknown dimension. An exonome of the spell's Level enters the Zone, per Summons (below). Unless the gateway is sealed, more exonomes may appear over the coming Rounds, hours, and days."
+    },
+    {
+        roll: "4",
+        effect: "Outbreak",
+        description: "Extra-dimensional energies escape from the spellcaster's control. All Zones within Medium Range of their current location are transformed into a Hazard which inflicts Psychological Damage equal to the spell's Level."
+    },
+    {
+        roll: "5",
+        effect: "Summons",
+        description: "The caster accidentally summons an exonome of the spell's Level into their Zone. If the exonome has no physical form, it immediately attempts Possession of a target in its Zone, ignoring the spell's usual 1 hour Casting Time. If it already has physical form, it reacts violently, and attempts to escape."
+    },
+    {
+        roll: "6",
+        effect: "Ground Zero",
+        description: "Bizarre forces spin around the spellcaster, barely within their power to contain. Their current Zone is transformed into a Hazard which inflicts Psychological Damage equal to the spell's Level."
+    },
+    {
+        roll: "7",
+        effect: "Psychological Injury",
+        description: "The caster suffers a Psychological Injury. Level 1 spells inflict Minor Injuries, Level 2-3 spells inflict Serious Injuries, and Level 4+ spells inflict Deadly Injuries."
+    },
+    {
+        roll: "8",
+        effect: "Warping",
+        description: "The GM adjusts the Environmental Traits of the spellcaster's Zone to reflect the misfiring extra-dimensional static coursing through the space. Scale the results to the Level of the spell - a Level 1 Warping might only cover the Zone in Lightly Obscuring green fog, whilst Level 4 Warping could flatten Cover, impose Difficult Terrain, and plunge it into Darkness."
+    },
+    {
+        roll: "9",
+        effect: "Miscast",
+        description: "After resolving the spell's effects (if any), the caster immediately triggers a second spell, successfully cast at the original spell's Level. If the original spell targeted the caster, they blast their spirit out of their body using Astral Projection. If the original spell targeted another creature, the caster and the target are bound in a Destiny Entanglement Geas. If the original spell targeted a Zone or inanimate creature, the GM chooses an appropriate effect due to Energy Transference."
+    },
+    {
+        roll: "10",
+        effect: "Dread",
+        description: "The caster seems to have gotten away scott free, but a gnawing sensation at the back of their mind warns them that the looming spectre of CASE NIGHTMARE GREEN is creeping ever-closer. Increase Threat by +1."
+    },
+    {
+        roll: "11-12",
+        effect: "Dark Future",
+        description: "In the interdimensional ether the caster is haunted by dreadful visions of a post-cataclysmic world, along with useful details of a potential future. The caster triggers a successful Prognostication at the spell's Level if they are a Laundry operative. NPCs trigger the Dread effect instead."
+    }
+];
+
+function _parseRollRangeSpec(raw) {
+    const text = String(raw ?? "").trim();
+    const rangeMatch = text.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+        const min = Math.max(0, Math.trunc(Number(rangeMatch[1]) || 0));
+        const max = Math.max(min, Math.trunc(Number(rangeMatch[2]) || min));
+        return [min, max];
+    }
+    const plusMatch = text.match(/^(\d+)\s*\+$/);
+    if (plusMatch) {
+        const min = Math.max(0, Math.trunc(Number(plusMatch[1]) || 0));
+        return [min, 999];
+    }
+    const exact = Math.max(0, Math.trunc(Number(text) || 0));
+    return [exact, exact];
+}
+
+function _buildRollTableResult({
+    text = "",
+    roll = "1",
+    flags = {}
+} = {}) {
+    return {
+        type: CONST.TABLE_RESULT_TYPES.TEXT,
+        text,
+        weight: 1,
+        range: _parseRollRangeSpec(roll),
+        drawn: false,
+        flags: {
+            "laundry-rpg": flags
+        }
+    };
+}
+
 function _buildDefaultInjuryTableData() {
+    const physicalResults = PDF_PHYSICAL_INJURY_ROWS.map(row => _buildRollTableResult({
+        text: `${row.injury}: ${row.effect}`,
+        roll: row.roll,
+        flags: {
+            injuryType: "physical",
+            conditionData: {
+                injuryType: "physical",
+                effectName: row.injury,
+                statusId: row.statusId,
+                durationRounds: row.durationRounds
+            }
+        }
+    }));
+    const psychologicalResults = PDF_PSYCHOLOGICAL_INJURY_ROWS.map(row => _buildRollTableResult({
+        text: `${row.injury}: ${row.effect}`,
+        roll: row.roll,
+        flags: {
+            injuryType: "psychological",
+            conditionData: {
+                injuryType: "psychological",
+                effectName: row.injury,
+                statusId: row.statusId,
+                durationRounds: row.durationRounds
+            }
+        }
+    }));
+
     return {
         name: "Laundry Injury Table",
-        description: "Default injury outcomes used by automation (editable by GM).",
-        formula: "1d20",
+        description: "Default physical and psychological injury outcomes from Operative's Handbook (editable by GM).",
+        formula: "2d6",
         replacement: true,
         displayRoll: true,
-        results: [
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Stunned.",
-                weight: 1,
-                range: [1, 3],
-                drawn: false,
-                flags: {
-                    "laundry-rpg": {
-                        statusId: "stunned",
-                        durationRounds: 1
-                    }
-                }
-            },
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Bleeding. Mark ongoing harm and pressure the target.",
-                weight: 1,
-                range: [4, 5],
-                drawn: false,
-                flags: {
-                    "laundry-rpg": {
-                        statusId: "weakened",
-                        durationRounds: 1
-                    }
-                }
-            },
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Incapacitated / Lethal trauma.",
-                weight: 1,
-                range: [6, 8],
-                drawn: false,
-                flags: {
-                    "laundry-rpg": {
-                        statusId: "stunned",
-                        durationRounds: 1
-                    }
-                }
-            },
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Catastrophic Injury: immediate removal or death at GM discretion.",
-                weight: 1,
-                range: [9, 20],
-                drawn: false
-            }
-        ]
+        results: physicalResults.concat(psychologicalResults)
     };
 }
 
 function _buildDefaultMishapTableData() {
+    const results = PDF_MISHAP_ROWS.map(row => _buildRollTableResult({
+        text: `${row.effect}: ${row.description}`,
+        roll: row.roll,
+        flags: {
+            conditionData: {
+                effectName: row.effect,
+                statusId: "",
+                durationRounds: 0
+            }
+        }
+    }));
+
     return {
         name: "Laundry Magic Mishap Table",
-        description: "Default computational mishap outcomes used by automation (editable by GM).",
-        formula: "1d6",
+        description: "Default magical mishap outcomes from Operative's Handbook (editable by GM).",
+        formula: "2d6",
         replacement: true,
         displayRoll: true,
-        results: [
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Arcane Feedback: caster is Stunned.",
-                weight: 1,
-                range: [1, 2],
-                drawn: false,
-                flags: {
-                    "laundry-rpg": {
-                        statusId: "stunned",
-                        durationRounds: 1
-                    }
-                }
-            },
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Signal Bleed: nearby electronics glitch, occult signatures spike.",
-                weight: 1,
-                range: [3, 4],
-                drawn: false
-            },
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Aetheric Backlash: caster suffers harmful recoil and is Weakened.",
-                weight: 1,
-                range: [5, 5],
-                drawn: false,
-                flags: {
-                    "laundry-rpg": {
-                        statusId: "weakened",
-                        durationRounds: 1
-                    }
-                }
-            },
-            {
-                type: CONST.TABLE_RESULT_TYPES.TEXT,
-                text: "Catastrophic Breach: severe anomaly manifests.",
-                weight: 1,
-                range: [6, 6],
-                drawn: false
-            }
-        ]
+        results
     };
 }
 
@@ -659,13 +882,15 @@ function _normalizeTurnEconomyState(combat, state = null) {
         : {
             turnKey,
             actionsRemaining: actionFallback,
-            moveRemaining: combat?.started ? 1 : 0
+            moveRemaining: combat?.started ? 1 : 0,
+            fearCloserBlocked: false
         };
 
     return {
         turnKey,
         actionsRemaining: Math.max(0, Math.trunc(Number(normalized?.actionsRemaining) || 0)),
-        moveRemaining: Math.max(0, Math.trunc(Number(normalized?.moveRemaining) || 0))
+        moveRemaining: Math.max(0, Math.trunc(Number(normalized?.moveRemaining) || 0)),
+        fearCloserBlocked: Boolean(normalized?.fearCloserBlocked)
     };
 }
 
@@ -675,10 +900,10 @@ function _collectActorStatuses(actor) {
     for (const effect of actor.effects ?? []) {
         const effectStatuses = _extractEffectStatuses(effect);
         for (const statusId of effectStatuses) {
-            if (statusId) statuses.add(String(statusId));
+            if (statusId) statuses.add(String(statusId).trim().toLowerCase());
         }
         const legacyStatus = effect.getFlag?.("core", "statusId");
-        if (legacyStatus) statuses.add(String(legacyStatus));
+        if (legacyStatus) statuses.add(String(legacyStatus).trim().toLowerCase());
     }
     return statuses;
 }
@@ -695,6 +920,79 @@ function _extractEffectStatuses(effect) {
     if (statuses.length) return statuses.map(value => String(value));
     const legacy = effect?.getFlag?.("core", "statusId");
     return legacy ? [String(legacy)] : [];
+}
+
+function _normalizeIdString(value) {
+    const text = String(value ?? "").trim();
+    return text || "";
+}
+
+function _resolveDefaultFearSourceFromTargets(actor) {
+    const actorId = _normalizeIdString(actor?.id);
+    for (const target of Array.from(game.user?.targets ?? [])) {
+        const targetActor = target?.actor ?? target?.document?.actor ?? null;
+        const targetActorId = _normalizeIdString(targetActor?.id);
+        if (!targetActorId || targetActorId === actorId) continue;
+        return {
+            fearSourceActorId: targetActorId,
+            fearSourceTokenId: _normalizeIdString(target?.id ?? target?.document?.id),
+            fearSourceName: _normalizeIdString(target?.name ?? targetActor?.name)
+        };
+    }
+    return {
+        fearSourceActorId: "",
+        fearSourceTokenId: "",
+        fearSourceName: ""
+    };
+}
+
+function _resolveFearConditionData({
+    actor,
+    statusKey,
+    fearSourceActorId = "",
+    fearSourceTokenId = "",
+    fearSourceName = "",
+    existingData = null
+} = {}) {
+    if (statusKey !== "frightened" && statusKey !== "terrified") return {};
+
+    const previous = existingData && typeof existingData === "object" ? existingData : {};
+    let actorId = _normalizeIdString(fearSourceActorId) || _normalizeIdString(previous.fearSourceActorId);
+    let tokenId = _normalizeIdString(fearSourceTokenId) || _normalizeIdString(previous.fearSourceTokenId);
+    let sourceName = _normalizeIdString(fearSourceName) || _normalizeIdString(previous.fearSourceName);
+
+    if (!actorId && !tokenId) {
+        const fallback = _resolveDefaultFearSourceFromTargets(actor);
+        actorId = fallback.fearSourceActorId;
+        tokenId = fallback.fearSourceTokenId;
+        sourceName = sourceName || fallback.fearSourceName;
+    }
+
+    if (!actorId && tokenId && canvas?.scene) {
+        const sourceToken = canvas.tokens?.get(tokenId)
+            ?? canvas.tokens?.placeables?.find(token => token?.id === tokenId)
+            ?? null;
+        actorId = _normalizeIdString(sourceToken?.actor?.id);
+        sourceName = sourceName || _normalizeIdString(sourceToken?.name ?? sourceToken?.actor?.name);
+    }
+
+    if (!tokenId && actorId && canvas?.scene) {
+        const sourceToken = canvas.tokens?.placeables?.find(token =>
+            token?.actor?.id === actorId && token.document?.hidden !== true
+        ) ?? null;
+        tokenId = _normalizeIdString(sourceToken?.id);
+        sourceName = sourceName || _normalizeIdString(sourceToken?.name ?? sourceToken?.actor?.name);
+    }
+
+    if (!sourceName && actorId) {
+        sourceName = _normalizeIdString(game.actors?.get(actorId)?.name);
+    }
+
+    const out = {};
+    if (actorId) out.fearSourceActorId = actorId;
+    if (tokenId) out.fearSourceTokenId = tokenId;
+    if (sourceName) out.fearSourceName = sourceName;
+    return out;
 }
 
 async function _removeActorStatus(actor, statusId) {
@@ -731,7 +1029,10 @@ export async function applyCondition(actor, statusId, {
     durationRounds = null,
     source = "automation",
     suppressChat = false,
-    refreshDurationIfPresent = true
+    refreshDurationIfPresent = true,
+    fearSourceActorId = "",
+    fearSourceTokenId = "",
+    fearSourceName = ""
 } = {}) {
     const statusKey = String(statusId ?? "").trim().toLowerCase();
     if (!actor || !statusKey) return false;
@@ -743,22 +1044,34 @@ export async function applyCondition(actor, statusId, {
     const resolvedDuration = Number.isFinite(Number(durationRounds))
         ? Math.max(0, Math.trunc(Number(durationRounds)))
         : Math.max(0, Math.trunc(Number(condition.defaultDurationRounds ?? 0) || 0));
+    const existingConditionData = existing?.getFlag?.("laundry-rpg", "conditionData") ?? null;
+    const fearConditionData = _resolveFearConditionData({
+        actor,
+        statusKey,
+        fearSourceActorId,
+        fearSourceTokenId,
+        fearSourceName,
+        existingData: existingConditionData
+    });
+    const conditionData = {
+        statusId: statusKey,
+        durationRounds: resolvedDuration,
+        source,
+        ...fearConditionData
+    };
 
     if (existing) {
+        const updateData = {
+            [`flags.laundry-rpg.conditionData`]: conditionData
+        };
         if (refreshDurationIfPresent && resolvedDuration > 0 && combat?.started) {
-            await existing.update({
-                duration: {
-                    rounds: resolvedDuration,
-                    startRound: Math.max(0, Math.trunc(Number(combat.round ?? 0) || 0)),
-                    startTurn: Math.max(0, Math.trunc(Number(combat.turn ?? 0) || 0))
-                },
-                [`flags.laundry-rpg.conditionData`]: {
-                    statusId: statusKey,
-                    durationRounds: resolvedDuration,
-                    source
-                }
-            });
+            updateData.duration = {
+                rounds: resolvedDuration,
+                startRound: Math.max(0, Math.trunc(Number(combat.round ?? 0) || 0)),
+                startTurn: Math.max(0, Math.trunc(Number(combat.turn ?? 0) || 0))
+            };
         }
+        await existing.update(updateData);
         return true;
     }
 
@@ -773,11 +1086,7 @@ export async function applyCondition(actor, statusId, {
                 statusId: statusKey
             },
             "laundry-rpg": {
-                conditionData: {
-                    statusId: statusKey,
-                    durationRounds: resolvedDuration,
-                    source
-                }
+                conditionData
             }
         }
     };
@@ -791,6 +1100,15 @@ export async function applyCondition(actor, statusId, {
     }
 
     await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
+
+    if (statusKey === "frightened" || statusKey === "terrified") {
+        const adrenalineValue = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value) || 0));
+        const adrenalineMax = Math.max(adrenalineValue, Math.trunc(Number(actor.system?.derived?.adrenaline?.max ?? adrenalineValue) || adrenalineValue));
+        const nextAdrenaline = Math.max(0, Math.min(adrenalineMax, adrenalineValue + 1));
+        if (nextAdrenaline !== adrenalineValue) {
+            await actor.update({ "system.derived.adrenaline.value": nextAdrenaline });
+        }
+    }
 
     if (!suppressChat) {
         const safeName = foundry.utils.escapeHTML(actor.name ?? "Agent");
@@ -855,6 +1173,7 @@ export function getCombatTurnEconomy(actor) {
         isActorTurn: combat.combatant?.id === combatant.id,
         actionsRemaining: state.actionsRemaining,
         moveRemaining: state.moveRemaining,
+        fearCloserBlocked: state.fearCloserBlocked,
         turnKey: state.turnKey
     };
 }
@@ -864,6 +1183,11 @@ export async function consumeCombatAction(actor, { amount = 1, warn = true } = {
     const combatant = _getActorCombatant(actor, combat);
     if (!combat || !combatant) return true;
     if (combat.combatant?.id !== combatant.id) return true;
+    const statuses = _collectActorStatuses(actor);
+    if (statuses.has("incapacitated") || statuses.has("unconscious")) {
+        if (warn) ui.notifications.warn("Incapacitated actors cannot take Actions.");
+        return false;
+    }
 
     const spend = Math.max(1, Math.trunc(Number(amount) || 1));
     const state = _normalizeTurnEconomyState(
@@ -886,6 +1210,15 @@ export async function consumeCombatMove(actor, { amount = 1, warn = true } = {})
     const combatant = _getActorCombatant(actor, combat);
     if (!combat || !combatant) return true;
     if (combat.combatant?.id !== combatant.id) return true;
+    const statuses = _collectActorStatuses(actor);
+    if (statuses.has("incapacitated") || statuses.has("unconscious")) {
+        if (warn) ui.notifications.warn("Incapacitated actors cannot Move.");
+        return false;
+    }
+    if (statuses.has("restrained")) {
+        if (warn) ui.notifications.warn("Restrained actors cannot Move.");
+        return false;
+    }
 
     const spend = Math.max(1, Math.trunc(Number(amount) || 1));
     const state = _normalizeTurnEconomyState(
@@ -898,9 +1231,227 @@ export async function consumeCombatMove(actor, { amount = 1, warn = true } = {})
         return false;
     }
 
+    const fearConstraint = _getFearMoveConstraint(actor);
+    if (fearConstraint?.hasLineOfSight) {
+        const moveIntent = await _promptFearMovementIntent({
+            actor,
+            fearConstraint
+        });
+        if (moveIntent === "cancel") return false;
+        if (moveIntent === "closer") {
+            if (state.fearCloserBlocked) {
+                if (warn) {
+                    ui.notifications.warn(game.i18n.format("LAUNDRY.FearMoveBlockedTurn", {
+                        source: fearConstraint.sourceName
+                    }));
+                }
+                return false;
+            }
+            const check = await _rollFearResolveCheck({
+                actor,
+                fearConstraint
+            });
+            if (!check.passed) {
+                state.fearCloserBlocked = true;
+                await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, state);
+                if (warn) {
+                    ui.notifications.warn(game.i18n.format("LAUNDRY.FearMoveDenied", {
+                        name: actor.name,
+                        source: fearConstraint.sourceName
+                    }));
+                }
+                return false;
+            }
+        }
+    }
+
     state.moveRemaining -= spend;
     await combatant.setFlag("laundry-rpg", TURN_ECONOMY_FLAG, state);
     return true;
+}
+
+function _getActorTokenInCurrentScene(actor) {
+    if (!actor || !canvas?.scene) return null;
+    return canvas.tokens?.placeables?.find(token =>
+        token?.actor?.id === actor.id && token.document?.hidden !== true
+    ) ?? null;
+}
+
+function _getFearSourceToken({ fearSourceTokenId = "", fearSourceActorId = "" } = {}) {
+    const tokenId = _normalizeIdString(fearSourceTokenId);
+    if (tokenId && canvas?.scene) {
+        const byId = canvas.tokens?.get(tokenId)
+            ?? canvas.tokens?.placeables?.find(token => token?.id === tokenId)
+            ?? null;
+        if (byId) return byId;
+    }
+
+    const actorId = _normalizeIdString(fearSourceActorId);
+    if (!actorId || !canvas?.scene) return null;
+    return canvas.tokens?.placeables?.find(token =>
+        token?.actor?.id === actorId && token.document?.hidden !== true
+    ) ?? null;
+}
+
+function _tokensHaveLineOfSight(observerToken, targetToken) {
+    if (!observerToken?.center || !targetToken?.center) return false;
+
+    if (typeof observerToken.hasLineOfSight === "function") {
+        try {
+            return Boolean(observerToken.hasLineOfSight(targetToken));
+        } catch (_err) {
+            // Fall through to visibility check fallback.
+        }
+    }
+
+    if (canvas?.visibility?.testVisibility) {
+        try {
+            const visible = canvas.visibility.testVisibility(targetToken.center, {
+                object: observerToken
+            });
+            if (typeof visible === "boolean") return visible;
+        } catch (_err) {
+            // Fall through to permissive fallback.
+        }
+    }
+
+    return true;
+}
+
+function _getFearMoveConstraint(actor) {
+    if (!actor) return null;
+    const statuses = _collectActorStatuses(actor);
+    const statusId = statuses.has("terrified")
+        ? "terrified"
+        : (statuses.has("frightened") ? "frightened" : "");
+    if (!statusId) return null;
+
+    const conditionEffect = Array.from(actor.effects ?? []).find(effect => {
+        const effectStatuses = _extractEffectStatuses(effect)
+            .map(value => String(value ?? "").trim().toLowerCase());
+        return effectStatuses.includes(statusId);
+    }) ?? null;
+    const conditionData = conditionEffect?.getFlag?.("laundry-rpg", "conditionData") ?? {};
+    const fearSourceActorId = _normalizeIdString(conditionData?.fearSourceActorId);
+    const fearSourceTokenId = _normalizeIdString(conditionData?.fearSourceTokenId);
+    const sourceToken = _getFearSourceToken({ fearSourceTokenId, fearSourceActorId });
+    const sourceName = _normalizeIdString(
+        conditionData?.fearSourceName
+        || sourceToken?.name
+        || sourceToken?.actor?.name
+        || game.actors?.get(fearSourceActorId)?.name
+        || game.i18n.localize("LAUNDRY.FearSourceUnknown")
+    );
+    const actorToken = _getActorTokenInCurrentScene(actor);
+    const hasLineOfSight = Boolean(actorToken && sourceToken && _tokensHaveLineOfSight(actorToken, sourceToken));
+
+    return {
+        statusId,
+        sourceName,
+        fearSourceActorId,
+        fearSourceTokenId,
+        hasLineOfSight,
+        dn: statusId === "terrified" ? 6 : 5
+    };
+}
+
+async function _promptFearMovementIntent({ actor, fearConstraint } = {}) {
+    const sourceName = foundry.utils.escapeHTML(
+        fearConstraint?.sourceName
+        ?? game.i18n.localize("LAUNDRY.FearSourceUnknown")
+    );
+    const dn = Math.max(2, Math.min(6, Math.trunc(Number(fearConstraint?.dn ?? 5) || 5)));
+    const actorName = foundry.utils.escapeHTML(actor?.name ?? game.i18n.localize("LAUNDRY.ActorFallback"));
+    const line1 = game.i18n.format("LAUNDRY.FearMoveDialogLine1", { name: actorName });
+    const line2 = game.i18n.format("LAUNDRY.FearMoveDialogLine2", { source: sourceName, dn });
+    return new Promise(resolve => {
+        let settled = false;
+        const finish = (value) => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+
+        new Dialog({
+            title: game.i18n.localize("LAUNDRY.FearMoveDialogTitle"),
+            content: `<p>${line1}</p><p>${line2}</p>`,
+            classes: ["laundry-rpg", "laundry-dialog"],
+            buttons: {
+                closer: {
+                    label: game.i18n.localize("LAUNDRY.FearMoveCloser"),
+                    callback: () => finish("closer")
+                },
+                notCloser: {
+                    label: game.i18n.localize("LAUNDRY.FearMoveElsewhere"),
+                    callback: () => finish("not-closer")
+                },
+                cancel: {
+                    label: game.i18n.localize("Cancel"),
+                    callback: () => finish("cancel")
+                }
+            },
+            default: "notCloser",
+            close: () => finish("cancel")
+        }).render(true);
+    });
+}
+
+function _didDiceStateSucceed(state) {
+    if (!state || typeof state !== "object") return false;
+    const dn = Math.max(2, Math.min(6, Math.trunc(Number(state.effectiveDn ?? state.dn ?? 4) || 4)));
+    const complexity = Math.max(1, Math.trunc(Number(state.complexity ?? 1) || 1));
+    const dice = Array.isArray(state.rawDice) ? state.rawDice : [];
+    const allocations = Array.isArray(state.focusAllocations) ? state.focusAllocations : [];
+    const successes = dice.reduce((sum, raw, index) => {
+        const value = Math.max(1, Math.min(6, Math.trunc(Number(raw) || 1)));
+        const bonus = Math.max(0, Math.trunc(Number(allocations[index] ?? 0) || 0));
+        const adjusted = Math.max(1, Math.min(6, value + bonus));
+        return sum + (adjusted >= dn ? 1 : 0);
+    }, 0);
+    return successes >= complexity;
+}
+
+async function _rollFearResolveCheck({ actor, fearConstraint } = {}) {
+    if (!actor) return { passed: false };
+
+    const resolveSkill = actor.items.find(item =>
+        item.type === "skill" && String(item.name ?? "").trim().toLowerCase() === "resolve"
+    ) ?? null;
+    const attributeKey = String(resolveSkill?.system?.attribute ?? "spirit").trim().toLowerCase() || "spirit";
+    const attributeValue = Math.max(0, Math.trunc(Number(actor.system?.attributes?.[attributeKey]?.value) || 0));
+    const trainingValue = Math.max(0, Math.trunc(Number(resolveSkill?.system?.training) || 0));
+    const pool = Math.max(0, attributeValue + trainingValue);
+    if (pool <= 0) {
+        return { passed: false };
+    }
+
+    const dn = Math.max(2, Math.min(6, Math.trunc(Number(fearConstraint?.dn ?? 5) || 5)));
+    const sourceName = String(
+        fearConstraint?.sourceName
+        ?? game.i18n.localize("LAUNDRY.FearSourceUnknown")
+    ).trim();
+    const message = await rollDice({
+        pool,
+        dn,
+        complexity: 1,
+        flavor: game.i18n.format("LAUNDRY.FearCheckFlavor", { source: sourceName }),
+        actorId: actor.id,
+        focusItemId: resolveSkill?.id ?? null,
+        allowPostRollFocus: false,
+        prompt: false,
+        rollContext: {
+            sourceType: "skill",
+            sourceName: "Resolve",
+            skillName: "Resolve",
+            attribute: attributeKey,
+            isMagic: false,
+            isSpell: false
+        }
+    });
+    const state = message?.getFlag?.("laundry-rpg", "diceState") ?? null;
+    return {
+        passed: _didDiceStateSucceed(state)
+    };
 }
 
 export async function spendAdrenalineForExtraAction(actor) {
@@ -912,6 +1463,11 @@ export async function spendAdrenalineForExtraAction(actor) {
     }
     if (combat.combatant?.id !== combatant.id) {
         ui.notifications.warn("You can only gain an extra Action during your turn.");
+        return false;
+    }
+    const statuses = _collectActorStatuses(actor);
+    if (statuses.has("stunned") || statuses.has("incapacitated") || statuses.has("unconscious")) {
+        ui.notifications.warn("Current condition prevents spending Adrenaline for extra Actions.");
         return false;
     }
 
@@ -948,6 +1504,14 @@ async function initializeTurnEconomyForActiveCombatant(combat) {
     const activeStatuses = _collectActorStatuses(actor);
     if (activeStatuses.has("bleeding")) {
         await _applyBleedingTick(actor);
+    }
+    if (activeStatuses.has("terrified")) {
+        const currentAdr = Math.max(0, Math.trunc(Number(actor.system?.derived?.adrenaline?.value) || 0));
+        const maxAdr = Math.max(currentAdr, Math.trunc(Number(actor.system?.derived?.adrenaline?.max ?? currentAdr) || currentAdr));
+        const nextAdr = Math.max(0, Math.min(maxAdr, currentAdr + 1));
+        if (nextAdr !== currentAdr) {
+            await actor.update({ "system.derived.adrenaline.value": nextAdr });
+        }
     }
 
     for (const statusId of activeStatuses) {

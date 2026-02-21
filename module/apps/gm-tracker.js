@@ -22,6 +22,9 @@ export class LaundryGMTracker extends Application {
     getData(options = {}) {
         const data = super.getData(options);
         const threatLevel = Number(game.settings.get("laundry-rpg", "threatLevel")) || 0;
+        const teamLuck = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuck")) || 0));
+        const teamLuckMax = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuckMax")) || 0));
+        const teamLuckAutoSync = Boolean(game.settings.get("laundry-rpg", "teamLuckAutoSync"));
         const target = _getPrimaryTargetToken();
         const actor = target?.actor ?? null;
         const combat = game.combat ?? null;
@@ -116,7 +119,10 @@ export class LaundryGMTracker extends Application {
             hasCombat: Boolean(combat && combat.started && combatantsWithHints.length),
             combatants: combatantsWithHints,
             combatSummary,
-            npcPresetGroups
+            npcPresetGroups,
+            teamLuck,
+            teamLuckMax,
+            teamLuckAutoSync
         };
     }
 
@@ -137,6 +143,8 @@ export class LaundryGMTracker extends Application {
         html.find("form").on("submit", (ev) => this._onSubmit(ev));
         html.find(".set-threat").on("click", (ev) => this._onSubmit(ev));
         html.find(".award-luck").on("click", (ev) => this._onAwardLuck(ev));
+        html.find(".sync-team-luck").on("click", (ev) => this._onSyncTeamLuck(ev));
+        html.find(".reset-team-luck").on("click", (ev) => this._onResetTeamLuck(ev));
         html.find(".request-bau").on("click", (ev) => this._onRequestBau(ev));
         html.find(".open-mission-generator").on("click", (ev) => this._onOpenMissionGenerator(ev));
         html.find(".apply-threat-buffs").on("click", (ev) => this._onApplyThreatBuffs(ev));
@@ -188,6 +196,37 @@ export class LaundryGMTracker extends Application {
             luck: next,
             max: effectiveMax
         }));
+        this.render(false);
+    }
+
+    async _onSyncTeamLuck(ev) {
+        ev.preventDefault();
+        const result = await game.laundry?.syncTeamLuckMax?.({ force: true });
+        if (!result) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.TeamLuckSyncUnavailable"));
+            return;
+        }
+        ui.notifications.info(game.i18n.format("LAUNDRY.TeamLuckSynced", {
+            luck: Math.max(0, Math.trunc(Number(result.luck) || 0)),
+            max: Math.max(0, Math.trunc(Number(result.max) || 0))
+        }));
+        this.render(false);
+    }
+
+    async _onResetTeamLuck(ev) {
+        ev.preventDefault();
+        const mode = String(ev.currentTarget?.dataset?.mode ?? "max").trim().toLowerCase();
+        const toMax = mode !== "zero";
+        const result = await game.laundry?.resetTeamLuck?.({ toMax });
+        if (!result) {
+            ui.notifications.warn(game.i18n.localize("LAUNDRY.TeamLuckResetUnavailable"));
+            return;
+        }
+        ui.notifications.info(game.i18n.format("LAUNDRY.TeamLuckReset", {
+            luck: Math.max(0, Math.trunc(Number(result.luck) || 0)),
+            max: Math.max(0, Math.trunc(Number(result.max) || 0))
+        }));
+        this.render(false);
     }
 
     async _onRequestBau(ev) {
