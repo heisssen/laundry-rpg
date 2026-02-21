@@ -1178,11 +1178,11 @@ async function _postEndeavourCard({
 } = {}) {
     const safeTitle = foundry.utils.escapeHTML(String(title ?? "").trim() || "DOWNTIME MEMO");
     const safeSubtitle = foundry.utils.escapeHTML(String(subtitle ?? "").trim());
-    const safeLines = (Array.isArray(lines) ? lines : [])
-        .map(line => foundry.utils.escapeHTML(String(line ?? "").trim()))
+    const rawLines = (Array.isArray(lines) ? lines : [])
+        .map(line => String(line ?? "").trim())
         .filter(Boolean);
     const whisperIds = Array.isArray(whisper) ? whisper.filter(Boolean) : [];
-    const cardRows = safeLines
+    const rawRows = rawLines
         .map(line => {
             const splitIndex = line.indexOf(":");
             if (splitIndex <= 0) {
@@ -1197,6 +1197,38 @@ async function _postEndeavourCard({
             };
         })
         .filter(row => row.value);
+
+    let diceValues = [];
+    const diceRowIndex = rawRows.findIndex(row => String(row?.label ?? "").trim().toLowerCase() === "dice");
+    if (diceRowIndex >= 0) {
+        const parsedDice = _parseDiceValues(rawRows[diceRowIndex]?.value ?? "");
+        if (parsedDice.length) {
+            diceValues = parsedDice;
+            rawRows.splice(diceRowIndex, 1);
+        }
+    }
+
+    const testRow = rawRows.find(row => String(row?.label ?? "").trim().toLowerCase() === "test");
+    const testTarget = _parseDnComplexity(testRow?.value ?? "");
+    const dn = testTarget?.dn ?? 4;
+    const complexity = testTarget?.complexity ?? 1;
+    const successesRow = rawRows.find(row => String(row?.label ?? "").trim().toLowerCase() === "successes");
+    const declaredSuccesses = _parseFirstInt(successesRow?.value ?? "");
+    const rolledSuccesses = diceValues.filter(value => value >= dn).length;
+    const effectiveSuccesses = Number.isFinite(declaredSuccesses) ? declaredSuccesses : rolledSuccesses;
+    const diceSection = _renderEndeavourRollSection({
+        dice: diceValues,
+        dn,
+        complexity,
+        successes: effectiveSuccesses
+    });
+
+    const cardRows = rawRows
+        .map(row => ({
+            label: foundry.utils.escapeHTML(String(row?.label ?? "").trim() || "Detail"),
+            value: foundry.utils.escapeHTML(String(row?.value ?? "").trim())
+        }))
+        .filter(row => row.value);
     const content = `
         <div class="laundry-chat-card laundry-bureau-card laundry-endeavour-card">
             <div class="laundry-chat-header">
@@ -1206,6 +1238,7 @@ async function _postEndeavourCard({
                 </div>
                 <span class="laundry-chat-stamp">END</span>
             </div>
+            ${diceSection}
             <div class="laundry-chat-rows">
                 ${cardRows.map(row => `
                     <div class="laundry-chat-row">
@@ -1223,6 +1256,97 @@ async function _postEndeavourCard({
     if (roll) payload.rolls = [roll];
     if (roll) payload.sound = CONFIG.sounds?.dice;
     await ChatMessage.create(payload);
+}
+
+function _renderEndeavourRollSection({
+    dice = [],
+    dn = 4,
+    complexity = 1,
+    successes = 0
+} = {}) {
+    const rawDice = Array.isArray(dice) ? dice : [];
+    if (!rawDice.length) return "";
+
+    const safeDn = Math.max(2, Math.trunc(Number(dn) || 4));
+    const safeComplexity = Math.max(1, Math.trunc(Number(complexity) || 1));
+    const safeSuccesses = Math.max(0, Math.trunc(Number(successes) || 0));
+    const passed = safeSuccesses >= safeComplexity;
+    const criticals = rawDice.filter(value => Math.trunc(Number(value) || 0) === 6).length;
+    const complications = rawDice.filter(value => Math.trunc(Number(value) || 0) === 1).length;
+    const safeCriticalLabel = _escapeHtml(game.i18n?.localize?.("LAUNDRY.Criticals") ?? "Criticals");
+    const safeComplicationLabel = _escapeHtml(game.i18n?.localize?.("LAUNDRY.Complications") ?? "Complications");
+    const safeNaturalSix = _escapeHtml(game.i18n?.localize?.("LAUNDRY.NaturalSix") ?? "Natural Six");
+    const safeNaturalOne = _escapeHtml(game.i18n?.localize?.("LAUNDRY.NaturalOne") ?? "Natural One");
+
+    const diceHtml = rawDice.map((value, index) => {
+        const dieValue = Math.max(1, Math.min(6, Math.trunc(Number(value) || 0)));
+        const isCritical = dieValue === 6;
+        const isComplication = dieValue === 1;
+        const classes = [
+            "roll",
+            "die",
+            "d6",
+            "laundry-die",
+            dieValue >= safeDn ? "success" : "failure",
+            isCritical ? "die-critical" : "",
+            isComplication ? "die-complication" : ""
+        ].filter(Boolean).join(" ");
+        const marker = isCritical
+            ? `<span class="die-marker marker-critical" title="${safeNaturalSix}">*</span>`
+            : (isComplication
+                ? `<span class="die-marker marker-complication" title="${safeNaturalOne}">!</span>`
+                : "");
+        return `<li class="${classes}" data-die-index="${index}">${dieValue}${marker}</li>`;
+    }).join("");
+
+    const outcomeLabel = passed ? "Downtime Check Passed" : "Downtime Check Failed";
+    const outcomeClass = passed ? "outcome-success" : "outcome-failure";
+    return `
+        <div class="laundry-dice-roll laundry-endeavour-roll">
+            <ol class="dice-rolls">${diceHtml}</ol>
+            <div class="dice-roll-summary">
+                <span class="crit-summary">${safeCriticalLabel}: ${criticals}</span>
+                <span class="comp-summary">${safeComplicationLabel}: ${complications}</span>
+            </div>
+            <div class="dice-outcome ${outcomeClass}">
+                <strong>${outcomeLabel}</strong>
+                <span class="success-count">(Successes: ${safeSuccesses}/${safeComplexity})</span>
+            </div>
+        </div>`;
+}
+
+function _parseDiceValues(value = "") {
+    const tokens = String(value ?? "")
+        .split(/[,\s]+/)
+        .map(token => token.trim())
+        .filter(Boolean);
+    const parsed = tokens
+        .map(token => Math.trunc(Number(token)))
+        .filter(number => Number.isFinite(number) && number >= 1 && number <= 6);
+    return parsed;
+}
+
+function _parseDnComplexity(value = "") {
+    const match = /dn\s*(\d+)\s*:\s*(\d+)/i.exec(String(value ?? ""));
+    if (!match) return null;
+    return {
+        dn: Math.max(2, Math.trunc(Number(match[1]) || 4)),
+        complexity: Math.max(1, Math.trunc(Number(match[2]) || 1))
+    };
+}
+
+function _parseFirstInt(value = "") {
+    const match = /(-?\d+)/.exec(String(value ?? ""));
+    if (!match) return Number.NaN;
+    const parsed = Math.trunc(Number(match[1]));
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function _escapeHtml(value) {
+    const escape = foundry.utils?.escapeHTML;
+    return typeof escape === "function"
+        ? escape(String(value ?? ""))
+        : String(value ?? "");
 }
 
 async function _checkAndApplyPartyWideEndeavour({ flagKey = "", handler } = {}) {

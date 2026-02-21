@@ -2802,6 +2802,16 @@
     margin-bottom: 4px;
 }
 
+.laundry-chat-card .laundry-dice-roll {
+    margin: 0 0 0.34rem;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.44);
+}
+
+.laundry-chat-card .laundry-dice-roll .roll.die {
+    cursor: default;
+}
+
 .laundry-critical-wound-card,
 .laundry-injury-result-card,
 .laundry-mishap-result-card,

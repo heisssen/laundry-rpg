@@ -420,7 +420,6 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
         const safeSource = foundry.utils.escapeHTML(requestEntry.source ?? "");
         const safeMethod = foundry.utils.escapeHTML(testMethodLabel);
         const safeTestSkill = foundry.utils.escapeHTML(testSkill);
-        const rollText = dieResults.join(", ") || "-";
         const verdict = approved ? "APPROVED" : "DENIED";
         const verdictClass = approved ? "laundry-support-approved" : "laundry-support-denied";
         const freeSuccessText = consumedPaperworkBonus
@@ -444,6 +443,15 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
             : (approved && request.isGear
                 ? `<div class="laundry-chat-note">Issued: No matching inventory items found; bundle logged for GM handling.</div>`
                 : "");
+        const diceSection = _renderSupportRollSection({
+            dice: dieResults,
+            dn: requestEntry.dn,
+            complexity: requestEntry.complexity,
+            successes,
+            totalSuccesses,
+            approved,
+            bonusSuccesses: consumedPaperworkBonus ? 1 : 0
+        });
 
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor: this.actor }),
@@ -456,7 +464,8 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
                         </div>
                         <span class="laundry-chat-stamp">${verdict}</span>
                     </div>
-                    <div class="laundry-chat-meta">Mind (${safeTestSkill}) DN ${requestEntry.dn}:${requestEntry.complexity} // Pool ${pool}d6 (${rollText})</div>
+                    <div class="laundry-chat-meta">Mind (${safeTestSkill}) DN ${requestEntry.dn}:${requestEntry.complexity} // Pool ${pool}d6</div>
+                    ${diceSection}
                     <div class="laundry-chat-rows">
                         <div class="laundry-chat-row"><span class="laundry-chat-label">Requester</span><span class="laundry-chat-value">${safeName}</span></div>
                         <div class="laundry-chat-row"><span class="laundry-chat-label">Method</span><span class="laundry-chat-value">${safeMethod}</span></div>
@@ -543,6 +552,78 @@ function _extractRollDieValues(roll) {
         }
     }
     return values;
+}
+
+function _renderSupportRollSection({
+    dice = [],
+    dn = 4,
+    complexity = 1,
+    successes = 0,
+    totalSuccesses = 0,
+    approved = false,
+    bonusSuccesses = 0
+} = {}) {
+    const rawDice = Array.isArray(dice) ? dice : [];
+    if (!rawDice.length) return "";
+
+    const safeDn = Math.max(2, Math.trunc(Number(dn) || 4));
+    const safeComplexity = Math.max(1, Math.trunc(Number(complexity) || 1));
+    const safeSuccesses = Math.max(0, Math.trunc(Number(successes) || 0));
+    const safeTotalSuccesses = Math.max(0, Math.trunc(Number(totalSuccesses) || 0));
+    const safeBonus = Math.max(0, Math.trunc(Number(bonusSuccesses) || 0));
+    const criticals = rawDice.filter(value => Math.trunc(Number(value) || 0) === 6).length;
+    const complications = rawDice.filter(value => Math.trunc(Number(value) || 0) === 1).length;
+    const safeCriticalLabel = _escapeHtml(game.i18n?.localize?.("LAUNDRY.Criticals") ?? "Criticals");
+    const safeComplicationLabel = _escapeHtml(game.i18n?.localize?.("LAUNDRY.Complications") ?? "Complications");
+    const safeNaturalSix = _escapeHtml(game.i18n?.localize?.("LAUNDRY.NaturalSix") ?? "Natural Six");
+    const safeNaturalOne = _escapeHtml(game.i18n?.localize?.("LAUNDRY.NaturalOne") ?? "Natural One");
+
+    const diceHtml = rawDice.map((value, index) => {
+        const dieValue = Math.max(1, Math.min(6, Math.trunc(Number(value) || 0)));
+        const isCritical = dieValue === 6;
+        const isComplication = dieValue === 1;
+        const classes = [
+            "roll",
+            "die",
+            "d6",
+            "laundry-die",
+            dieValue >= safeDn ? "success" : "failure",
+            isCritical ? "die-critical" : "",
+            isComplication ? "die-complication" : ""
+        ].filter(Boolean).join(" ");
+        const marker = isCritical
+            ? `<span class="die-marker marker-critical" title="${safeNaturalSix}">*</span>`
+            : (isComplication
+                ? `<span class="die-marker marker-complication" title="${safeNaturalOne}">!</span>`
+                : "");
+        return `<li class="${classes}" data-die-index="${index}">${dieValue}${marker}</li>`;
+    }).join("");
+
+    const successSuffix = safeBonus > 0
+        ? ` (${safeSuccesses} + ${safeBonus} bonus)`
+        : "";
+    const outcomeLabel = approved ? "Support Check Passed" : "Support Check Failed";
+    const outcomeClass = approved ? "outcome-success" : "outcome-failure";
+
+    return `
+        <div class="laundry-dice-roll laundry-support-roll">
+            <ol class="dice-rolls">${diceHtml}</ol>
+            <div class="dice-roll-summary">
+                <span class="crit-summary">${safeCriticalLabel}: ${criticals}</span>
+                <span class="comp-summary">${safeComplicationLabel}: ${complications}</span>
+            </div>
+            <div class="dice-outcome ${outcomeClass}">
+                <strong>${outcomeLabel}</strong>
+                <span class="success-count">(Successes: ${safeTotalSuccesses}/${safeComplexity}${successSuffix})</span>
+            </div>
+        </div>`;
+}
+
+function _escapeHtml(value) {
+    const escape = foundry.utils?.escapeHTML;
+    return typeof escape === "function"
+        ? escape(String(value ?? ""))
+        : String(value ?? "");
 }
 
 function _buildSupportRequestForecast({

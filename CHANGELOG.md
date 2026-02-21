@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.18.3 - 2026-02-21
+
+### Changed
+- Requisition/Support result cards now render rolled dice as highlighted skill-style die boxes (success/failure coloring, critical and complication markers) instead of plain comma-separated text.
+- Added an embedded outcome strip for support checks (`Successes: X/Y` with paperwork bonus breakdown) so the roll verdict is readable at a glance.
+- Endeavour cards now auto-convert `Dice: ...` lines into the same boxed dice presentation used by skill checks, keeping downtime chat output visually consistent.
+- Added chat-specific spacing tweaks for embedded dice blocks so boxed dice remain clear inside the unified dossier chat-card layout.
+
 ## 1.18.2 - 2026-02-20
 
 ### Changed
