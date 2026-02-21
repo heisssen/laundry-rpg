@@ -294,12 +294,12 @@
 }
 
 .laundry-rpg .sheet-tabs .item {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--laundry-ink-muted);
-    padding: 4px 10px;
+    padding: 3px 8px;
     border: 1px solid transparent;
     border-radius: 3px 3px 0 0;
     cursor: pointer;
@@ -320,14 +320,14 @@
 /* ── Panels ─────────────────────────────────────────────────────────────── */
 .laundry-rpg .panel-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
 }
 
 .laundry-rpg .panel {
     border: 1px solid var(--laundry-line);
     background: rgba(255,255,255,0.35);
-    padding: 8px;
+    padding: 7px;
 }
 
 .laundry-rpg .section-header {
@@ -336,8 +336,26 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--laundry-ink-muted);
-    padding-bottom: 3px;
-    margin: 4px 0 8px;
+    padding-bottom: 2px;
+    margin: 2px 0 7px;
+}
+
+.laundry-rpg.sheet.actor .bio-autofill,
+.laundry-rpg.sheet.actor .rest-action-buttons button,
+.laundry-rpg.sheet.actor .combat-quick-actions button,
+.laundry-rpg.sheet.actor .npc-preset-row button,
+.laundry-rpg.sheet.actor .npc-action-add,
+.laundry-rpg.sheet.actor .npc-action-autofill,
+.laundry-rpg.sheet.actor .npc-reset-defeated,
+.laundry-rpg.sheet.actor .kpi-add,
+.laundry-rpg.sheet.actor .kpi-archive-toggle,
+.laundry-rpg.sheet.actor .kpi-close-actions button,
+.laundry-rpg.sheet.actor .kpi-shop-actions button,
+.laundry-rpg.sheet.actor .requisition-actions-row button {
+    font-size: 9px;
+    letter-spacing: 0.055em;
+    min-height: 24px;
+    padding: 2px 7px;
 }
 
 .laundry-rpg .bio-profile-grid {
@@ -1130,9 +1148,9 @@
 .laundry-rpg .items-list .item {
     display: flex;
     align-items: center;
-    padding: 4px 6px;
+    padding: 3px 5px;
     border-bottom: 1px solid rgba(0,0,0,0.08);
-    gap: 6px;
+    gap: 5px;
 }
 
 .laundry-rpg .items-list .item:last-child {
@@ -1146,7 +1164,7 @@
 .laundry-rpg .item-name {
     flex: 1;
     margin: 0;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bold;
     white-space: nowrap;
     overflow: hidden;
@@ -1260,18 +1278,28 @@
 .laundry-rpg .item-controls {
     flex: 0 0 auto;
     display: flex;
-    gap: 6px;
+    gap: 4px;
     align-items: center;
 }
 
 .laundry-rpg .item-control {
     color: var(--laundry-ink-muted);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     transition: color 0.15s;
+    border: 1px solid rgba(110, 98, 82, 0.35);
+    background: rgba(255,255,255,0.6);
+    border-radius: 2px;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .laundry-rpg .item-control:hover {
+    border-color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.08);
     color: var(--laundry-stamp);
 }
 
@@ -2115,6 +2143,42 @@
     margin: 0;
 }
 
+.laundry-rpg .kpi-workspace {
+    padding: 9px;
+}
+
+.laundry-rpg .kpi-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    gap: 10px;
+    align-items: start;
+}
+
+.laundry-rpg .kpi-main-column,
+.laundry-rpg .kpi-side-column {
+    display: grid;
+    gap: 8px;
+}
+
+.laundry-rpg .kpi-side-column {
+    align-self: start;
+}
+
+.laundry-rpg .kpi-summary-panel,
+.laundry-rpg .kpi-shop-panel {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.34);
+    padding: 7px;
+}
+
+.laundry-rpg .kpi-summary-panel h4 {
+    margin: 0 0 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-accent);
+}
+
 .laundry-rpg .kpi-head {
     display: flex;
     justify-content: space-between;
@@ -2123,43 +2187,42 @@
 }
 
 .laundry-rpg .kpi-head-main {
-    margin-bottom: 6px;
+    margin-bottom: 2px;
 }
 
-.laundry-rpg .kpi-add {
+.laundry-rpg .kpi-add,
+.laundry-rpg .kpi-archive-toggle {
     border: 1px solid var(--laundry-line-dark);
-    background: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.62);
     color: var(--laundry-ink);
     font-family: var(--laundry-font);
-    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
     cursor: pointer;
 }
 
-.laundry-rpg .kpi-add:hover {
+.laundry-rpg .kpi-archive-toggle {
+    border-color: rgba(47, 74, 93, 0.45);
+    color: var(--laundry-accent);
+    background: rgba(47,74,93,0.08);
+}
+
+.laundry-rpg .kpi-add:hover,
+.laundry-rpg .kpi-archive-toggle:hover {
     border-color: var(--laundry-stamp);
     color: var(--laundry-stamp);
 }
 
-.laundry-rpg .kpi-list {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
 .laundry-rpg .kpi-summary-row {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
-    margin: 0 0 8px;
+    margin: 0 0 2px;
 }
 
 .laundry-rpg .kpi-summary-chip {
     border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.45);
-    font-size: 10px;
+    background: rgba(255,255,255,0.52);
+    font-size: 9px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--laundry-ink-muted);
@@ -2168,66 +2231,139 @@
 
 .laundry-rpg .kpi-group {
     border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.33);
     padding: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
 }
 
 .laundry-rpg .kpi-group-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     margin-bottom: 6px;
 }
 
 .laundry-rpg .kpi-group-head h4 {
     margin: 0;
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--laundry-stamp);
 }
 
+.laundry-rpg .kpi-group-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.laundry-rpg .kpi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.laundry-rpg .kpi-empty-note {
+    border: 1px dashed var(--laundry-line);
+    background: rgba(255,255,255,0.42);
+    color: var(--laundry-ink-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 6px;
+}
+
 .laundry-rpg .kpi-row {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(280px, 1.6fr) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 1.15fr) auto;
     align-items: start;
-    gap: 8px;
+    gap: 7px;
     border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.5);
     padding: 6px;
 }
 
 .laundry-rpg .kpi-main {
     display: grid;
-    gap: 6px;
+    gap: 5px;
+    min-width: 0;
 }
 
 .laundry-rpg .kpi-text-input {
     width: 100%;
     border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.8);
     font-family: var(--laundry-font);
     font-size: 11px;
     padding: 3px 5px;
+    min-height: 25px;
 }
 
 .laundry-rpg .kpi-owner-input {
     width: 100%;
     border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.8);
     font-family: var(--laundry-font);
     font-size: 10px;
-    padding: 3px 5px;
+    padding: 2px 5px;
+    min-height: 23px;
 }
 
 .laundry-rpg .kpi-meta {
     display: grid;
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
     gap: 6px;
 }
 
-.laundry-rpg .kpi-meta label {
+.laundry-rpg .kpi-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.laundry-rpg .kpi-status-chip {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.7);
+    color: var(--laundry-ink);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    white-space: nowrap;
+}
+
+.laundry-rpg .kpi-status-chip.is-open {
+    border-color: var(--laundry-accent);
+    color: var(--laundry-accent);
+}
+
+.laundry-rpg .kpi-status-chip.is-completed {
+    border-color: var(--laundry-success);
+    color: var(--laundry-success);
+}
+
+.laundry-rpg .kpi-status-chip.is-failed {
+    border-color: var(--laundry-stamp);
+    color: var(--laundry-stamp);
+}
+
+.laundry-rpg .kpi-close-note {
+    font-size: 9px;
+    color: var(--laundry-ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.laundry-rpg .kpi-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(110px, 1fr));
+    gap: 6px;
+}
+
+.laundry-rpg .kpi-meta-grid label {
     display: grid;
     gap: 2px;
     font-size: 9px;
@@ -2236,86 +2372,49 @@
     letter-spacing: 0.06em;
 }
 
-.laundry-rpg .kpi-status-static {
+.laundry-rpg .kpi-meta-grid select,
+.laundry-rpg .kpi-meta-grid input {
     border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.8);
     color: var(--laundry-ink);
     font-family: var(--laundry-font);
     font-size: 10px;
-    min-height: 22px;
-    padding: 2px 6px;
-    display: flex;
-    align-items: center;
+    min-height: 23px;
+    padding: 2px 4px;
+}
+
+.laundry-rpg .kpi-progress-input {
+    text-align: center;
 }
 
 .laundry-rpg .kpi-close-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
-    grid-column: 1 / -1;
 }
 
-.laundry-rpg .kpi-close-actions button {
-    min-height: 26px;
-    font-size: 10px;
+.laundry-rpg .kpi-close-actions .kpi-close[data-kpi-result="completed"] {
+    border-color: rgba(46, 107, 63, 0.55);
+    color: #1f5f35;
+    background: rgba(46,107,63,0.1);
 }
 
-.laundry-rpg .kpi-close-note {
-    grid-column: 1 / -1;
-    font-size: 10px;
-    color: var(--laundry-ink-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+.laundry-rpg .kpi-close-actions .kpi-close[data-kpi-result="failed"] {
+    border-color: rgba(178, 31, 31, 0.55);
+    color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.1);
 }
 
-.laundry-rpg .kpi-shop-panel {
-    border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.3);
-    padding: 8px;
+.laundry-rpg .kpi-delete {
+    margin-top: 1px;
 }
 
-.laundry-rpg .kpi-shop-grid {
+.laundry-rpg .kpi-list .kpi-archived-row {
+    display: none;
+}
+
+.laundry-rpg .kpi-list.show-archived .kpi-archived-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-}
-
-.laundry-rpg .kpi-shop-card {
-    border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.45);
-    padding: 8px;
-    display: grid;
-    gap: 6px;
-}
-
-.laundry-rpg .kpi-shop-card label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--laundry-ink-muted);
-}
-
-.laundry-rpg .kpi-shop-actions {
-    display: grid;
-    gap: 6px;
-}
-
-.laundry-rpg .kpi-shop-actions button {
-    min-height: 28px;
-}
-
-.laundry-rpg .kpi-meta select,
-.laundry-rpg .kpi-meta input {
-    border: 1px solid var(--laundry-line);
-    background: rgba(255,255,255,0.75);
-    color: var(--laundry-ink);
-    font-family: var(--laundry-font);
-    font-size: 10px;
-    padding: 2px 4px;
-}
-
-.laundry-rpg .kpi-progress-input {
-    text-align: center;
 }
 
 .laundry-rpg .kpi-row.kpi-completed .kpi-text-input,
@@ -2332,6 +2431,32 @@
 
 .laundry-rpg .kpi-row.kpi-failed {
     border-color: #9a4b2c;
+}
+
+.laundry-rpg .kpi-shop-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.laundry-rpg .kpi-shop-card {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.45);
+    padding: 7px;
+    display: grid;
+    gap: 6px;
+}
+
+.laundry-rpg .kpi-shop-card label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .kpi-shop-actions {
+    display: grid;
+    gap: 5px;
 }
 
 .laundry-rpg .talent-detail {
@@ -3675,13 +3800,13 @@
 .laundry-support-request-app button,
 .laundry-endeavours-app button {
     font-family: var(--laundry-font, "Courier New", monospace);
-    font-size: 0.71rem;
+    font-size: 0.68rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     border: 1px solid var(--laundry-line-dark);
     background: rgba(255, 255, 255, 0.64);
     color: var(--laundry-ink);
-    min-height: 30px;
+    min-height: 28px;
     cursor: pointer;
 }
 
@@ -3727,8 +3852,8 @@
 .laundry-support-request-app .laundry-support-layout,
 .laundry-endeavours-app .laundry-endeavour-layout {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
-    gap: 0.5rem;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 0.6rem;
     align-items: start;
 }
 
@@ -3736,7 +3861,7 @@
 .laundry-endeavours-app .laundry-endeavour-catalog {
     border: 1px solid var(--laundry-line-dark);
     background: rgba(255, 255, 255, 0.33);
-    padding: 0.4rem;
+    padding: 0.45rem;
     display: grid;
     gap: 0.4rem;
     max-height: 72vh;
@@ -3748,13 +3873,34 @@
     display: grid;
     gap: 0.45rem;
     min-width: 0;
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255, 255, 255, 0.26);
+    padding: 0.45rem 0.5rem;
 }
 
+.laundry-support-request-app .laundry-support-catalog-head,
 .laundry-endeavours-app .laundry-endeavour-catalog-head {
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--laundry-ink-muted);
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.24);
+    padding-bottom: 0.2rem;
+}
+
+.laundry-support-request-app .laundry-support-workbench-head,
+.laundry-endeavours-app .laundry-endeavour-workbench-head {
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.24);
+    padding-bottom: 0.28rem;
+}
+
+.laundry-support-request-app .laundry-support-workbench-head h3,
+.laundry-endeavours-app .laundry-endeavour-workbench-head h3 {
+    margin: 0;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-accent);
 }
 
 .laundry-endeavours-app .laundry-endeavour-cards,
@@ -3830,6 +3976,7 @@
     gap: 0.4rem;
     align-items: center;
     border: 1px solid var(--laundry-line-dark);
+    border-left: 3px solid rgba(47, 74, 93, 0.48);
     background: rgba(255, 255, 255, 0.4);
     padding: 0.3rem 0.4rem;
 }
@@ -3852,6 +3999,15 @@
 
 .laundry-support-request-app .laundry-requisition-line-controls input[type="number"] {
     width: 74px;
+}
+
+.laundry-support-request-app .laundry-support-preview h4,
+.laundry-endeavours-app .laundry-endeavour-details h4 {
+    margin: 0 0 0.2rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--laundry-accent);
 }
 
 .laundry-support-request-app .laundry-support-bundle-list,
@@ -3900,12 +4056,26 @@
         align-items: start;
     }
 
-    .laundry-rpg .kpi-meta {
+    .laundry-rpg .kpi-layout {
         grid-template-columns: 1fr;
     }
 
-    .laundry-rpg .kpi-shop-grid {
+    .laundry-rpg .kpi-meta-grid {
         grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .kpi-status-row {
+        align-items: flex-start;
+    }
+
+    .laundry-rpg .kpi-group-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .laundry-rpg .kpi-group-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 
     .laundry-rpg .gm-kpi-actions {

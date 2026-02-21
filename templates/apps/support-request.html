@@ -6,6 +6,7 @@
 
     <div class="laundry-support-layout">
         <aside class="laundry-support-catalog">
+            <div class="laundry-support-catalog-head">Request Catalogue</div>
             <div class="laundry-support-type-toggle">
                 {{#each requestTypes as |entry|}}
                 <button type="button" class="request-type-select {{#if entry.selected}}is-selected{{/if}}" data-request-type="{{entry.id}}">{{entry.label}}</button>
@@ -34,6 +35,10 @@
         </aside>
 
         <section class="laundry-support-workbench">
+            <div class="laundry-support-workbench-head">
+                <h3>Request Builder</h3>
+                <p class="notes">Build a request line, review the forecast, then process.</p>
+            </div>
             <div class="form-group">
                 <label>Request Line (Dropdown Fallback)</label>
                 <select name="requestType">
@@ -121,6 +126,7 @@
 
             {{#if showPreview}}
             <div class="laundry-support-preview">
+                <h4>Outcome Preview</h4>
                 <p><strong>Target:</strong> {{previewName}}</p>
                 <p><strong>Test:</strong> Mind (Bureaucracy/Presence) DN {{previewDn}}:{{previewComplexity}}</p>
                 {{#if previewRequirements}}

@@ -111,20 +111,33 @@ export class LaundryActorSheet extends ActorSheet {
                 label: game.i18n.localize(option.labelKey)
             }))
         };
-        context.kpiGroups = KPI_HORIZONS.map(group => ({
-            key: group.key,
-            label: game.i18n.localize(group.labelKey),
-            entries: normalizedKpi
+        context.kpiGroups = KPI_HORIZONS.map(group => {
+            const groupEntries = normalizedKpi
                 .filter(entry => entry.horizon === group.key)
-                .map(entry => ({
-                    ...entry,
-                    statusCss: KPI_STATUS_CSS[entry.status] ?? "kpi-open",
-                    resolved: entry.status === "completed" || entry.status === "failed",
-                    canClose: kpiCanClose && entry.status === "open",
-                    closedDateLabel: entry.closedAt ? new Date(entry.closedAt).toLocaleDateString() : "",
-                    rewardLabel: entry.rewardedXp > 0 ? `+${entry.rewardedXp} XP` : "No XP"
-                }))
-        }));
+                .map(entry => {
+                    const archived = entry.status !== "open";
+                    return {
+                        ...entry,
+                        archived,
+                        statusCss: KPI_STATUS_CSS[entry.status] ?? "kpi-open",
+                        resolved: archived,
+                        canClose: kpiCanClose && entry.status === "open",
+                        closedDateLabel: entry.closedAt ? new Date(entry.closedAt).toLocaleDateString() : "",
+                        rewardLabel: entry.rewardedXp > 0 ? `+${entry.rewardedXp} XP` : "No XP"
+                    };
+                });
+            const openEntries = groupEntries.filter(entry => !entry.archived);
+            const archivedEntries = groupEntries.filter(entry => entry.archived);
+            const showArchived = this._isKpiArchiveVisible(group.key);
+            return {
+                key: group.key,
+                label: game.i18n.localize(group.labelKey),
+                entries: [...openEntries, ...archivedEntries],
+                openCount: openEntries.length,
+                archivedCount: archivedEntries.length,
+                showArchived
+            };
+        });
 
         const skillItemsByName = new Map(context.skills.map(s => [s.name, s]));
         const skillDefs = CONFIG.LAUNDRY.skills ?? [];
@@ -375,10 +388,12 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".combat-adrenaline-action").click(this._onCombatAdrenalineAction.bind(this));
         html.find(".take-breather").click(this._onTakeBreather.bind(this));
         html.find(".standard-rest").click(this._onStandardRest.bind(this));
+        html.on("change", ".xp-field", (ev) => this._onXpFieldChange(ev));
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
         html.find(".kpi-close").click(this._onKpiClose.bind(this));
+        html.find(".kpi-archive-toggle").click(this._onKpiArchiveToggle.bind(this));
         html.on("change", ".kpi-field", (ev) => this._onKpiFieldChange(ev));
         html.find(".kpi-shop-buy").click(this._onKpiShopBuy.bind(this));
         html.find(".kpi-shop-buy-talent").click(this._onKpiShopBuyTalent.bind(this));
@@ -729,6 +744,40 @@ export class LaundryActorSheet extends ActorSheet {
             speaker: ChatMessage.getSpeaker({ actor: this.actor }),
             content: `<p><strong>${escapedName}</strong> has completed a Standard Rest and recovered Toughness and Adrenaline.</p>`
         });
+    }
+
+    async _onXpFieldChange(ev) {
+        if (!game.user?.isGM) return;
+        if (this.actor.type !== "character") return;
+
+        const key = String(ev.currentTarget?.dataset?.xpKey ?? "").trim().toLowerCase();
+        if (!["value", "unspent"].includes(key)) return;
+
+        const raw = Math.trunc(Number(ev.currentTarget?.value ?? 0));
+        const entered = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+        const currentTotal = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.value) || 0));
+        const currentUnspent = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.unspent) || 0));
+
+        let nextTotal = currentTotal;
+        let nextUnspent = currentUnspent;
+
+        if (key === "value") {
+            nextTotal = entered;
+            const delta = nextTotal - currentTotal;
+            nextUnspent = Math.max(0, currentUnspent + delta);
+            nextUnspent = Math.min(nextUnspent, nextTotal);
+        } else {
+            nextUnspent = entered;
+            if (nextUnspent > nextTotal) nextTotal = nextUnspent;
+        }
+
+        if (nextTotal === currentTotal && nextUnspent === currentUnspent) return;
+
+        await this.actor.update({
+            "system.details.xp.value": nextTotal,
+            "system.details.xp.unspent": nextUnspent
+        });
+        this.render(false);
     }
 
     async _onCallSupport(ev) {
@@ -1262,6 +1311,15 @@ export class LaundryActorSheet extends ActorSheet {
         ui.notifications.info(`${this.actor.name}: KPI ${statusLabel}${xpLabel}.`);
     }
 
+    _onKpiArchiveToggle(ev) {
+        ev.preventDefault();
+        const horizon = String(ev.currentTarget?.dataset?.kpiHorizon ?? "").trim();
+        if (!horizon) return;
+        const show = String(ev.currentTarget?.dataset?.show ?? "1").trim() === "1";
+        this._setKpiArchiveVisible(horizon, show);
+        this.render(false);
+    }
+
     async _onKpiFieldChange(ev) {
         const index = Number(ev.currentTarget.dataset.kpiIndex);
         const key = String(ev.currentTarget.dataset.kpiKey ?? "");
@@ -1332,6 +1390,25 @@ export class LaundryActorSheet extends ActorSheet {
         }
 
         await this.actor.update({ "system.kpi": kpis });
+    }
+
+    _getKpiArchiveMap() {
+        if (!this._kpiArchiveVisibility || typeof this._kpiArchiveVisibility !== "object") {
+            this._kpiArchiveVisibility = {};
+        }
+        return this._kpiArchiveVisibility;
+    }
+
+    _isKpiArchiveVisible(horizon = "") {
+        const key = String(horizon ?? "").trim();
+        if (!key) return false;
+        return Boolean(this._getKpiArchiveMap()[key]);
+    }
+
+    _setKpiArchiveVisible(horizon = "", visible = false) {
+        const key = String(horizon ?? "").trim();
+        if (!key) return;
+        this._getKpiArchiveMap()[key] = Boolean(visible);
     }
 
     _getActorKpis() {
