@@ -205,6 +205,14 @@ export class LaundryCharacterBuilder extends Application {
         this.customInitialXp = Number.isFinite(this.customInitialXp)
             ? this.customInitialXp
             : 40;
+        if (!this.customUi) {
+            this.customUi = {
+                activeTab: "skills",
+                onlyImprovedSkills: false,
+                onlyPurchasedTalents: false,
+                onlyEligibleTalents: false
+            };
+        }
 
         this._renderCustomBuilder(html);
 
@@ -222,8 +230,13 @@ export class LaundryCharacterBuilder extends Application {
         html.on("click", ".increase-skill", (ev) => this._onIncreaseSkill(ev));
         html.on("click", ".decrease-skill", (ev) => this._onDecreaseSkill(ev));
         html.on("click", ".buy-talent", (ev) => this._onBuyTalent(ev));
+        html.on("click", ".custom-tab-btn", (ev) => this._onCustomTabClick(ev));
         html.on("input", ".skill-search-input", () => this._applyCustomFilters(html));
         html.on("input", ".talent-search-input", () => this._applyCustomFilters(html));
+        html.on("change", ".custom-filter-skills-invested", () => this._applyCustomFilters(html));
+        html.on("change", ".custom-filter-talents-purchased", () => this._applyCustomFilters(html));
+        html.on("change", ".custom-filter-talents-eligible", () => this._applyCustomFilters(html));
+        this._setCustomTab(this.customUi.activeTab, { force: true, html });
     }
 
     _renderCustomBuilder(html) {
@@ -269,7 +282,7 @@ export class LaundryCharacterBuilder extends Application {
                 : 0;
             const totalSkillCost = _calculateSkillCost(skillData.training, 0) + _calculateSkillCost(skillData.focus, 0);
             return `
-                <div class="skill-allocation-row custom-skill-row" data-skill-name="${safeSkillName}">
+                <div class="skill-allocation-row custom-skill-row" data-skill-name="${safeSkillName}" data-invested="${(skillData.training > 0 || skillData.focus > 0) ? "1" : "0"}">
                     <div class="skill-name"><span>${safeSkillName}</span></div>
                     <div class="skill-controls">
                         <label>${_escapeHtml(i18n.localize("LAUNDRY.Training"))}</label>
@@ -312,7 +325,7 @@ export class LaundryCharacterBuilder extends Application {
                     : i18n.localize("LAUNDRY.PrereqMetLabel"));
             const blockedForPlayer = !isBought && prereq.status === "unmet" && !game.user?.isGM;
             return `
-                <div class="talent-allocation-row ${isBought ? "is-bought" : ""}" data-talent-name="${safeTalentName}" title="${_escapeHtml(describeTalentPrerequisiteResult(prereq))}">
+                <div class="talent-allocation-row ${isBought ? "is-bought" : ""}" data-talent-name="${safeTalentName}" data-bought="${isBought ? "1" : "0"}" data-prereq="${_escapeHtml(prereq.status)}" title="${_escapeHtml(describeTalentPrerequisiteResult(prereq))}">
                     <span class="talent-name">${safeTalentName}</span>
                     <span class="talent-prereq-badge talent-prereq-${prereq.status}">${_escapeHtml(prereqLabel)}</span>
                     <div class="talent-controls">
@@ -339,21 +352,82 @@ export class LaundryCharacterBuilder extends Application {
         html.find(".talent-count-value").text(String(this.customBuild.talents.length));
         html.find(".skill-count-value").text(String(skillsSpentCount));
         this._applyCustomFilters(html);
+        this._setCustomTab(this.customUi?.activeTab ?? "skills", { force: true, html });
+    }
+
+    _onCustomTabClick(ev) {
+        ev.preventDefault();
+        const tab = String(ev.currentTarget?.dataset?.customTab ?? "").trim();
+        this._setCustomTab(tab);
+    }
+
+    _setCustomTab(tab, { force = false, html = this.element } = {}) {
+        const root = html?.[0] ?? html;
+        if (!root) return;
+
+        const allowed = new Set(["attributes", "skills", "talents"]);
+        const requested = allowed.has(tab) ? tab : "skills";
+        const btn = root.querySelector(`.custom-tab-btn[data-custom-tab="${requested}"]`);
+        const resolved = (!force && btn?.disabled)
+            ? (this.customUi?.activeTab ?? "skills")
+            : requested;
+
+        root.dataset.customTab = resolved;
+        if (this.customUi) this.customUi.activeTab = resolved;
+
+        for (const button of root.querySelectorAll(".custom-tab-btn")) {
+            button.classList.toggle("active", button.dataset.customTab === resolved);
+        }
+        for (const panel of root.querySelectorAll(".custom-builder-panel")) {
+            panel.classList.toggle("active", panel.dataset.customTab === resolved);
+        }
     }
 
     _applyCustomFilters(html = this.element) {
         const skillQuery = String(html?.find?.(".skill-search-input")?.val?.() ?? "").trim().toLowerCase();
         const talentQuery = String(html?.find?.(".talent-search-input")?.val?.() ?? "").trim().toLowerCase();
+        const onlyImprovedSkills = Boolean(html?.find?.(".custom-filter-skills-invested")?.prop?.("checked"));
+        const onlyPurchasedTalents = Boolean(html?.find?.(".custom-filter-talents-purchased")?.prop?.("checked"));
+        const onlyEligibleTalents = Boolean(html?.find?.(".custom-filter-talents-eligible")?.prop?.("checked"));
 
-        html?.find?.(".skill-allocation-row")?.each((_, row) => {
+        if (!this.customUi) this.customUi = {};
+        this.customUi.onlyImprovedSkills = onlyImprovedSkills;
+        this.customUi.onlyPurchasedTalents = onlyPurchasedTalents;
+        this.customUi.onlyEligibleTalents = onlyEligibleTalents;
+
+        let skillVisible = 0;
+        let skillTotal = 0;
+        let talentVisible = 0;
+        let talentTotal = 0;
+
+        html?.find?.(".custom-skill-row")?.each((_, row) => {
+            skillTotal += 1;
             const name = String(row.dataset?.skillName ?? "").trim().toLowerCase();
-            row.classList.toggle("search-hidden", skillQuery.length > 0 && !name.includes(skillQuery));
+            const invested = String(row.dataset?.invested ?? "0") === "1";
+            const visible = (skillQuery.length === 0 || name.includes(skillQuery))
+                && (!onlyImprovedSkills || invested);
+            row.classList.toggle("search-hidden", !visible);
+            if (visible) skillVisible += 1;
         });
 
         html?.find?.(".talent-allocation-row")?.each((_, row) => {
+            talentTotal += 1;
             const name = String(row.dataset?.talentName ?? "").trim().toLowerCase();
-            row.classList.toggle("search-hidden", talentQuery.length > 0 && !name.includes(talentQuery));
+            const bought = String(row.dataset?.bought ?? "0") === "1";
+            const prereq = String(row.dataset?.prereq ?? "").trim().toLowerCase();
+            const visible = (talentQuery.length === 0 || name.includes(talentQuery))
+                && (!onlyPurchasedTalents || bought)
+                && (!onlyEligibleTalents || prereq !== "unmet");
+            row.classList.toggle("search-hidden", !visible);
+            if (visible) talentVisible += 1;
         });
+
+        const formatCount = (visible, total) => game.i18n.format("LAUNDRY.CustomVisibleCount", {
+            visible,
+            total
+        });
+        html?.find?.(".skill-result-count")?.text(skillTotal > 0 ? formatCount(skillVisible, skillTotal) : "");
+        html?.find?.(".talent-result-count")?.text(talentTotal > 0 ? formatCount(talentVisible, talentTotal) : "");
     }
 
     _buildCustomMockActor() {

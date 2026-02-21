@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.20.8 - 2026-02-21
+
+### Changed
+- Reworked `Form 2B-C` custom builder into a clearer tabbed workflow (`Attributes`, `Skills`, `Talents`) with stronger section hierarchy and cleaner panel layout.
+- Added advanced filtering controls for custom build lists: improved-only skills, purchased-only talents, and eligible-only talents.
+- Added live list visibility counters (`shown/total`) for skills and talents to improve navigation in larger compendium datasets.
+- Refined custom builder visual design (summary strip, panel framing, filter rows, and responsive tab behavior) for better readability and faster interaction.
+
 ## 1.20.7 - 2026-02-21
 
 ### Fixed

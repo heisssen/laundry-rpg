@@ -8,8 +8,39 @@
         <p>{{localize "LAUNDRY.CustomCharacterCreationHint"}} <strong>{{actorName}}</strong>.</p>
     </header>
 
-    <div class="builder-layout custom-builder-layout">
-        <section class="builder-main-column custom-builder-main">
+    <section class="builder-choice-group builder-xp-counter custom-summary-group">
+        <div class="builder-choice-head">
+            <h3>{{localize "LAUNDRY.ExperiencePoints"}}</h3>
+            <span class="builder-choice-counter">{{localize "LAUNDRY.CustomXpHint"}}</span>
+        </div>
+        <div class="xp-tracker">
+            <span class="xp-label">{{localize "LAUNDRY.RemainingXP"}}</span>
+            <span class="xp-value">40</span>
+        </div>
+        <div class="custom-summary-grid">
+            <div class="custom-summary-cell">
+                <span class="custom-summary-label">{{localize "LAUNDRY.SpentXP"}}</span>
+                <strong class="xp-spent-value">0</strong>
+            </div>
+            <div class="custom-summary-cell">
+                <span class="custom-summary-label">{{localize "LAUNDRY.CustomSkillsImproved"}}</span>
+                <strong class="skill-count-value">0</strong>
+            </div>
+            <div class="custom-summary-cell">
+                <span class="custom-summary-label">{{localize "LAUNDRY.CustomTalentsPurchased"}}</span>
+                <strong class="talent-count-value">0</strong>
+            </div>
+        </div>
+    </section>
+
+    <nav class="custom-builder-tabs" aria-label="{{localize 'LAUNDRY.CustomBuilderTabs'}}">
+        <button type="button" class="custom-tab-btn" data-custom-tab="attributes">{{localize "LAUNDRY.CustomTabAttributes"}}</button>
+        <button type="button" class="custom-tab-btn active" data-custom-tab="skills">{{localize "LAUNDRY.CustomTabSkills"}}</button>
+        <button type="button" class="custom-tab-btn" data-custom-tab="talents">{{localize "LAUNDRY.CustomTabTalents"}}</button>
+    </nav>
+
+    <div class="custom-builder-panels" data-custom-tab="skills">
+        <section class="custom-builder-panel" data-custom-tab="attributes">
             <section class="builder-choice-group custom-attributes-group">
                 <div class="builder-choice-head">
                     <h3>{{localize "LAUNDRY.Attributes"}}</h3>
@@ -18,7 +49,9 @@
                 <p class="builder-choice-hint">{{localize "LAUNDRY.CustomAttributeHint"}}</p>
                 <div class="attribute-allocation-grid"></div>
             </section>
+        </section>
 
+        <section class="custom-builder-panel active" data-custom-tab="skills">
             <section class="builder-choice-group custom-skills-group">
                 <div class="builder-choice-head">
                     <h3>{{localize "LAUNDRY.Skills"}}</h3>
@@ -28,34 +61,18 @@
                     <span>{{localize "LAUNDRY.SearchSkills"}}</span>
                     <input type="text" class="skill-search-input" placeholder="{{localize 'LAUNDRY.SearchByName'}}" />
                 </label>
+                <div class="custom-filter-row">
+                    <label class="custom-filter-toggle">
+                        <input type="checkbox" class="custom-filter-skills-invested" />
+                        <span>{{localize "LAUNDRY.CustomFilterImprovedSkills"}}</span>
+                    </label>
+                    <span class="builder-choice-counter skill-result-count"></span>
+                </div>
                 <div class="skill-allocation-list"></div>
             </section>
         </section>
 
-        <aside class="builder-side-column custom-builder-side">
-            <section class="builder-choice-group builder-xp-counter custom-summary-group">
-                <h3>{{localize "LAUNDRY.ExperiencePoints"}}</h3>
-                <div class="xp-tracker">
-                    <span class="xp-label">{{localize "LAUNDRY.RemainingXP"}}</span>
-                    <span class="xp-value">40</span>
-                </div>
-                <div class="custom-summary-grid">
-                    <div class="custom-summary-cell">
-                        <span class="custom-summary-label">{{localize "LAUNDRY.SpentXP"}}</span>
-                        <strong class="xp-spent-value">0</strong>
-                    </div>
-                    <div class="custom-summary-cell">
-                        <span class="custom-summary-label">{{localize "LAUNDRY.CustomSkillsImproved"}}</span>
-                        <strong class="skill-count-value">0</strong>
-                    </div>
-                    <div class="custom-summary-cell">
-                        <span class="custom-summary-label">{{localize "LAUNDRY.CustomTalentsPurchased"}}</span>
-                        <strong class="talent-count-value">0</strong>
-                    </div>
-                </div>
-                <p class="builder-choice-hint custom-summary-hint">{{localize "LAUNDRY.CustomXpHint"}}</p>
-            </section>
-
+        <section class="custom-builder-panel" data-custom-tab="talents">
             <section class="builder-choice-group custom-talents-group">
                 <div class="builder-choice-head">
                     <h3>{{localize "LAUNDRY.Talents"}}</h3>
@@ -65,9 +82,20 @@
                     <span>{{localize "LAUNDRY.SearchTalents"}}</span>
                     <input type="text" class="talent-search-input" placeholder="{{localize 'LAUNDRY.SearchByName'}}" />
                 </label>
+                <div class="custom-filter-row custom-filter-row-stack">
+                    <label class="custom-filter-toggle">
+                        <input type="checkbox" class="custom-filter-talents-purchased" />
+                        <span>{{localize "LAUNDRY.CustomFilterPurchasedTalents"}}</span>
+                    </label>
+                    <label class="custom-filter-toggle">
+                        <input type="checkbox" class="custom-filter-talents-eligible" />
+                        <span>{{localize "LAUNDRY.CustomFilterEligibleTalents"}}</span>
+                    </label>
+                    <span class="builder-choice-counter talent-result-count"></span>
+                </div>
                 <div class="talent-allocation-list"></div>
             </section>
-        </aside>
+        </section>
     </div>
 
     <div class="builder-actions">
