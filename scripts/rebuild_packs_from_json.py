@@ -582,6 +582,28 @@ def _normalize_enemy_action(action: dict | None = None, enemy_name: str = "") ->
     }
 
 
+def _parse_rolltable_range(value, fallback: int = 1) -> tuple[int, int]:
+    if isinstance(value, (list, tuple)) and len(value) >= 2:
+        low = max(1, int(value[0] or fallback))
+        high = max(low, int(value[1] or low))
+        return low, high
+
+    token = str(value or "").strip()
+    if not token:
+        safe = max(1, int(fallback or 1))
+        return safe, safe
+    if "-" in token:
+        left, right = token.split("-", 1)
+        low = max(1, int(left.strip() or fallback))
+        high = max(low, int(right.strip() or low))
+        return low, high
+    if token.endswith("+"):
+        low = max(1, int(token[:-1].strip() or fallback))
+        return low, low
+    safe = max(1, int(token))
+    return safe, safe
+
+
 def _build_enemy_skill_items(preset_id: str, skill_training: dict | None) -> list[dict]:
     src = skill_training if isinstance(skill_training, dict) else {}
     docs: list[dict] = []
@@ -736,6 +758,235 @@ def build_enemies() -> list[dict]:
     return docs
 
 
+def build_servant_npcs() -> list[dict]:
+    try:
+        _resolve_source_path("servant-npcs.json")
+    except FileNotFoundError:
+        return []
+    data = _read_source("servant-npcs.json")
+    docs: list[dict] = []
+
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+
+        name = _normalize_display_name(str(entry.get("name") or "").strip())
+        if not name:
+            continue
+        npc_id = str(entry.get("id") or "").strip().lower() or _slugify(name)
+
+        attrs = entry.get("attributes") if isinstance(entry.get("attributes"), dict) else {}
+        body = max(1, int(attrs.get("body", 1) or 1))
+        mind = max(1, int(attrs.get("mind", 1) or 1))
+        spirit = max(1, int(attrs.get("spirit", 1) or 1))
+
+        actions = entry.get("quickActions") if isinstance(entry.get("quickActions"), list) else []
+        normalized_actions = [_normalize_enemy_action(action, enemy_name=name) for action in actions]
+        if not normalized_actions:
+            normalized_actions = [_normalize_enemy_action({
+                "name": "Signature Attack",
+                "kind": "attack",
+                "pool": body,
+                "dn": 4,
+                "complexity": 1,
+                "damage": "",
+                "traits": "",
+                "isMagic": False
+            }, enemy_name=name)]
+
+        source = str(entry.get("source") or "A Man of the People (2E)").strip()
+        source_page = str(entry.get("sourcePage") or "").strip() or _extract_source_page(source, fallback="p.4-26")
+        category = str(entry.get("category") or "Servant Cases").strip() or "Servant Cases"
+        role = str(entry.get("role") or "npc").strip()
+        tags = _normalize_tags(entry.get("tags"), fallback=[
+            "enemy",
+            "servant-case",
+            category,
+            role
+        ])
+        search_terms = _normalize_search_terms([
+            name,
+            category,
+            role,
+            source,
+            source_page,
+            *tags
+        ])
+        skill_training = entry.get("skillTraining") if isinstance(entry.get("skillTraining"), dict) else {}
+        normalized_skill_training = {
+            str(key).strip(): max(0, int(value or 0))
+            for key, value in skill_training.items()
+            if str(key).strip()
+        }
+        description = str(entry.get("description") or "").strip()
+
+        docs.append({
+            "_id": _stable_id("servant-npc", npc_id or name),
+            "name": name,
+            "type": "npc",
+            "img": _enemy_icon(entry),
+            "system": {
+                "attributes": {
+                    "body": {"value": body},
+                    "mind": {"value": mind},
+                    "spirit": {"value": spirit}
+                },
+                "category": category,
+                "tags": tags,
+                "sourcePage": source_page,
+                "kpi": [],
+                "derived": {
+                    "toughness": {"value": 0, "max": 0, "damage": 0},
+                    "injuries": {"value": 0, "max": 0},
+                    "adrenaline": {"value": 0, "max": 0},
+                    "melee": {"value": 0, "label": ""},
+                    "accuracy": {"value": 0, "label": ""},
+                    "defence": {"value": 0, "label": ""},
+                    "armour": {"value": 0},
+                    "initiative": {"value": 0},
+                    "naturalAwareness": {"value": 0}
+                },
+                "details": {
+                    "assignment": "",
+                    "department": "",
+                    "clearance": "UNCLASSIFIED",
+                    "profile": {
+                        "codename": "",
+                        "background": "",
+                        "coverIdentity": "",
+                        "shortGoal": "",
+                        "longGoal": "",
+                        "notableIncident": "",
+                        "personalNotes": description
+                    },
+                    "xp": {"value": 0, "unspent": 0}
+                },
+                "threat": str(entry.get("threat") or "minor"),
+                "npc": {
+                    "mode": str(entry.get("mode") or "lite"),
+                    "class": str(entry.get("npcClass") or "elite"),
+                    "mobSize": max(1, int(entry.get("mobSize", 1) or 1)),
+                    "trackInjuries": bool(entry.get("trackInjuries", False)),
+                    "fastDamage": bool(entry.get("fastDamage", True)),
+                    "archetype": npc_id,
+                    "defeated": False,
+                    "quickActions": normalized_actions
+                }
+            },
+            "items": _build_enemy_skill_items(npc_id or name, normalized_skill_training),
+            "effects": [],
+            "folder": None,
+            "sort": 0,
+            "ownership": {"default": 2},
+            "flags": {
+                "laundry-rpg": {
+                    "npcPresetId": npc_id,
+                    "source": source,
+                    "sourcePage": source_page,
+                    "category": category,
+                    "tags": tags,
+                    "searchTerms": search_terms,
+                    "servantCase": "a-man-of-the-people"
+                }
+            },
+            "prototypeToken": {
+                "name": name,
+                "actorLink": False,
+                "disposition": -1,
+                "displayName": 20,
+                "displayBars": 20
+            }
+        })
+
+    docs.sort(key=lambda item: (str(item.get("name", "")).casefold(), str(item.get("_id", ""))))
+    return docs
+
+
+def build_servant_tables() -> list[dict]:
+    try:
+        _resolve_source_path("servant-tables.json")
+    except FileNotFoundError:
+        return []
+
+    data = _read_source("servant-tables.json")
+    if not isinstance(data, list):
+        return []
+
+    docs: list[dict] = []
+    for idx, entry in enumerate(data):
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+        table_id = str(entry.get("id") or "").strip() or _slugify(name)
+        source = str(entry.get("source") or "A Man of the People (2E)").strip()
+        source_page = str(entry.get("sourcePage") or "").strip() or _extract_source_page(source, fallback="p.4-26")
+        tags = _normalize_tags(entry.get("tags"), fallback=["servant-case", "table"])
+
+        raw_results = entry.get("results") if isinstance(entry.get("results"), list) else []
+        rows = []
+        next_range = 1
+        max_range = 1
+        for result_index, raw in enumerate(raw_results):
+            if isinstance(raw, dict):
+                text = str(raw.get("text") or "").strip()
+                if not text:
+                    continue
+                low, high = _parse_rolltable_range(raw.get("range"), fallback=next_range)
+                weight = max(1, int(raw.get("weight", 1) or 1))
+                img = str(raw.get("img") or "icons/svg/d20-grey.svg").strip() or "icons/svg/d20-grey.svg"
+            else:
+                text = str(raw or "").strip()
+                if not text:
+                    continue
+                low, high = next_range, next_range
+                weight = 1
+                img = "icons/svg/d20-grey.svg"
+
+            next_range = high + 1
+            max_range = max(max_range, high)
+            rows.append({
+                "_id": _stable_id("servant-table-result", f"{table_id}:{result_index}:{text}", size=16),
+                "type": 0,
+                "text": text,
+                "img": img,
+                "weight": weight,
+                "range": [low, high],
+                "drawn": False,
+                "documentCollection": None,
+                "documentId": None,
+                "flags": {}
+            })
+
+        if not rows:
+            continue
+
+        formula = str(entry.get("formula") or "").strip() or f"1d{max_range}"
+        docs.append({
+            "_id": _stable_id("servant-table", table_id),
+            "name": name,
+            "description": str(entry.get("description") or "").strip(),
+            "results": rows,
+            "formula": formula,
+            "replacement": bool(entry.get("replacement", True)),
+            "displayRoll": bool(entry.get("displayRoll", True)),
+            "folder": None,
+            "sort": int(entry.get("sort", idx * 1000) or idx * 1000),
+            "ownership": {"default": 2},
+            "flags": {
+                "laundry-rpg": {
+                    "source": source,
+                    "sourcePage": source_page,
+                    "tags": tags,
+                    "servantCase": "a-man-of-the-people"
+                }
+            }
+        })
+
+    return docs
+
+
 def build_all_items(item_collections: list[list[dict]]) -> list[dict]:
     docs: list[dict] = []
     seen: set[tuple[str, str]] = set()
@@ -877,6 +1128,8 @@ def main() -> None:
         "enemies.db": enemies,
         "rules.db": build_rules_journal(),
         "servant.db": build_servant_journal(),
+        "servant-npcs.db": build_servant_npcs(),
+        "servant-tables.db": build_servant_tables(),
         "macros.db": build_macros(),
     }
 

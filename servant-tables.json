@@ -1,0 +1,886 @@
+[
+  {
+    "id": "gm-scene-sequencer",
+    "name": "A Man of the People // Scene Sequencer",
+    "description": "Fast scene order helper for GMs running the case in one session.",
+    "source": "A Man of the People (2E) p.4-26",
+    "sourcePage": "p.4-26",
+    "formula": "1d8",
+    "tags": [
+      "servant-case",
+      "gm-tools",
+      "flow",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Act One: Search Nicholas Morris office under contractor cover.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-005.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Busted: Fairchild + security shut down the op and humiliate the team.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-045.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Milton Keynes retraining opens with social pressure and icebreakers.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-102.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Computational demonology practical fails and possession incident triggers.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-190.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Q Division issues HOG, NecronomiPhone, and last-resort kit.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-151.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Emergency recall to London. Team C moved to CCTV support role.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          7,
+          7
+        ],
+        "text": "Parliament infiltration while Team A and B are neutralised or delayed.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+      },
+      {
+        "range": [
+          8,
+          8
+        ],
+        "text": "Commons chamber showdown: neutralise Algernon and shut down the grid.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-170.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 0
+  },
+  {
+    "id": "act-one-office-leads",
+    "name": "Act One // Office Search Leads",
+    "description": "Use when PCs overperform on office search or ask for extra leads.",
+    "source": "A Man of the People (2E) p.8-10",
+    "sourcePage": "p.8-10",
+    "formula": "1d8",
+    "tags": [
+      "servant-case",
+      "act-one",
+      "clues",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Draft speech with repeated language about emergency executive action.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-131.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Call log showing repeated contact with unknown private number tagged ALGY.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Paper map with Parliament service corridors lightly annotated.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Safe code hidden in predictable personal data pattern.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Receipts for occult books ordered through shell consultant account.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-063.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Paranoid notes on election timing and parliamentary floor control.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-131.png"
+      },
+      {
+        "range": [
+          7,
+          7
+        ],
+        "text": "Printed article clippings linking Morris to anti-establishment rhetoric.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-131.png"
+      },
+      {
+        "range": [
+          8,
+          8
+        ],
+        "text": "No hard evidence, but enough aligned anomalies to justify full escalation.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-005.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 1000
+  },
+  {
+    "id": "act-one-busted-escalation",
+    "name": "Act One // Busted Escalation",
+    "description": "Complication beats for the arrest and reprimand sequence.",
+    "source": "A Man of the People (2E) p.11",
+    "sourcePage": "p.11",
+    "formula": "1d6",
+    "tags": [
+      "servant-case",
+      "act-one",
+      "complications",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Security records every second; cover identities are burned.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Fairchild frames PCs as incompetent saboteurs in front of Morris.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-030.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Algernon overplays concern and accidentally confirms insider awareness.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-012.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Confiscated evidence chain triggers extra HR interviews.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Media staff are nearby; PCs must avoid an optics disaster.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Warrant cards suspended immediately pending corrective training.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-005.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 2000
+  },
+  {
+    "id": "icebreaker-pressure-prompts",
+    "name": "Act Two // Icebreaker Pressure Prompts",
+    "description": "Prompts to force character voice under hostile corporate training conditions.",
+    "source": "A Man of the People (2E) p.14",
+    "sourcePage": "p.14",
+    "formula": "1d8",
+    "tags": [
+      "servant-case",
+      "act-two",
+      "social",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Explain your most avoidable mission failure in one sentence.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Name the colleague you trust least and why.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Describe how you would fix your department in one policy line.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "State one thing HR wrote about you that was technically accurate.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Choose: you were unlucky, underprepared, or set up by process.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Share your worst field improvisation and what it cost.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-092.png"
+      },
+      {
+        "range": [
+          7,
+          7
+        ],
+        "text": "Jamie calls someone a legend. Who reacts badly?",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-092.png"
+      },
+      {
+        "range": [
+          8,
+          8
+        ],
+        "text": "Melanie demands one concrete proof that retraining is not wasted on you.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 3000
+  },
+  {
+    "id": "demonology-practical-complications",
+    "name": "Act Two // Demonology Practical Complications",
+    "description": "Escalation options once the possession incident begins.",
+    "source": "A Man of the People (2E) p.15",
+    "sourcePage": "p.15",
+    "formula": "1d8",
+    "tags": [
+      "servant-case",
+      "act-two",
+      "complications",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Power leads are fused; cutting power needs a harder Computers test.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-130.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Possessed Jamie reaches the nearest door and tries to spread panic.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-190.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Ward app glitches; one PC must re-establish it under pressure.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-151.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Melanie re-enters early and mistakes containment for disobedience.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Active line sparks across the floor, forcing reposition tests.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-190.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Nearby trainee freezes, adding a civilian extraction burden.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+      },
+      {
+        "range": [
+          7,
+          7
+        ],
+        "text": "Alarm suppression fails and site lockdown starts in 2 rounds.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          8,
+          8
+        ],
+        "text": "You can end it now by brute-force hardware destruction with collateral risk.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-130.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 4000
+  },
+  {
+    "id": "q-division-gear-spotlight",
+    "name": "Act Two // Q Division Gear Spotlight",
+    "description": "Quick reminder table for gadget capabilities in play.",
+    "source": "A Man of the People (2E) p.16-18",
+    "sourcePage": "p.16-18",
+    "formula": "1d6",
+    "tags": [
+      "servant-case",
+      "act-two",
+      "gear",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "text": "Hand of Glory (HOG): ignore observation, but still manage sound and contact.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-156.png"
+      },
+      {
+        "range": [
+          3,
+          4
+        ],
+        "text": "NecronomiPhone: Banishment, Ward, Exorcism only for this mission loadout.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-130.png"
+      },
+      {
+        "range": [
+          5,
+          6
+        ],
+        "text": "Basilisk Camera: absolute last resort, severe collateral and reflection risk.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-151.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 5000
+  },
+  {
+    "id": "recall-and-transit-frictions",
+    "name": "Act Two // Recall and Transit Frictions",
+    "description": "Inject urgency and dark comedy during rush back to London.",
+    "source": "A Man of the People (2E) p.19-20",
+    "sourcePage": "p.19-20",
+    "formula": "1d6",
+    "tags": [
+      "servant-case",
+      "act-two",
+      "travel",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Melanie gets priority transit while PCs inherit a failing minibus.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-102.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Route closure adds delay unless someone secures an alternate corridor.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Command comms are saturated; PCs brief from incomplete fragments.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Gear manifest mismatch means one critical item is missing until improvised.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Algernon over-shares confidence and accidentally raises alarm bells.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-012.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Boris changes team assignments mid-stream after new CCTV intel.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-166.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 6000
+  },
+  {
+    "id": "parliament-entry-routes",
+    "name": "Act Three // Parliament Entry Routes",
+    "description": "Route chooser with tradeoffs for first approach to Westminster.",
+    "source": "A Man of the People (2E) p.22-23",
+    "sourcePage": "p.22-23",
+    "formula": "1d6",
+    "tags": [
+      "servant-case",
+      "act-three",
+      "infiltration",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Front entrance: fastest, but police scrutiny is maximal.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Whitehall tunnels: slower, stealth-oriented, dependent on timing windows.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-102.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Westminster station secure access: social-engineering heavy.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Thames-side wall approach: athletic risk, minimal social contact.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "HOG-assisted movement: bypasses attention but increases stealth checks.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-156.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Split approach: two entry vectors, higher coordination burden.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 7000
+  },
+  {
+    "id": "amateur-occultist-obstacles",
+    "name": "Act Three // Amateur Occultist Obstacles",
+    "description": "Pick one or roll to pace corridor friction before the final chamber.",
+    "source": "A Man of the People (2E) p.23-24",
+    "sourcePage": "p.23-24",
+    "formula": "1d8",
+    "tags": [
+      "servant-case",
+      "act-three",
+      "obstacles",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Ominous Oliver stages a theatrical warning and demands retreat.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-197.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Fake offensive warding covers corridor; it wastes time but has no force.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-058.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Linda offers calm assurances and attempts to hold position socially.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Martin starts a tangent argument about scam grimoires.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "A new smell of burning suggests the grid is worsening right now.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-165.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Ambient glamour pushes everyone to believe intervention is unnecessary.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-148.png"
+      },
+      {
+        "range": [
+          7,
+          7
+        ],
+        "text": "Security patrol crosses near the chamber doors unexpectedly.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          8,
+          8
+        ],
+        "text": "A loud tech failure inside the chamber forces immediate action.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-130.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 8000
+  },
+  {
+    "id": "grid-shutdown-escalation",
+    "name": "Act Three // Grid Shutdown Escalation",
+    "description": "Escalation clock while PCs attempt to disable the Commons processor stack.",
+    "source": "A Man of the People (2E) p.24-25",
+    "sourcePage": "p.24-25",
+    "formula": "1d6",
+    "tags": [
+      "servant-case",
+      "act-three",
+      "countdown",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Minor: smoke thickens; visibility and breathing both worsen.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-165.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Minor: MPs begin twitching as psychic pressure spikes.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Moderate: high-pitched whine triggers extra Resolve tests.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-151.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Moderate: fused cabling raises shutdown DN by +1 for next attempt.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-130.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Major: localized arc flash causes immediate hazard damage.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-190.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Critical: incursion pressure rises; if unresolved, transition to catastrophic fallout.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-197.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 9000
+  },
+  {
+    "id": "aftermath-bureaucratic-fallout",
+    "name": "Conclusion // Bureaucratic Fallout",
+    "description": "Post-mission administrative consequences and hooks for continuation.",
+    "source": "A Man of the People (2E) p.26",
+    "sourcePage": "p.26",
+    "formula": "1d8",
+    "tags": [
+      "servant-case",
+      "conclusion",
+      "aftermath",
+      "table"
+    ],
+    "results": [
+      {
+        "range": [
+          1,
+          1
+        ],
+        "text": "Commended: immediate re-accreditation and controlled praise.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          2,
+          2
+        ],
+        "text": "Conditional success: mission succeeded, paperwork failed, probation extended.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-005.png"
+      },
+      {
+        "range": [
+          3,
+          3
+        ],
+        "text": "Narrative cleanup assignment: PCs spend next week patching witness stories.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+      },
+      {
+        "range": [
+          4,
+          4
+        ],
+        "text": "Audit storm: every requisition form in the mission chain is re-opened.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-182.png"
+      },
+      {
+        "range": [
+          5,
+          5
+        ],
+        "text": "Political pressure: command requests deniable add-on tasks.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-045.png"
+      },
+      {
+        "range": [
+          6,
+          6
+        ],
+        "text": "Team B resentment: intra-office friction becomes a new KPI thread.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+      },
+      {
+        "range": [
+          7,
+          7
+        ],
+        "text": "Melanie grievance: she files procedural complaints against Team C outcomes.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+      },
+      {
+        "range": [
+          8,
+          8
+        ],
+        "text": "Promoted headache: more authority granted, more oversight attached.",
+        "weight": 1,
+        "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-170.png"
+      }
+    ],
+    "replacement": true,
+    "displayRoll": true,
+    "sort": 10000
+  }
+]

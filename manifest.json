@@ -2,7 +2,7 @@
   "id": "laundry-rpg",
   "title": "The Laundry RPG",
   "description": "A system for The Laundry Roleplaying Game (Cubicle 7) in Foundry VTT.",
-  "version": "1.21.0",
+  "version": "1.22.0",
   "compatibility": {
     "minimum": 12,
     "verified": 13
@@ -101,6 +101,20 @@
       "label": "Servant Cases",
       "path": "packs/servant.db",
       "type": "JournalEntry",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "servant-npcs",
+      "label": "Servant NPCs",
+      "path": "packs/servant-npcs.db",
+      "type": "Actor",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "servant-tables",
+      "label": "Servant Tables",
+      "path": "packs/servant-tables.db",
+      "type": "RollTable",
       "system": "laundry-rpg"
     },
     {

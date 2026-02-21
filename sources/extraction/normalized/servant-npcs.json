@@ -1,0 +1,848 @@
+[
+  {
+    "id": "entranced-mps",
+    "name": "Entranced MPs",
+    "role": "hazard",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.24-25",
+    "sourcePage": "p.24-25",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 40,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 1,
+      "spirit": 1
+    },
+    "skillTraining": {
+      "Awareness": 0,
+      "Resolve": 0
+    },
+    "quickActions": [
+      {
+        "name": "Trance Cascade",
+        "kind": "spell",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Environmental psychic pressure",
+        "isMagic": true
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "hazard",
+      "commons",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Mass of vulnerable bystanders trapped in grid-induced trance. They are the key collateral-pressure element.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-177.png"
+  },
+  {
+    "id": "jamie-smyth-possessed",
+    "name": "Jamie Smyth (Possessed)",
+    "role": "hazard",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.15",
+    "sourcePage": "p.15",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": true,
+    "attributes": {
+      "body": 4,
+      "mind": 2,
+      "spirit": 1
+    },
+    "skillTraining": {
+      "Awareness": 1,
+      "Close Combat": 2,
+      "Fortitude": 2
+    },
+    "quickActions": [
+      {
+        "name": "Teeth and Fingernails",
+        "kind": "attack",
+        "pool": 7,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "3d6+1",
+        "traits": "Piercing",
+        "isMagic": false
+      },
+      {
+        "name": "Possession Surge",
+        "kind": "spell",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Target: Spirit (Resolve), fear and panic",
+        "isMagic": true
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-two",
+      "hazard",
+      "possession",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Failure state from the demonology practical. Neutralise by disrupting the active summoning setup, ideally by cutting power.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-190.png"
+  },
+  {
+    "id": "bloody-duncan",
+    "name": "Bloody Duncan",
+    "role": "obstacle",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.24",
+    "sourcePage": "p.24",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 3,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Fast Talk": 2,
+      "Occult": 1,
+      "Intuition": 1
+    },
+    "quickActions": [
+      {
+        "name": "Fraud Ward Setup",
+        "kind": "test",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "False positive, time sink",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "obstacle",
+      "amateur-occultist",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Seller of bogus grimoires and decorative warding scripts. Indirect obstacle, not a combat threat.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-151.png"
+  },
+  {
+    "id": "linda-occultist",
+    "name": "Linda (Occult Volunteer)",
+    "role": "obstacle",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.24",
+    "sourcePage": "p.24",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 2,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Fast Talk": 2,
+      "Presence": 1,
+      "Occult": 1
+    },
+    "quickActions": [
+      {
+        "name": "Peaceful Deflection",
+        "kind": "test",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Namaste stall tactic",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "obstacle",
+      "amateur-occultist",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Smiling corridor blocker who attempts to hold PCs in place with calm language and ritual framing.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+  },
+  {
+    "id": "martin-occultist",
+    "name": "Martin (Occult Volunteer)",
+    "role": "obstacle",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.24",
+    "sourcePage": "p.24",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Fast Talk": 1,
+      "Intuition": 1,
+      "Occult": 1
+    },
+    "quickActions": [
+      {
+        "name": "Rambling Delay",
+        "kind": "test",
+        "pool": 3,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Distracting side argument",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "obstacle",
+      "amateur-occultist",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Well-meaning but obstructive assistant to Linda, mostly useful for buying Nicholas and Algernon more time.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+  },
+  {
+    "id": "ominous-oliver",
+    "name": "Ominous Oliver",
+    "role": "obstacle",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.23",
+    "sourcePage": "p.23",
+    "npcClass": "minion",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 2,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Fast Talk": 2,
+      "Occult": 1,
+      "Presence": 1
+    },
+    "quickActions": [
+      {
+        "name": "Albion Warning",
+        "kind": "test",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Stall and redirect",
+        "isMagic": false
+      },
+      {
+        "name": "Crystal Drone",
+        "kind": "spell",
+        "pool": 3,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Harmless theatrics",
+        "isMagic": true
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "obstacle",
+      "amateur-occultist",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Corridor gatekeeper with more confidence than capability. Primarily a delay vector.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-197.png"
+  },
+  {
+    "id": "algernon-mainwaring",
+    "name": "Algernon Mainwaring",
+    "role": "principal",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.7",
+    "sourcePage": "p.7",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 1,
+      "mind": 4,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Bureaucracy": 3,
+      "Computers": 2,
+      "Occult": 2,
+      "Resolve": 2,
+      "Fast Talk": 1
+    },
+    "quickActions": [
+      {
+        "name": "Basilisk Gun Shot",
+        "kind": "attack",
+        "pool": 6,
+        "dn": 5,
+        "complexity": 1,
+        "damage": "6d6+2",
+        "traits": "Range (Long), Lethal, Collateral",
+        "isMagic": true
+      },
+      {
+        "name": "Frantic Ritual Coaching",
+        "kind": "test",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 2,
+        "damage": "",
+        "traits": "Target: Mind, confusion and delay",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-two",
+      "act-three",
+      "principal",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Counter Possession administrator with deep resentment over stalled advancement. Smart, anxious, and far out of his depth when real pressure lands.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-012.png"
+  },
+  {
+    "id": "nicholas-morris",
+    "name": "Nicholas Morris",
+    "role": "principal",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.7",
+    "sourcePage": "p.7",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "major",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 4,
+      "spirit": 4
+    },
+    "skillTraining": {
+      "Bureaucracy": 3,
+      "Fast Talk": 2,
+      "Presence": 2,
+      "Resolve": 2,
+      "Intuition": 1
+    },
+    "quickActions": [
+      {
+        "name": "Parliamentary Pressure",
+        "kind": "test",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Target: Spirit (Resolve), social coercion",
+        "isMagic": false
+      },
+      {
+        "name": "Panic Lunge",
+        "kind": "attack",
+        "pool": 3,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "1d6+1",
+        "traits": "Ineffective",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "principal",
+      "ian gunpowder",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "High-profile politician and self-justifying architect of the coup attempt. He is dangerous mostly through access, influence, and conviction.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-045.png"
+  },
+  {
+    "id": "angela-davies",
+    "name": "Angela Davies",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.26",
+    "sourcePage": "p.26",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 2,
+      "mind": 4,
+      "spirit": 4
+    },
+    "skillTraining": {
+      "Bureaucracy": 3,
+      "Fast Talk": 2,
+      "Intuition": 2,
+      "Resolve": 2
+    },
+    "quickActions": [
+      {
+        "name": "Narrative Containment",
+        "kind": "test",
+        "pool": 7,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Removes collateral witnesses from play",
+        "isMagic": false
+      },
+      {
+        "name": "Senior Plumber Authority",
+        "kind": "test",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Target: Spirit, compliance pressure",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "support",
+      "senior-plumber",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Post-incident control specialist who shuts down fallout and converts disaster into plausible bureaucratic paperwork.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-108.png"
+  },
+  {
+    "id": "boris",
+    "name": "Boris",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.19-20",
+    "sourcePage": "p.19-20",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 3,
+      "mind": 3,
+      "spirit": 4
+    },
+    "skillTraining": {
+      "Bureaucracy": 3,
+      "Presence": 3,
+      "Resolve": 2,
+      "Intuition": 2
+    },
+    "quickActions": [
+      {
+        "name": "Operations Brief",
+        "kind": "test",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Coordination, grants allied momentum",
+        "isMagic": false
+      },
+      {
+        "name": "Hard Cut Order",
+        "kind": "test",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Target: Spirit, suppresses argument",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-two",
+      "act-three",
+      "command",
+      "Servant Cases // A Man of the People",
+      "support"
+    ],
+    "description": "Thickset command lead who treats the situation as existential and assigns teams under extreme time pressure.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-166.png"
+  },
+  {
+    "id": "dr-wilfred-maunder",
+    "name": "Dr Wilfred Maunder",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.18",
+    "sourcePage": "p.18",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "minor",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 1,
+      "mind": 4,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Academics": 3,
+      "Computers": 2,
+      "Occult": 2,
+      "Technology": 3
+    },
+    "quickActions": [
+      {
+        "name": "Q Division Demo",
+        "kind": "test",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Provides gear context and safety notes",
+        "isMagic": false
+      },
+      {
+        "name": "Experimental Ward Advice",
+        "kind": "spell",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Allied defensive bonus",
+        "isMagic": true
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-two",
+      "q-division",
+      "support",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Excitable Q Division instructor who provides hands-on access to HOGs, NecronomiPhones, and last-resort anti-occult hardware.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-170.png"
+  },
+  {
+    "id": "general-douglas-fairchild",
+    "name": "General Douglas Fairchild",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.7",
+    "sourcePage": "p.7",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 3,
+      "mind": 3,
+      "spirit": 4
+    },
+    "skillTraining": {
+      "Presence": 3,
+      "Fast Talk": 2,
+      "Intuition": 2,
+      "Resolve": 2
+    },
+    "quickActions": [
+      {
+        "name": "Command Voice",
+        "kind": "test",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Target: Spirit (Resolve), intimidation",
+        "isMagic": false
+      },
+      {
+        "name": "Security Detail Signal",
+        "kind": "test",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Summons mundane backup",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-one",
+      "support",
+      "mod",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Senior MOD planner who uses aristocratic theatre and aggressive framing to unbalance targets.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-030.png"
+  },
+  {
+    "id": "jamie-smyth",
+    "name": "Jamie Smyth",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.18",
+    "sourcePage": "p.18",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 4,
+      "mind": 2,
+      "spirit": 2
+    },
+    "skillTraining": {
+      "Athletics": 2,
+      "Close Combat": 2,
+      "Fortitude": 2,
+      "Ranged": 2,
+      "Resolve": 1
+    },
+    "quickActions": [
+      {
+        "name": "Aggressive Entry",
+        "kind": "attack",
+        "pool": 6,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "3d6+1",
+        "traits": "Brutal",
+        "isMagic": false
+      },
+      {
+        "name": "Legendary Banter",
+        "kind": "test",
+        "pool": 4,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Target: Spirit, social disruption",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-two",
+      "occulus",
+      "support",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Brash OCCULUS support officer who should be in the field, not in retraining. Loves risk and loud confidence.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-092.png"
+  },
+  {
+    "id": "laundry-team-a-operatives",
+    "name": "Laundry Team A Operatives",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.19-22",
+    "sourcePage": "p.19-22",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 4,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 3,
+      "mind": 3,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Awareness": 2,
+      "Close Combat": 2,
+      "Ranged": 2,
+      "Stealth": 1,
+      "Technology": 1
+    },
+    "quickActions": [
+      {
+        "name": "Rapid Entry",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6+1",
+        "traits": "Coordinated",
+        "isMagic": false
+      },
+      {
+        "name": "Badge and Warrant",
+        "kind": "test",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Fails if police are already hostile",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "support",
+      "laundry-team",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Primary interception team neutralised during the Westminster response window.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+  },
+  {
+    "id": "laundry-team-b-operatives",
+    "name": "Laundry Team B Operatives",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.19-22",
+    "sourcePage": "p.19-22",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 3,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 3,
+      "mind": 3,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Awareness": 2,
+      "Close Combat": 2,
+      "Ranged": 2,
+      "Stealth": 1,
+      "Technology": 1
+    },
+    "quickActions": [
+      {
+        "name": "Route Intercept",
+        "kind": "test",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Time-sensitive intercept check",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-three",
+      "support",
+      "laundry-team",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Secondary interception team delayed and out of position when Parliament breach begins.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+  },
+  {
+    "id": "melanie-rerio",
+    "name": "Melanie Rerio",
+    "role": "support",
+    "category": "Servant Cases // A Man of the People",
+    "source": "A Man of the People (2E) p.7",
+    "sourcePage": "p.7",
+    "npcClass": "elite",
+    "mode": "lite",
+    "threat": "moderate",
+    "mobSize": 1,
+    "fastDamage": true,
+    "trackInjuries": false,
+    "attributes": {
+      "body": 3,
+      "mind": 2,
+      "spirit": 3
+    },
+    "skillTraining": {
+      "Athletics": 2,
+      "Close Combat": 2,
+      "Ranged": 2,
+      "Presence": 2,
+      "Fast Talk": 2
+    },
+    "quickActions": [
+      {
+        "name": "Public Dressing Down",
+        "kind": "test",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "",
+        "traits": "Target: Spirit (Resolve), morale damage",
+        "isMagic": false
+      },
+      {
+        "name": "Sidearm Drill",
+        "kind": "attack",
+        "pool": 5,
+        "dn": 4,
+        "complexity": 1,
+        "damage": "2d6+1",
+        "traits": "Range (Short)",
+        "isMagic": false
+      }
+    ],
+    "tags": [
+      "servant-case",
+      "act-two",
+      "trainer",
+      "support",
+      "Servant Cases // A Man of the People"
+    ],
+    "description": "Competitive training officer who weaponises embarrassment and hierarchy. Effective, bitter, and always scoring the room.",
+    "img": "systems/laundry-rpg/icons/adventures/man-of-the-people/motp-050.png"
+  }
+]

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.22.0 - 2026-02-21
+
+### Added
+- New `Servant NPCs` actor compendium at `packs/servant-npcs.db` with 16 case-ready actors for `A Man of the People`, including key principals, command/support staff, corridor obstacles, and the `Jamie Smyth (Possessed)` encounter profile.
+- New `Servant Tables` rolltable compendium at `packs/servant-tables.db` with 11 GM-facing tables for scene flow, clues, complications, infiltration routes, escalation clocks, and aftermath fallout.
+- Added GM usability overlays to `servant.json` (`GM Dashboard` and `GM Ops Index`) so the adventure opens with quick routing for scenes, NPCs, and table usage.
+- Added rendered key-page handouts extracted from the source PDF under `icons/adventures/man-of-the-people/pages/` and indexed in `servant.json` for direct Foundry use.
+- Added extraction-pipeline staging data for new servant sources:
+  - `sources/extraction/raw/servant-npcs.json`
+  - `sources/extraction/normalized/servant-npcs.json`
+  - `sources/extraction/reviewed/servant-npcs.json`
+  - `sources/extraction/raw/servant-tables.json`
+  - `sources/extraction/normalized/servant-tables.json`
+  - `sources/extraction/reviewed/servant-tables.json`
+
+### Changed
+- Extended `scripts/stage_extracted_sources.py` normalization workflow to include `servant.json`, `servant-npcs.json`, and `servant-tables.json`.
+- System manifests now register two additional servant compendiums: `servant-npcs` (Actor) and `servant-tables` (RollTable).
+
 ## 1.21.0 - 2026-02-21
 
 ### Added
