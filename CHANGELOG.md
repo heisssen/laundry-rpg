@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.20.6 - 2026-02-21
+
+### Fixed
+- Fixed a critical sheet rendering regression introduced in `1.20.5`: base `LaundryActorSheet.getData()` referenced NPC-only variables (`npcMode`, `npcClass`, etc.) that are undefined outside NPC context, causing runtime `ReferenceError` and breaking sheet rendering.
+- Restored safe base `npcOps` defaults in `LaundryActorSheet`, while keeping full NPC data preparation in `LaundryNpcSheet`.
+
 ## 1.20.5 - 2026-02-21
 
 ### Added

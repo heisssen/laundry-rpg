@@ -180,6 +180,7 @@ export class LaundryActorSheet extends ActorSheet {
             defence: actorData.derived?.defence?.label ?? "Poor"
         };
 
+        context.isNpc = context.actor.type === "npc";
         context.isCharacter = context.actor.type === "character";
         context.hasAssignment = !!actorData.details?.assignment;
         
@@ -257,15 +258,16 @@ export class LaundryActorSheet extends ActorSheet {
             canOpenGmTracker: Boolean(game.user?.isGM && game.laundry?.openGMTracker),
             gmTrackerHint: "GM monitoring: Threat, Team Luck, BAU prompts and party overview are in GM Tracker."
         };
+        // Base sheet keeps a safe default shape; NPC sheet override populates real values.
         context.npcOps = {
-            mode: npcMode,
-            npcClass,
-            mobSize: npcMobSize,
-            fastDamage: npcFastDamage,
-            trackInjuries: npcTrackInjuries,
-            defeated: npcDefeated,
-            archetype: String(npcRaw.archetype ?? ""),
-            quickActions: npcQuickActions,
+            mode: "lite",
+            npcClass: "elite",
+            mobSize: 1,
+            fastDamage: true,
+            trackInjuries: false,
+            defeated: false,
+            archetype: "",
+            quickActions: [],
             presets: NPC_PRESETS.map(entry => ({
                 id: entry.id,
                 name: entry.name
@@ -275,8 +277,8 @@ export class LaundryActorSheet extends ActorSheet {
                 { id: "spell", name: "Spell" },
                 { id: "test", name: "Test" }
             ],
-            usingSuggestedActions: !npcQuickActionSource.length && npcQuickActions.length > 0,
-            canSpawnToScene: npcCanSpawn
+            usingSuggestedActions: false,
+            canSpawnToScene: false
         };
 
         return context;
