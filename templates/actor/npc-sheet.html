@@ -163,16 +163,20 @@
         </div>
 
         <div class="tab npc-actions" data-group="primary" data-tab="npc-actions">
-            <section class="panel">
+            <section class="panel npc-actions-panel">
                 <h3 class="section-header stamp-red">One-Line Actions</h3>
                 {{#unless editable}}
                 <p class="combat-note npc-actions-readonly">Read-only enemy source. Import/duplicate to world to edit actions.</p>
                 {{/unless}}
+                {{#if editable}}
                 <div class="npc-actions-toolbar">
                     <button type="button" class="npc-action-add" data-action-kind="attack">Add Attack</button>
                     <button type="button" class="npc-action-add" data-action-kind="spell">Add Spell</button>
                     <button type="button" class="npc-action-add" data-action-kind="test">Add Test</button>
                 </div>
+                {{else}}
+                <a class="npc-import-world" href="#" role="button">Create Editable World Copy</a>
+                {{/if}}
                 <ol class="items-list compact-list npc-actions-list">
                     <li class="item flexrow item-header">
                         <div class="npc-col npc-col-name">Name</div>
@@ -187,35 +191,35 @@
                     </li>
                     {{#each npcOps.quickActions as |action|}}
                     <li class="item flexrow npc-action-row" data-action-index="{{action.index}}">
-                        <div class="npc-col npc-col-name">
+                        <div class="npc-col npc-col-name" data-label="Name">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="name" type="text" value="{{action.name}}" />
                         </div>
-                        <div class="npc-col npc-col-kind">
+                        <div class="npc-col npc-col-kind" data-label="Kind">
                             <select class="npc-action-field" data-action-index="{{action.index}}" data-action-key="kind">
                                 {{#each @root.npcOps.actionKinds as |kind|}}
                                 <option value="{{kind.id}}" {{#if (laundryEq kind.id ../action.kind)}}selected{{/if}}>{{kind.name}}</option>
                                 {{/each}}
                             </select>
                         </div>
-                        <div class="npc-col npc-col-num">
+                        <div class="npc-col npc-col-num" data-label="Pool">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="pool" type="number" min="0" max="20" value="{{action.pool}}" data-dtype="Number" />
                         </div>
-                        <div class="npc-col npc-col-num">
+                        <div class="npc-col npc-col-num" data-label="DN">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="dn" type="number" min="2" max="6" value="{{action.dn}}" data-dtype="Number" />
                         </div>
-                        <div class="npc-col npc-col-num">
+                        <div class="npc-col npc-col-num" data-label="Complexity">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="complexity" type="number" min="1" max="10" value="{{action.complexity}}" data-dtype="Number" />
                         </div>
-                        <div class="npc-col npc-col-damage">
+                        <div class="npc-col npc-col-damage" data-label="Damage">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="damage" type="text" value="{{action.damage}}" />
                         </div>
-                        <div class="npc-col npc-col-traits">
+                        <div class="npc-col npc-col-traits" data-label="Traits">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="traits" type="text" value="{{action.traits}}" />
                         </div>
-                        <div class="npc-col npc-col-magic">
+                        <div class="npc-col npc-col-magic" data-label="Magic">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="isMagic" type="checkbox" {{checked action.isMagic}} />
                         </div>
-                        <div class="npc-col npc-col-controls">
+                        <div class="npc-col npc-col-controls" data-label="Actions">
                             <button type="button" class="npc-action-roll" data-action-index="{{action.index}}">Roll</button>
                             <button type="button" class="npc-action-duplicate" data-action-index="{{action.index}}">Dup</button>
                             <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-direction="up" {{#unless action.canMoveUp}}disabled{{/unless}}>Up</button>

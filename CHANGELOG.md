@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.19.2 - 2026-02-21
+
+### Fixed
+- NPC action editor now correctly treats editable world actors as editable, restoring reliable `Add Attack` / `Add Spell` / `Add Test` behavior after importing enemies.
+- Read-only compendium enemies now create editable world copies with explicit owner permissions for the active user.
+
+### Changed
+- NPC one-line action panel is now fully responsive: desktop table on wide screens, compact tablet layout, and card-style labeled rows on mobile.
+- Improved mobile usability for NPC sheets with cleaner header stacking and action controls that stay tappable on narrow viewports.
+
 ## 1.19.1 - 2026-02-21
 
 ### Fixed

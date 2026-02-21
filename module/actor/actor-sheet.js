@@ -312,6 +312,7 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".call-support").click(this._onCallSupport.bind(this));
         html.find(".open-endeavours").click(this._onOpenEndeavours.bind(this));
         html.find(".take-downtime").click(this._onOpenEndeavours.bind(this));
+        html.find(".npc-import-world").click(this._onNpcImportWorld.bind(this));
         html.find(".npc-preset-apply").click(this._onNpcPresetApply.bind(this));
         html.find(".npc-action-add").click(this._onNpcActionAdd.bind(this));
         html.find(".npc-action-delete").click(this._onNpcActionDelete.bind(this));
@@ -703,6 +704,27 @@ export class LaundryActorSheet extends ActorSheet {
         await openEndeavoursApp(this.actor);
     }
 
+    async _onNpcImportWorld(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+
+        const canModify = this.actor?.canUserModify?.(game.user, "update");
+        if (this.isEditable || canModify) {
+            ui.notifications.info("This NPC is already editable.");
+            return;
+        }
+
+        const copyData = this._buildNpcWorldCopyData();
+        const created = await Actor.create(copyData);
+        if (!created) {
+            ui.notifications.warn("Failed to create editable NPC copy.");
+            return;
+        }
+
+        ui.notifications.info(`${created.name}: editable copy created in Actor Directory.`);
+        created.sheet?.render(true);
+    }
+
     async _onNpcPresetApply(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
@@ -867,6 +889,31 @@ export class LaundryActorSheet extends ActorSheet {
         if (this.isEditable) return true;
         ui.notifications.warn("This NPC is read-only. Import or duplicate it into the world before editing one-line actions.");
         return false;
+    }
+
+    _buildNpcWorldCopyData() {
+        const source = foundry.utils.deepClone(this.actor.toObject());
+        delete source._id;
+        source.folder = null;
+        source.pack = null;
+        source.sort = 0;
+        source.ownership = { default: 0 };
+        if (game.user?.id) source.ownership[game.user.id] = 3;
+
+        if (Array.isArray(source.items)) {
+            for (const item of source.items) {
+                if (item && typeof item === "object") delete item._id;
+            }
+        }
+        if (Array.isArray(source.effects)) {
+            for (const effect of source.effects) {
+                if (effect && typeof effect === "object") delete effect._id;
+            }
+        }
+        if (source.prototypeToken && typeof source.prototypeToken === "object") {
+            delete source.prototypeToken._id;
+        }
+        return source;
     }
 
     _createNpcQuickAction(kind = "attack") {
