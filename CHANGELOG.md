@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.19.1 - 2026-02-21
+
+### Fixed
+- NPC `Add One-Line Action` now reliably persists new entries from the sheet (including unsaved inline edits) instead of dropping updates.
+- Read-only enemy actors now show explicit guidance when action editing is blocked.
+
+### Changed
+- Upgraded NPC one-line action UX with quick add buttons (`Add Attack`, `Add Spell`, `Add Test`) and smarter default pools by action kind.
+- Added quick action management controls for enemies: `Dup`, `Up`, `Down`, plus improved button layout/disabled states for easier encounter prep.
+
 ## 1.19.0 - 2026-02-21
 
 ### Added

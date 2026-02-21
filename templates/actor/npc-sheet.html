@@ -165,6 +165,14 @@
         <div class="tab npc-actions" data-group="primary" data-tab="npc-actions">
             <section class="panel">
                 <h3 class="section-header stamp-red">One-Line Actions</h3>
+                {{#unless editable}}
+                <p class="combat-note npc-actions-readonly">Read-only enemy source. Import/duplicate to world to edit actions.</p>
+                {{/unless}}
+                <div class="npc-actions-toolbar">
+                    <button type="button" class="npc-action-add" data-action-kind="attack">Add Attack</button>
+                    <button type="button" class="npc-action-add" data-action-kind="spell">Add Spell</button>
+                    <button type="button" class="npc-action-add" data-action-kind="test">Add Test</button>
+                </div>
                 <ol class="items-list compact-list npc-actions-list">
                     <li class="item flexrow item-header">
                         <div class="npc-col npc-col-name">Name</div>
@@ -209,12 +217,17 @@
                         </div>
                         <div class="npc-col npc-col-controls">
                             <button type="button" class="npc-action-roll" data-action-index="{{action.index}}">Roll</button>
+                            <button type="button" class="npc-action-duplicate" data-action-index="{{action.index}}">Dup</button>
+                            <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-direction="up" {{#unless action.canMoveUp}}disabled{{/unless}}>Up</button>
+                            <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-direction="down" {{#unless action.canMoveDown}}disabled{{/unless}}>Down</button>
                             <button type="button" class="npc-action-delete" data-action-index="{{action.index}}">Delete</button>
                         </div>
                     </li>
                     {{/each}}
                 </ol>
-                <button type="button" class="npc-action-add">Add One-Line Action</button>
+                {{#unless npcOps.quickActions.length}}
+                <p class="combat-note">No one-line actions yet. Use Add Attack/Spell/Test.</p>
+                {{/unless}}
             </section>
         </div>
     </section>

@@ -153,7 +153,14 @@ export class LaundryActorSheet extends ActorSheet {
         const npcMobSize = Math.max(1, Math.trunc(Number(npcRaw.mobSize) || 1));
         const npcDefeated = Boolean(npcRaw.defeated) || Math.max(0, Math.trunc(Number(actorData.derived?.toughness?.value) || 0)) <= 0;
         const npcQuickActions = Array.isArray(npcRaw.quickActions)
-            ? npcRaw.quickActions.map(entry => normalizeNpcQuickAction(entry)).map((entry, index) => ({ ...entry, index }))
+            ? npcRaw.quickActions
+                .map(entry => normalizeNpcQuickAction(entry))
+                .map((entry, index, allActions) => ({
+                    ...entry,
+                    index,
+                    canMoveUp: index > 0,
+                    canMoveDown: index < allActions.length - 1
+                }))
             : [];
         const npcCanSpawn = Boolean(game.user?.isGM && canvas?.scene);
 
@@ -305,6 +312,14 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".call-support").click(this._onCallSupport.bind(this));
         html.find(".open-endeavours").click(this._onOpenEndeavours.bind(this));
         html.find(".take-downtime").click(this._onOpenEndeavours.bind(this));
+        html.find(".npc-preset-apply").click(this._onNpcPresetApply.bind(this));
+        html.find(".npc-action-add").click(this._onNpcActionAdd.bind(this));
+        html.find(".npc-action-delete").click(this._onNpcActionDelete.bind(this));
+        html.find(".npc-action-duplicate").click(this._onNpcActionDuplicate.bind(this));
+        html.find(".npc-action-move").click(this._onNpcActionMove.bind(this));
+        html.find(".npc-action-roll").click(this._onNpcActionRoll.bind(this));
+        html.find(".npc-reset-defeated").click(this._onNpcResetDefeated.bind(this));
+        html.on("change", ".npc-action-field", (ev) => this._onNpcActionFieldChange(ev));
 
         // Render only for owners
         if (!this.isEditable) return;
@@ -328,12 +343,6 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
-        html.find(".npc-preset-apply").click(this._onNpcPresetApply.bind(this));
-        html.find(".npc-action-add").click(this._onNpcActionAdd.bind(this));
-        html.find(".npc-action-delete").click(this._onNpcActionDelete.bind(this));
-        html.find(".npc-action-roll").click(this._onNpcActionRoll.bind(this));
-        html.find(".npc-reset-defeated").click(this._onNpcResetDefeated.bind(this));
-        html.on("change", ".npc-action-field", (ev) => this._onNpcActionFieldChange(ev));
         html.on("change", ".kpi-field", (ev) => this._onKpiFieldChange(ev));
 
         // Item editing
@@ -697,6 +706,7 @@ export class LaundryActorSheet extends ActorSheet {
     async _onNpcPresetApply(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
+        if (!this._ensureNpcEditable()) return;
         const root = this.element?.[0];
         const presetId = String(root?.querySelector('[name="npcPreset"]')?.value ?? "").trim();
         if (!presetId) {
@@ -716,17 +726,11 @@ export class LaundryActorSheet extends ActorSheet {
     async _onNpcActionAdd(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
-        const actions = this._getNpcQuickActions();
-        actions.push(normalizeNpcQuickAction({
-            name: "New Action",
-            kind: "attack",
-            pool: Math.max(1, Math.trunc(Number(this.actor.system?.derived?.accuracy?.value) || 1)),
-            dn: 4,
-            complexity: 1,
-            damage: "1d6",
-            traits: "",
-            isMagic: false
-        }));
+        if (!this._ensureNpcEditable()) return;
+        const requestedKind = String(ev.currentTarget?.dataset?.actionKind ?? "attack").trim().toLowerCase();
+        const kind = ["attack", "spell", "test"].includes(requestedKind) ? requestedKind : "attack";
+        const actions = this._collectNpcQuickActionsFromSheet();
+        actions.push(this._createNpcQuickAction(kind));
         await this._setNpcQuickActions(actions);
         this.render(false);
     }
@@ -734,39 +738,57 @@ export class LaundryActorSheet extends ActorSheet {
     async _onNpcActionDelete(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
+        if (!this._ensureNpcEditable()) return;
         const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
-        const actions = this._getNpcQuickActions();
+        const actions = this._collectNpcQuickActionsFromSheet();
         if (index < 0 || index >= actions.length) return;
         actions.splice(index, 1);
         await this._setNpcQuickActions(actions);
         this.render(false);
     }
 
+    async _onNpcActionDuplicate(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        if (!this._ensureNpcEditable()) return;
+        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
+        const actions = this._collectNpcQuickActionsFromSheet();
+        if (index < 0 || index >= actions.length) return;
+        const original = actions[index];
+        if (!original) return;
+
+        const copyName = String(original.name ?? "New Action").trim();
+        actions.splice(index + 1, 0, normalizeNpcQuickAction({
+            ...original,
+            id: undefined,
+            name: copyName ? `${copyName} (Copy)` : "New Action (Copy)"
+        }));
+        await this._setNpcQuickActions(actions);
+        this.render(false);
+    }
+
+    async _onNpcActionMove(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        if (!this._ensureNpcEditable()) return;
+        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
+        const direction = String(ev.currentTarget?.dataset?.direction ?? "").trim().toLowerCase();
+        const delta = direction === "up" ? -1 : (direction === "down" ? 1 : 0);
+        if (!delta) return;
+
+        const actions = this._collectNpcQuickActionsFromSheet();
+        if (index < 0 || index >= actions.length) return;
+        const targetIndex = index + delta;
+        if (targetIndex < 0 || targetIndex >= actions.length) return;
+        [actions[index], actions[targetIndex]] = [actions[targetIndex], actions[index]];
+        await this._setNpcQuickActions(actions);
+        this.render(false);
+    }
+
     async _onNpcActionFieldChange(ev) {
         if (this.actor.type !== "npc") return;
-        const input = ev.currentTarget;
-        const index = Math.trunc(Number(input?.dataset?.actionIndex) || -1);
-        const key = String(input?.dataset?.actionKey ?? "").trim();
-        if (index < 0 || !key) return;
-
-        const actions = this._getNpcQuickActions();
-        const action = actions[index];
-        if (!action) return;
-
-        if (["pool", "dn", "complexity"].includes(key)) {
-            action[key] = Math.max(
-                key === "dn" ? 2 : 0,
-                Math.trunc(Number(input.value) || (key === "dn" ? 4 : 1))
-            );
-            if (key === "dn") action[key] = Math.min(6, action[key]);
-            if (key === "complexity") action[key] = Math.max(1, action[key]);
-        } else if (key === "isMagic") {
-            action[key] = Boolean(input.checked);
-        } else {
-            action[key] = String(input.value ?? "").trim();
-        }
-
-        actions[index] = normalizeNpcQuickAction(action);
+        if (!this._ensureNpcEditable()) return;
+        const actions = this._collectNpcQuickActionsFromSheet();
         await this._setNpcQuickActions(actions);
     }
 
@@ -774,7 +796,7 @@ export class LaundryActorSheet extends ActorSheet {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
         const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
-        const actions = this._getNpcQuickActions();
+        const actions = this._collectNpcQuickActionsFromSheet();
         const action = actions[index];
         if (!action) return;
 
@@ -823,6 +845,7 @@ export class LaundryActorSheet extends ActorSheet {
     async _onNpcResetDefeated(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
+        if (!this._ensureNpcEditable()) return;
         const maxToughness = Math.max(1, Math.trunc(Number(this.actor.system?.derived?.toughness?.max) || 1));
         await this.actor.update({
             "system.npc.defeated": false,
@@ -838,6 +861,77 @@ export class LaundryActorSheet extends ActorSheet {
         return Array.isArray(actions)
             ? actions.map(entry => normalizeNpcQuickAction(entry))
             : [];
+    }
+
+    _ensureNpcEditable() {
+        if (this.isEditable) return true;
+        ui.notifications.warn("This NPC is read-only. Import or duplicate it into the world before editing one-line actions.");
+        return false;
+    }
+
+    _createNpcQuickAction(kind = "attack") {
+        const actionKind = ["attack", "spell", "test"].includes(String(kind)) ? String(kind) : "attack";
+        const body = Math.max(1, Math.trunc(Number(this.actor.system?.attributes?.body?.value) || 1));
+        const mind = Math.max(1, Math.trunc(Number(this.actor.system?.attributes?.mind?.value) || 1));
+        const melee = Math.max(1, Math.trunc(Number(this.actor.system?.derived?.melee?.value) || body));
+        const accuracy = Math.max(1, Math.trunc(Number(this.actor.system?.derived?.accuracy?.value) || body));
+        const basePool = actionKind === "spell"
+            ? Math.max(mind, accuracy)
+            : (actionKind === "test" ? Math.max(1, Math.min(melee, accuracy)) : Math.max(melee, accuracy));
+
+        return normalizeNpcQuickAction({
+            name: actionKind === "spell"
+                ? "New Spell Action"
+                : (actionKind === "test" ? "New Test Action" : "New Attack Action"),
+            kind: actionKind,
+            pool: basePool,
+            dn: 4,
+            complexity: 1,
+            damage: actionKind === "test" ? "" : "1d6",
+            traits: "",
+            isMagic: actionKind === "spell"
+        });
+    }
+
+    _collectNpcQuickActionsFromSheet() {
+        const fallbackActions = this._getNpcQuickActions();
+        const root = this.element?.[0];
+        if (!root) return fallbackActions;
+
+        const rows = Array.from(root.querySelectorAll(".npc-action-row"));
+        if (!rows.length) return fallbackActions;
+
+        const collectText = (row, key, fallback = "") => {
+            const field = row.querySelector(`.npc-action-field[data-action-key="${key}"]`);
+            return field ? String(field.value ?? "").trim() : String(fallback ?? "").trim();
+        };
+        const collectNumber = (row, key, fallback = 0) => {
+            const field = row.querySelector(`.npc-action-field[data-action-key="${key}"]`);
+            const value = Number(field?.value ?? fallback);
+            return Number.isFinite(value) ? Math.trunc(value) : Math.trunc(Number(fallback) || 0);
+        };
+        const collectBoolean = (row, key, fallback = false) => {
+            const field = row.querySelector(`.npc-action-field[data-action-key="${key}"]`);
+            return field instanceof HTMLInputElement ? Boolean(field.checked) : Boolean(fallback);
+        };
+
+        return rows.map((row, rowOrder) => {
+            const index = Math.trunc(Number(row?.dataset?.actionIndex) || -1);
+            const current = index >= 0 && index < fallbackActions.length
+                ? fallbackActions[index]
+                : (fallbackActions[rowOrder] ?? {});
+            return normalizeNpcQuickAction({
+                id: current?.id,
+                name: collectText(row, "name", current?.name ?? "New Action"),
+                kind: collectText(row, "kind", current?.kind ?? "attack"),
+                pool: collectNumber(row, "pool", current?.pool ?? 0),
+                dn: collectNumber(row, "dn", current?.dn ?? 4),
+                complexity: collectNumber(row, "complexity", current?.complexity ?? 1),
+                damage: collectText(row, "damage", current?.damage ?? ""),
+                traits: collectText(row, "traits", current?.traits ?? ""),
+                isMagic: collectBoolean(row, "isMagic", current?.isMagic ?? false)
+            });
+        });
     }
 
     async _setNpcQuickActions(actions = []) {
