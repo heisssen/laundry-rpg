@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.20.10 - 2026-02-21
+
+### Fixed
+- Endeavours now blocks duplicate submissions while an activity is being resolved.
+- Infirmary Shift now requires a valid injured target before rolling and reports injury-track changes clearly.
+- Training Course now enforces the skill rank cap (`4`) before spending XP.
+
+### Changed
+- Downtime form flow simplified: card catalogue remains primary, with dropdown moved to a compact fallback section.
+- Added contextual descriptions for selected approaches and richer skill/target hints in the Endeavours workbench.
+- Reduced Endeavours UI visual saturation and shortened catalogue summaries to improve scanability.
+
 ## 1.20.9 - 2026-02-21
 
 ### Added

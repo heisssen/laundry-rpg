@@ -4598,6 +4598,81 @@
     grid-column: 1 / -1;
 }
 
+.laundry-endeavours-app {
+    gap: 0.6rem;
+    border-left-color: rgba(47, 74, 93, 0.4);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.16));
+}
+
+.laundry-endeavours-app .laundry-endeavour-config-grid > .form-group:first-child {
+    grid-column: auto;
+}
+
+.laundry-endeavours-app .laundry-endeavour-catalog,
+.laundry-endeavours-app .laundry-endeavour-workbench,
+.laundry-endeavours-app .laundry-endeavour-details {
+    background: rgba(255, 255, 255, 0.32);
+}
+
+.laundry-endeavours-app .endeavour-select-summary {
+    display: block;
+    display: -webkit-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.laundry-endeavours-app .endeavour-select.is-selected {
+    border-color: rgba(47, 74, 93, 0.55);
+    border-left-color: var(--laundry-accent);
+    background: rgba(47, 74, 93, 0.12);
+    color: var(--laundry-ink);
+}
+
+.laundry-endeavours-app .laundry-endeavour-fallback {
+    margin-top: 0.1rem;
+    border-top: 1px dashed rgba(0, 0, 0, 0.22);
+    padding-top: 0.3rem;
+}
+
+.laundry-endeavours-app .laundry-endeavour-fallback > summary {
+    cursor: pointer;
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-endeavours-app .laundry-endeavour-fallback .form-group {
+    margin-top: 0.35rem;
+}
+
+.laundry-endeavours-app .laundry-endeavour-field-hint {
+    margin: 0.1rem 0 0;
+    font-size: 0.66rem;
+    line-height: 1.35;
+}
+
+.laundry-endeavours-app [data-action="submit-endeavour"] {
+    border-color: var(--laundry-accent);
+    color: var(--laundry-accent);
+    background: rgba(47, 74, 93, 0.12);
+}
+
+.laundry-endeavours-app [data-action="submit-endeavour"]:hover:not(:disabled) {
+    border-color: var(--laundry-accent);
+    color: var(--laundry-accent);
+    background: rgba(47, 74, 93, 0.2);
+}
+
+.laundry-endeavours-app.is-resolving .laundry-endeavour-catalog,
+.laundry-endeavours-app.is-resolving .laundry-endeavour-config-grid,
+.laundry-endeavours-app.is-resolving .laundry-endeavour-fallback,
+.laundry-endeavours-app.is-resolving .laundry-checkbox-line {
+    pointer-events: none;
+}
+
 .laundry-support-request-app .laundry-support-bundle-list,
 .laundry-support-request-app .laundry-support-critical-list {
     margin-top: 0.24rem;

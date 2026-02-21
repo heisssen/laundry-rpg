@@ -63,19 +63,62 @@ const ENDEAVOUR_SUMMARY = {
 
 const APPROACH_OPTIONS = {
     "asset-cultivation": [
-        { id: "fast-talk", label: "Mind (Fast Talk)", attribute: "mind", skill: "Fast Talk" },
-        { id: "resolve", label: "Spirit (Resolve)", attribute: "spirit", skill: "Resolve" }
+        {
+            id: "fast-talk",
+            label: "Mind (Fast Talk)",
+            attribute: "mind",
+            skill: "Fast Talk",
+            detail: "Leverage social engineering and persuasion to recruit support."
+        },
+        {
+            id: "resolve",
+            label: "Spirit (Resolve)",
+            attribute: "spirit",
+            skill: "Resolve",
+            detail: "Build trust through conviction and principled pressure."
+        }
     ],
     "infirmary-shift": [
-        { id: "presence", label: "Spirit (Presence) - Psychological care", attribute: "spirit", skill: "Presence" },
-        { id: "medicine", label: "Mind (Medicine) - Physical care", attribute: "mind", skill: "Medicine" }
+        {
+            id: "presence",
+            label: "Spirit (Presence)",
+            attribute: "spirit",
+            skill: "Presence",
+            detail: "Psychological care and emotional stabilisation."
+        },
+        {
+            id: "medicine",
+            label: "Mind (Medicine)",
+            attribute: "mind",
+            skill: "Medicine",
+            detail: "Clinical treatment and physical recovery support."
+        }
     ],
     "repair-equipment": [
-        { id: "computers", label: "Mind (Computers)", attribute: "mind", skill: "Computers" },
-        { id: "technology", label: "Mind (Technology)", attribute: "mind", skill: "Technology" },
-        { id: "engineering", label: "Mind (Engineering)", attribute: "mind", skill: "Engineering" }
+        {
+            id: "computers",
+            label: "Mind (Computers)",
+            attribute: "mind",
+            skill: "Computers",
+            detail: "Software diagnostics, firmware recovery, and system restores."
+        },
+        {
+            id: "technology",
+            label: "Mind (Technology)",
+            attribute: "mind",
+            skill: "Technology",
+            detail: "General technical troubleshooting for modern equipment."
+        },
+        {
+            id: "engineering",
+            label: "Mind (Engineering)",
+            attribute: "mind",
+            skill: "Engineering",
+            detail: "Mechanical rebuilds, fabrication, and hardware repair."
+        }
     ]
 };
+const SKILL_RANK_CAP = 4;
 
 export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
     static DEFAULT_OPTIONS = foundry.utils.mergeObject(
@@ -119,6 +162,7 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
         this._departmentName = "";
         this._factionName = "";
         this._travelAbroad = false;
+        this._isResolving = false;
         this._actionsAbortController = null;
     }
 
@@ -134,22 +178,57 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
         if (!ENDEAVOUR_CHOICES.some(entry => entry.id === this._selectedEndeavour)) {
             this._selectedEndeavour = ENDEAVOUR_CHOICES[0]?.id ?? "sick-leave";
         }
-        const skills = _collectActorSkills(this.actor);
-        if (!this._selectedSkill && skills.length) this._selectedSkill = skills[0].name;
+        const endeavours = ENDEAVOUR_CHOICES.map(entry => {
+            const summary = ENDEAVOUR_SUMMARY[entry.id] ?? "";
+            return {
+                ...entry,
+                summary,
+                summaryShort: _truncateText(summary, 92),
+                selected: entry.id === this._selectedEndeavour
+            };
+        });
+        const skills = _collectSkillChoices(this.actor);
+        if (!skills.length) {
+            this._selectedSkill = "";
+        } else if (!skills.some(entry => _skillNamesMatch(entry.name, this._selectedSkill))) {
+            this._selectedSkill = skills[0].name;
+        }
+        const selectedSkill = skills.find(entry => _skillNamesMatch(entry.name, this._selectedSkill)) ?? null;
 
         const approaches = APPROACH_OPTIONS[this._selectedEndeavour] ?? [];
         if (!this._selectedApproach && approaches.length) this._selectedApproach = approaches[0].id;
         if (approaches.length && !approaches.some(option => option.id === this._selectedApproach)) {
             this._selectedApproach = approaches[0].id;
         }
+        const selectedApproach = approaches.find(option => option.id === this._selectedApproach) ?? null;
 
         const characterTargets = game.actors
             .filter(actor => actor.type === "character")
-            .map(actor => ({ id: actor.id, name: actor.name }))
-            .sort((a, b) => a.name.localeCompare(b.name));
-        if (!this._selectedTargetActorId && characterTargets.length) {
-            this._selectedTargetActorId = this.actor?.id ?? characterTargets[0].id;
+            .map(actor => {
+                const injuries = _getInjuryTrackState(actor);
+                return {
+                    id: actor.id,
+                    name: actor.name,
+                    injuriesValue: injuries.value,
+                    injuriesMax: injuries.max,
+                    hasInjuries: injuries.value > 0
+                };
+            })
+            .sort((a, b) => {
+                if (a.hasInjuries !== b.hasInjuries) return a.hasInjuries ? -1 : 1;
+                return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+            });
+        if (!characterTargets.some(entry => entry.id === this._selectedTargetActorId)) {
+            this._selectedTargetActorId = "";
         }
+        if (!this._selectedTargetActorId && characterTargets.length) {
+            const selfTarget = this.actor?.id && characterTargets.some(entry => entry.id === this.actor.id)
+                ? this.actor.id
+                : "";
+            const injuredTarget = characterTargets.find(entry => entry.hasInjuries)?.id ?? "";
+            this._selectedTargetActorId = injuredTarget || selfTarget || characterTargets[0].id;
+        }
+        const selectedTarget = characterTargets.find(entry => entry.id === this._selectedTargetActorId) ?? null;
 
         const needsSkillPicker = ["training-course", "hobbies-and-interests"].includes(this._selectedEndeavour);
         const needsApproachPicker = ["asset-cultivation", "infirmary-shift", "repair-equipment"].includes(this._selectedEndeavour);
@@ -157,14 +236,23 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
         const needsDepartment = this._selectedEndeavour === "overtime";
         const needsFaction = this._selectedEndeavour === "office-politics";
         const needsTravelToggle = this._selectedEndeavour === "family-vacation";
+        const selectedSkillMeta = selectedSkill
+            ? `${_getAttributeLabel(selectedSkill.attribute)} // Training ${selectedSkill.training} // Focus ${selectedSkill.focus}`
+            : "";
+        let targetPickerHint = "";
+        if (needsTargetPicker) {
+            if (!selectedTarget) {
+                targetPickerHint = "Select a treatment target.";
+            } else if (selectedTarget.hasInjuries) {
+                targetPickerHint = `${selectedTarget.name}: ${selectedTarget.injuriesValue}/${selectedTarget.injuriesMax} injury spaces currently marked.`;
+            } else {
+                targetPickerHint = `${selectedTarget.name} currently has no injury spaces marked.`;
+            }
+        }
 
         return {
             actorName: this.actor?.name ?? "Unknown Agent",
-            endeavours: ENDEAVOUR_CHOICES.map(entry => ({
-                ...entry,
-                summary: ENDEAVOUR_SUMMARY[entry.id] ?? "",
-                selected: entry.id === this._selectedEndeavour
-            })),
+            endeavours,
             selectedEndeavourLabel: ENDEAVOUR_CHOICES.find(entry => entry.id === this._selectedEndeavour)?.label ?? "Downtime Activity",
             summary: ENDEAVOUR_SUMMARY[this._selectedEndeavour] ?? "",
             showSkillPicker: needsSkillPicker,
@@ -174,16 +262,30 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             showDepartmentField: needsDepartment,
             showFactionField: needsFaction,
             showTravelToggle: needsTravelToggle,
-            skills: skills.map(entry => ({ ...entry, selected: entry.name === this._selectedSkill })),
+            skills: skills.map(entry => ({ ...entry, selected: _skillNamesMatch(entry.name, this._selectedSkill) })),
+            hasSkillChoices: skills.length > 0,
+            selectedSkillMeta,
+            selectedSkillDescription: selectedSkill?.description ?? "",
             trainingStatOptions: [
                 { id: "training", label: "Training", selected: this._trainingStat === "training" },
                 { id: "focus", label: "Focus", selected: this._trainingStat === "focus" }
             ],
             approaches: approaches.map(entry => ({ ...entry, selected: entry.id === this._selectedApproach })),
-            targetActors: characterTargets.map(entry => ({ ...entry, selected: entry.id === this._selectedTargetActorId })),
+            selectedApproachDetail: selectedApproach?.detail ?? "",
+            targetActors: characterTargets.map(entry => ({
+                ...entry,
+                label: entry.hasInjuries
+                    ? `${entry.name} (${entry.injuriesValue}/${entry.injuriesMax} injuries)`
+                    : `${entry.name} (no injuries)`,
+                selected: entry.id === this._selectedTargetActorId
+            })),
+            hasInjuredTargets: characterTargets.some(entry => entry.hasInjuries),
+            targetPickerHint,
             departmentName: this._departmentName,
             factionName: this._factionName,
-            travelAbroad: this._travelAbroad
+            travelAbroad: this._travelAbroad,
+            isResolving: this._isResolving,
+            submitLabel: this._isResolving ? "Processing..." : "File Endeavour"
         };
     }
 
@@ -253,6 +355,7 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
         root.querySelectorAll('[data-action="submit-endeavour"]').forEach(button => {
             button.addEventListener("click", async (ev) => {
                 ev.preventDefault();
+                if (this._isResolving) return;
                 await this._resolveSelectedEndeavour();
             }, listenerOptions);
         });
@@ -266,90 +369,51 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
 
     async _resolveSelectedEndeavour() {
         if (!this.actor) return;
+        if (this._isResolving) return;
         if (!(game.user?.isGM || this.actor.isOwner)) {
             ui.notifications.warn("Only the GM or actor owner can resolve downtime activities.");
             return;
         }
 
-        switch (this._selectedEndeavour) {
-            case "asset-cultivation":
-                await this._resolveAssetCultivation();
-                return;
-            case "business-as-usual":
-                await this._resolveBusinessAsUsual();
-                return;
-            case "compassionate-leave":
-                await this._resolveCompassionateLeave();
-                return;
-            case "cover-up":
-                await this._resolveCoverUp();
-                return;
-            case "dating-scene":
-                await this._resolveDatingScene();
-                return;
-            case "deep-research":
-                await this._resolveDeepResearch();
-                return;
-            case "false-identity":
-                await this._resolveFalseIdentity();
-                return;
-            case "family-vacation":
-                await this._resolveFamilyVacation();
-                return;
-            case "filing-paperwork":
-                await this._resolveFilingPaperwork();
-                return;
-            case "hidden-agenda":
-                await this._resolveHiddenAgenda();
-                return;
-            case "hobbies-and-interests":
-                await this._resolveHobbiesAndInterests();
-                return;
-            case "infirmary-shift":
-                await this._resolveInfirmaryShift();
-                return;
-            case "long-term-planning":
-                await this._resolveLongTermPlanning();
-                return;
-            case "moonlighting":
-                await this._resolveMoonlighting();
-                return;
-            case "office-politics":
-                await this._resolveOfficePolitics();
-                return;
-            case "overseas-conference":
-                await this._resolveOverseasConference();
-                return;
-            case "overtime":
-                await this._resolveOvertime();
-                return;
-            case "performance-review":
-                await this._resolvePerformanceReview();
-                return;
-            case "repair-equipment":
-                await this._resolveRepairEquipment();
-                return;
-            case "research-and-development":
-                await this._resolveResearchAndDevelopment();
-                return;
-            case "role-transfer":
-                await this._resolveRoleTransfer();
-                return;
-            case "sick-leave":
-                await this._resolveSickLeave();
-                return;
-            case "teambuilding":
-                await this._resolveTeambuilding();
-                return;
-            case "training-course":
-                await this._resolveTrainingCourse();
-                return;
-            case "writing-memoirs":
-                await this._resolveWritingMemoirs();
-                return;
-            default:
-                ui.notifications.warn("Unsupported Endeavour selection.");
-                return;
+        const resolver = {
+            "asset-cultivation": this._resolveAssetCultivation,
+            "business-as-usual": this._resolveBusinessAsUsual,
+            "compassionate-leave": this._resolveCompassionateLeave,
+            "cover-up": this._resolveCoverUp,
+            "dating-scene": this._resolveDatingScene,
+            "deep-research": this._resolveDeepResearch,
+            "false-identity": this._resolveFalseIdentity,
+            "family-vacation": this._resolveFamilyVacation,
+            "filing-paperwork": this._resolveFilingPaperwork,
+            "hidden-agenda": this._resolveHiddenAgenda,
+            "hobbies-and-interests": this._resolveHobbiesAndInterests,
+            "infirmary-shift": this._resolveInfirmaryShift,
+            "long-term-planning": this._resolveLongTermPlanning,
+            moonlighting: this._resolveMoonlighting,
+            "office-politics": this._resolveOfficePolitics,
+            "overseas-conference": this._resolveOverseasConference,
+            overtime: this._resolveOvertime,
+            "performance-review": this._resolvePerformanceReview,
+            "repair-equipment": this._resolveRepairEquipment,
+            "research-and-development": this._resolveResearchAndDevelopment,
+            "role-transfer": this._resolveRoleTransfer,
+            "sick-leave": this._resolveSickLeave,
+            teambuilding: this._resolveTeambuilding,
+            "training-course": this._resolveTrainingCourse,
+            "writing-memoirs": this._resolveWritingMemoirs
+        }[this._selectedEndeavour];
+        if (typeof resolver !== "function") {
+            ui.notifications.warn("Unsupported Endeavour selection.");
+            return;
+        }
+
+        this._isResolving = true;
+        await _rerenderApp(this);
+        try {
+            await resolver.call(this);
+        } finally {
+            this._isResolving = false;
+            await _rerenderApp(this);
         }
     }
 
@@ -644,7 +708,16 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             ui.notifications.warn("Select an Infirmary Shift approach.");
             return;
         }
-        const targetActor = _resolveTargetActor(this._selectedTargetActorId, this.actor);
+        const targetActor = _resolveTargetActor(this._selectedTargetActorId, null);
+        if (!targetActor) {
+            ui.notifications.warn("Select a treatment target.");
+            return;
+        }
+        const beforeTrack = _getInjuryTrackState(targetActor);
+        if (beforeTrack.value <= 0) {
+            ui.notifications.warn(`${targetActor.name} has no injury spaces to clear.`);
+            return;
+        }
         const result = await _rollSkillTest({
             actor: this.actor,
             attribute: approach.attribute,
@@ -653,14 +726,15 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             complexity: 1
         });
         let healed = 0;
-        if (targetActor && result.successes > 0) {
+        if (result.successes > 0) {
             healed = await _healInjurySpaces(targetActor, result.successes);
         }
+        const afterTrack = _getInjuryTrackState(targetActor);
         await _patchFlags(this.actor, {
             infirmary_shift_last: {
                 at: Date.now(),
                 approach: approach.id,
-                targetActorId: targetActor?.id ?? "",
+                targetActorId: targetActor.id,
                 successes: result.successes,
                 healed
             },
@@ -675,9 +749,7 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
                 `Test: ${approach.label} DN 5:1`,
                 `Dice: ${result.dice.join(", ") || "-"}`,
                 `Successes: ${result.successes}`,
-                targetActor
-                    ? `Target: ${targetActor.name}; Injury spaces cleared: ${healed}.`
-                    : "No valid treatment target selected."
+                `Target: ${targetActor.name}; Injury track ${beforeTrack.value}/${beforeTrack.max} -> ${afterTrack.value}/${afterTrack.max} (cleared ${healed}).`
             ],
             roll: result.roll
         });
@@ -927,6 +999,7 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             return;
         }
         const stat = this._trainingStat === "focus" ? "focus" : "training";
+        const statLabel = stat === "focus" ? "Focus" : "Training";
         const xpBefore = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.unspent) || 0));
         if (xpBefore < 5) {
             ui.notifications.warn("Training Course requires at least 5 unspent XP.");
@@ -939,7 +1012,11 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             return;
         }
         const current = Math.max(0, Math.trunc(Number(skill.system?.[stat]) || 0));
-        const next = current + 1;
+        if (current >= SKILL_RANK_CAP) {
+            ui.notifications.warn(`${skillName} ${statLabel} is already at maximum rank (${SKILL_RANK_CAP}).`);
+            return;
+        }
+        const next = Math.min(SKILL_RANK_CAP, current + 1);
         await skill.update({ [`system.${stat}`]: next });
         await this.actor.update({ "system.details.xp.unspent": xpBefore - 5 });
 
@@ -957,7 +1034,7 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             title: "TRAINING COURSE COMPLETION FORM",
             subtitle: "Coursework and advancement",
             lines: [
-                `${skillName}: ${stat === "focus" ? "Focus" : "Training"} ${current} -> ${next}`,
+                `${skillName}: ${statLabel} ${current} -> ${next}`,
                 `XP debited: 5 (unspent ${xpBefore} -> ${xpBefore - 5})`,
                 "Pending refund flag set: +1 XP upon successful course completion."
             ]
@@ -1051,11 +1128,82 @@ async function _patchFlags(actor, patch = {}) {
     });
 }
 
-function _collectActorSkills(actor) {
-    return Array.from(actor?.items ?? [])
-        .filter(item => item.type === "skill")
-        .map(item => ({ id: item.id, name: item.name }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+function _collectSkillChoices(actor) {
+    const byName = new Map();
+
+    for (const item of Array.from(actor?.items ?? [])) {
+        if (item.type !== "skill") continue;
+        const name = String(item.name ?? "").trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        byName.set(key, {
+            id: item.id,
+            name,
+            attribute: String(item.system?.attribute ?? "").trim().toLowerCase(),
+            training: Math.max(0, Math.trunc(Number(item.system?.training) || 0)),
+            focus: Math.max(0, Math.trunc(Number(item.system?.focus) || 0)),
+            description: _truncateText(item.system?.description, 180)
+        });
+    }
+
+    for (const def of CONFIG.LAUNDRY?.skills ?? []) {
+        const name = String(def?.name ?? "").trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        const attribute = String(def?.attribute ?? "").trim().toLowerCase();
+        const existing = byName.get(key);
+        if (!existing) {
+            byName.set(key, {
+                id: "",
+                name,
+                attribute,
+                training: 0,
+                focus: 0,
+                description: ""
+            });
+            continue;
+        }
+        if (!existing.attribute && attribute) existing.attribute = attribute;
+    }
+
+    return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function _skillNamesMatch(nameA, nameB) {
+    return String(nameA ?? "").trim().toLowerCase() === String(nameB ?? "").trim().toLowerCase();
+}
+
+function _getAttributeLabel(attribute = "") {
+    const key = String(attribute ?? "").trim().toLowerCase();
+    if (!key) return "Unknown";
+    const configured = String(CONFIG.LAUNDRY?.attributes?.[key]?.label ?? "").trim();
+    if (configured) return configured;
+    return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function _toPlainText(value = "") {
+    return String(value ?? "")
+        .replace(/<style[\s\S]*?<\/style>/gi, " ")
+        .replace(/<script[\s\S]*?<\/script>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function _truncateText(value = "", limit = 120) {
+    const safeLimit = Math.max(1, Math.trunc(Number(limit) || 120));
+    const plain = _toPlainText(value);
+    if (!plain) return "";
+    if (plain.length <= safeLimit) return plain;
+    if (safeLimit <= 3) return plain.slice(0, safeLimit);
+    return `${plain.slice(0, safeLimit - 3).trimEnd()}...`;
+}
+
+function _getInjuryTrackState(actor) {
+    return {
+        value: Math.max(0, Math.trunc(Number(actor?.system?.derived?.injuries?.value) || 0)),
+        max: Math.max(0, Math.trunc(Number(actor?.system?.derived?.injuries?.max) || 0))
+    };
 }
 
 function _getSkillTraining(actor, skillName) {

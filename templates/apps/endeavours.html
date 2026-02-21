@@ -1,4 +1,4 @@
-<section class="laundry-endeavours-app">
+<section class="laundry-endeavours-app {{#if isResolving}}is-resolving{{/if}}">
     <header class="laundry-endeavours-head">
         <h2>FORM D-17 // Endeavours Submission</h2>
         <p>Operative: <strong>{{actorName}}</strong></p>
@@ -10,9 +10,9 @@
             <div class="laundry-endeavour-catalog-head">Downtime Catalogue</div>
             <div class="laundry-endeavour-cards">
                 {{#each endeavours as |entry|}}
-                <button type="button" class="endeavour-select {{#if entry.selected}}is-selected{{/if}}" data-endeavour-id="{{entry.id}}">
+                <button type="button" class="endeavour-select {{#if entry.selected}}is-selected{{/if}}" data-endeavour-id="{{entry.id}}" {{#if ../isResolving}}disabled{{/if}}>
                     <strong class="endeavour-select-title">{{entry.label}}</strong>
-                    <span class="endeavour-select-summary">{{entry.summary}}</span>
+                    <span class="endeavour-select-summary">{{entry.summaryShort}}</span>
                 </button>
                 {{/each}}
             </div>
@@ -36,42 +36,58 @@
                     </div>
                 </div>
 
-                <div class="laundry-endeavour-config-grid">
+                <details class="laundry-endeavour-fallback">
+                    <summary>Use dropdown selector</summary>
                     <div class="form-group">
-                        <label>Downtime Activity (Dropdown Fallback)</label>
-                        <select name="endeavourId">
+                        <label>Downtime Activity</label>
+                        <select name="endeavourId" {{#if isResolving}}disabled{{/if}}>
                             {{#each endeavours as |entry|}}
                             <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.label}}</option>
                             {{/each}}
                         </select>
                     </div>
+                </details>
 
+                <div class="laundry-endeavour-config-grid">
                     {{#if showApproachPicker}}
                     <div class="form-group">
                         <label>Approach</label>
-                        <select name="approachId">
+                        <select name="approachId" {{#if isResolving}}disabled{{/if}}>
                             {{#each approaches as |approach|}}
                             <option value="{{approach.id}}" {{#if approach.selected}}selected{{/if}}>{{approach.label}}</option>
                             {{/each}}
                         </select>
+                        {{#if selectedApproachDetail}}
+                        <p class="notes laundry-endeavour-field-hint">{{selectedApproachDetail}}</p>
+                        {{/if}}
                     </div>
                     {{/if}}
 
                     {{#if showSkillPicker}}
                     <div class="form-group">
                         <label>Skill</label>
-                        <select name="skillName">
+                        {{#if hasSkillChoices}}
+                        <select name="skillName" {{#if isResolving}}disabled{{/if}}>
                             {{#each skills as |skill|}}
                             <option value="{{skill.name}}" {{#if skill.selected}}selected{{/if}}>{{skill.name}}</option>
                             {{/each}}
                         </select>
+                        {{else}}
+                        <p class="notes laundry-endeavour-field-hint">No skills available for this actor.</p>
+                        {{/if}}
+                        {{#if selectedSkillMeta}}
+                        <p class="notes laundry-endeavour-field-hint">{{selectedSkillMeta}}</p>
+                        {{/if}}
+                        {{#if selectedSkillDescription}}
+                        <p class="notes laundry-endeavour-field-hint">{{selectedSkillDescription}}</p>
+                        {{/if}}
                     </div>
                     {{/if}}
 
                     {{#if showTrainingStat}}
                     <div class="form-group">
                         <label>Increase</label>
-                        <select name="trainingStat">
+                        <select name="trainingStat" {{#if isResolving}}disabled{{/if}}>
                             {{#each trainingStatOptions as |opt|}}
                             <option value="{{opt.id}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
                             {{/each}}
@@ -82,39 +98,45 @@
                     {{#if showTargetPicker}}
                     <div class="form-group">
                         <label>Treatment Target</label>
-                        <select name="targetActorId">
+                        <select name="targetActorId" {{#if isResolving}}disabled{{/if}}>
                             {{#each targetActors as |entry|}}
-                            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.name}}</option>
+                            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.label}}</option>
                             {{/each}}
                         </select>
+                        {{#if targetPickerHint}}
+                        <p class="notes laundry-endeavour-field-hint">{{targetPickerHint}}</p>
+                        {{/if}}
+                        {{#unless hasInjuredTargets}}
+                        <p class="notes laundry-endeavour-field-hint">No characters currently have marked injuries.</p>
+                        {{/unless}}
                     </div>
                     {{/if}}
 
                     {{#if showDepartmentField}}
                     <div class="form-group">
                         <label>Department Name</label>
-                        <input type="text" name="departmentName" value="{{departmentName}}" placeholder="e.g. Internal Logistics" />
+                        <input type="text" name="departmentName" value="{{departmentName}}" placeholder="e.g. Internal Logistics" {{#if isResolving}}disabled{{/if}} />
                     </div>
                     {{/if}}
 
                     {{#if showFactionField}}
                     <div class="form-group">
                         <label>In-Group Faction</label>
-                        <input type="text" name="factionName" value="{{factionName}}" placeholder="e.g. Arcana Analysis old guard" />
+                        <input type="text" name="factionName" value="{{factionName}}" placeholder="e.g. Arcana Analysis old guard" {{#if isResolving}}disabled{{/if}} />
                     </div>
                     {{/if}}
                 </div>
 
                 {{#if showTravelToggle}}
                 <label class="laundry-checkbox-line">
-                    <input type="checkbox" name="travelAbroad" {{#if travelAbroad}}checked{{/if}} />
+                    <input type="checkbox" name="travelAbroad" {{#if travelAbroad}}checked{{/if}} {{#if isResolving}}disabled{{/if}} />
                     Foreign travel involved (roll Spirit/Resolve check).
                 </label>
                 {{/if}}
             </div>
 
             <div class="laundry-endeavour-actions">
-                <button type="button" data-action="submit-endeavour">File Endeavour</button>
+                <button type="button" data-action="submit-endeavour" {{#if isResolving}}disabled{{/if}}>{{submitLabel}}</button>
             </div>
         </section>
     </div>
