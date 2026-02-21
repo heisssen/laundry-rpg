@@ -54,6 +54,26 @@
                     <button type="button" class="pc-kpi-ping" data-actor-id="{{pc.id}}">{{localize "LAUNDRY.KPIPing"}} ({{pc.kpiOpen}})</button>
                     <button type="button" class="pc-open-sheet" data-actor-id="{{pc.id}}">{{localize "LAUNDRY.OpenDossier"}}</button>
                 </div>
+                <div class="gm-kpi-board">
+                    {{#if pc.hasOpenKpis}}
+                    <ol class="gm-kpi-list">
+                        {{#each pc.kpiEntries as |kpi|}}
+                        <li class="gm-kpi-row">
+                            <div class="gm-kpi-main">
+                                <strong>{{#if kpi.text}}{{kpi.text}}{{else}}(Untitled KPI){{/if}}</strong>
+                                <span>{{kpi.horizon}} • {{kpi.priority}} • +{{kpi.rewardPreview.xp}} XP</span>
+                            </div>
+                            <div class="gm-kpi-actions">
+                                <button type="button" class="pc-kpi-close" data-actor-id="{{../id}}" data-kpi-index="{{kpi.index}}" data-kpi-result="completed">Complete</button>
+                                <button type="button" class="pc-kpi-close" data-actor-id="{{../id}}" data-kpi-index="{{kpi.index}}" data-kpi-result="failed">Fail</button>
+                            </div>
+                        </li>
+                        {{/each}}
+                    </ol>
+                    {{else}}
+                    <p class="notes">No open KPIs.</p>
+                    {{/if}}
+                </div>
             </div>
             {{/each}}
         </div>

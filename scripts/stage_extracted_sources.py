@@ -57,7 +57,7 @@ def _normalize_gear(entries):
             continue
         row = copy.deepcopy(entry)
         row["type"] = "gear"
-        row["img"] = str(row.get("img") or "systems/laundry-rpg/icons/generated/_defaults/gear.svg")
+        row["img"] = str(row.get("img") or "systems/laundry-rpg/icons/generated/_defaults/gear.webp")
         system = row.get("system") if isinstance(row.get("system"), dict) else {}
         row["system"] = system
 
@@ -140,15 +140,41 @@ def _normalize_enemies(entries):
         for action in actions:
             if not isinstance(action, dict):
                 continue
+            kind = str(action.get("kind") or "attack").strip().lower()
+            if kind not in {"attack", "spell", "test"}:
+                kind = "attack"
+            action_name = str(
+                action.get("name")
+                or action.get("label")
+                or action.get("title")
+                or ""
+            ).strip()
+            if not action_name:
+                action_name = {
+                    "attack": "Signature Attack",
+                    "spell": "Occult Effect",
+                    "test": "Pressure Test"
+                }.get(kind, "Signature Action")
             normalized_actions.append({
-                "name": str(action.get("name") or "Action").strip(),
-                "kind": str(action.get("kind") or "attack").strip().lower(),
+                "name": action_name,
+                "kind": kind,
                 "pool": max(0, int(action.get("pool", 0) or 0)),
                 "dn": max(2, min(6, int(action.get("dn", 4) or 4))),
                 "complexity": max(1, int(action.get("complexity", 1) or 1)),
                 "damage": str(action.get("damage") or "").strip(),
                 "traits": str(action.get("traits") or "").strip(),
                 "isMagic": bool(action.get("isMagic", False))
+            })
+        if not normalized_actions:
+            normalized_actions.append({
+                "name": "Signature Attack",
+                "kind": "attack",
+                "pool": max(1, row["attributes"]["body"]),
+                "dn": 4,
+                "complexity": 1,
+                "damage": "",
+                "traits": "",
+                "isMagic": False
             })
         row["quickActions"] = normalized_actions
         row["tags"] = _clean_tags(row.get("tags"), defaults=[

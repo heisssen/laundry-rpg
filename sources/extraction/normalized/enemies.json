@@ -40,7 +40,7 @@
       "extreme",
       "boss"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/anning-black-shoggoth-5dfb1e.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/anning-black-shoggoth-5dfb1e.webp"
   },
   {
     "id": "anning-blue-skull",
@@ -99,7 +99,7 @@
       "extreme",
       "boss"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/anning-blue-skull-elder-thing-47c939.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/anning-blue-skull-elder-thing-47c939.webp"
   },
   {
     "id": "deep-one-type-i",
@@ -158,7 +158,7 @@
       "major",
       "boss"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-i-035032.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-i-035032.webp"
   },
   {
     "id": "deep-one-type-ii",
@@ -212,7 +212,7 @@
       "moderate",
       "elite"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-ii-4945df.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-ii-4945df.webp"
   },
   {
     "id": "deep-one-type-iii",
@@ -271,7 +271,7 @@
       "extreme",
       "boss"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-iii-7db566.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-iii-7db566.webp"
   },
   {
     "id": "deep-seven-cthonian",
@@ -316,7 +316,7 @@
       "extreme",
       "boss"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/deep-seven-cthonian-1f4dca.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/deep-seven-cthonian-1f4dca.webp"
   },
   {
     "id": "ghost-psychic-echo",
@@ -368,7 +368,7 @@
       "minor",
       "elite"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/ghost-psychic-echo-9d48b7.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/ghost-psychic-echo-9d48b7.webp"
   },
   {
     "id": "poltergeist",
@@ -423,7 +423,7 @@
       "moderate",
       "elite"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/poltergeist-psychic-echo-4506ea.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/poltergeist-psychic-echo-4506ea.webp"
   },
   {
     "id": "succubus",
@@ -469,7 +469,7 @@
       "major",
       "elite"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/succubus-60ba79.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/succubus-60ba79.webp"
   },
   {
     "id": "zombie-rhr",
@@ -511,7 +511,7 @@
       "minor",
       "minion"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/zombie-rhr-unit-76a9bf.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/zombie-rhr-unit-76a9bf.webp"
   },
   {
     "id": "mundane-large",
@@ -556,7 +556,7 @@
       "major",
       "boss"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/large-mundane-creature-0aedd9.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/large-mundane-creature-0aedd9.webp"
   },
   {
     "id": "mundane-medium",
@@ -601,7 +601,7 @@
       "moderate",
       "elite"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/medium-mundane-creature-dd05ff.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/medium-mundane-creature-dd05ff.webp"
   },
   {
     "id": "mundane-small",
@@ -646,7 +646,7 @@
       "minor",
       "minion"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/small-mundane-creature-a1938c.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/small-mundane-creature-a1938c.webp"
   },
   {
     "id": "aberration",
@@ -700,7 +700,7 @@
       "extreme",
       "boss"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/aberration-9b2ffe.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/aberration-9b2ffe.webp"
   },
   {
     "id": "cultist",
@@ -754,7 +754,7 @@
       "minor",
       "minion"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/cultist-cell-8bf909.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/cultist-cell-8bf909.webp"
   },
   {
     "id": "field-agent",
@@ -808,7 +808,7 @@
       "major",
       "elite"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/hostile-field-agent-cab8c7.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/hostile-field-agent-cab8c7.webp"
   },
   {
     "id": "civilian",
@@ -861,7 +861,7 @@
       "minor",
       "minion"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/panicked-civilian-fe0f56.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/panicked-civilian-fe0f56.webp"
   },
   {
     "id": "security",
@@ -915,6 +915,6 @@
       "moderate",
       "elite"
     ],
-    "img": "systems/laundry-rpg/icons/generated/enemies/security-team-15d54c.svg"
+    "img": "systems/laundry-rpg/icons/generated/enemies/security-team-15d54c.webp"
   }
 ]

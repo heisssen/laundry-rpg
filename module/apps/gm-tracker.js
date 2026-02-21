@@ -1,5 +1,10 @@
 import { rollDice } from "../dice.js";
-import { normalizeKpiEntries, summarizeKpiEntries } from "../utils/kpi.js";
+import {
+    closeKpiAtIndex,
+    getKpiReward,
+    normalizeKpiEntries,
+    summarizeKpiEntries
+} from "../utils/kpi.js";
 import { NPC_PRESETS, createNpcFromPreset, getNpcPreset } from "../utils/npc-presets.js";
 import { openMissionGenerator } from "./mission-generator.js";
 import { applyThreatBuffsToCurrentScene } from "../utils/threat-integration.js";
@@ -76,7 +81,22 @@ export class LaundryGMTracker extends Application {
             const injuriesMax = Math.max(0, Math.trunc(Number(pc.system?.derived?.injuries?.max) || 0));
             const toughnessValue = Math.max(0, Math.trunc(Number(pc.system?.derived?.toughness?.value) || 0));
             const toughnessMax = Math.max(0, Math.trunc(Number(pc.system?.derived?.toughness?.max) || 0));
-            const kpiSummary = summarizeKpiEntries(normalizeKpiEntries(pc.system?.kpi));
+            const normalizedKpi = normalizeKpiEntries(pc.system?.kpi);
+            const kpiSummary = summarizeKpiEntries(normalizedKpi);
+            const kpiOpenEntries = normalizedKpi
+                .map((entry, index) => ({
+                    ...entry,
+                    index,
+                    rewardPreview: getKpiReward({ horizon: entry.horizon, status: "completed" })
+                }))
+                .filter(entry => entry.status === "open")
+                .sort((a, b) => {
+                    if (a.priority !== b.priority) {
+                        const rank = { critical: 0, high: 1, normal: 2, low: 3 };
+                        return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
+                    }
+                    return String(a.text ?? "").localeCompare(String(b.text ?? ""));
+                });
             return {
                 id: pc.id,
                 name: pc.name,
@@ -86,7 +106,9 @@ export class LaundryGMTracker extends Application {
                 injuriesMax,
                 toughnessValue,
                 toughnessMax,
-                kpiOpen: kpiSummary.open
+                kpiOpen: kpiSummary.open,
+                kpiEntries: kpiOpenEntries,
+                hasOpenKpis: kpiOpenEntries.length > 0
             };
         });
 
@@ -269,6 +291,7 @@ export class LaundryGMTracker extends Application {
         html.find(".pc-bau").on("click", (ev) => this._onBauForPc(ev));
         html.find(".pc-open-sheet").on("click", (ev) => this._onOpenDossier(ev));
         html.find(".pc-kpi-ping").on("click", (ev) => this._onKpiPing(ev));
+        html.find(".pc-kpi-close").on("click", (ev) => this._onKpiCloseForPc(ev));
         html.find(".combat-adjust").on("click", (ev) => this._onCombatAdjust(ev));
         html.find(".combat-open-sheet").on("click", (ev) => this._onCombatOpenSheet(ev));
         html.find(".combat-next-turn").on("click", (ev) => this._onCombatNextTurn(ev));
@@ -480,6 +503,44 @@ export class LaundryGMTracker extends Application {
         ui.notifications.info(game.i18n.format("LAUNDRY.KPIPingSent", { name: actor.name }));
     }
 
+    async _onKpiCloseForPc(ev) {
+        ev.preventDefault();
+        if (!game.user?.isGM) return;
+        const actorId = String(ev.currentTarget?.dataset?.actorId ?? "").trim();
+        const index = Math.trunc(Number(ev.currentTarget?.dataset?.kpiIndex) || -1);
+        const requested = String(ev.currentTarget?.dataset?.kpiResult ?? "completed").trim().toLowerCase();
+        if (!actorId || !Number.isInteger(index) || index < 0) return;
+
+        const actor = game.actors?.get(actorId);
+        if (!actor || actor.type !== "character") return;
+        const status = requested === "failed" ? "failed" : "completed";
+
+        const closure = closeKpiAtIndex(actor.system?.kpi, {
+            index,
+            status,
+            userId: game.user.id,
+            closedAt: Date.now()
+        });
+        if (!closure.changed) {
+            ui.notifications.warn("KPI is already closed.");
+            return;
+        }
+
+        const rewardXp = Math.max(0, Math.trunc(Number(closure.reward?.xp) || 0));
+        const xpValue = Math.max(0, Math.trunc(Number(actor.system?.details?.xp?.value) || 0));
+        const xpUnspent = Math.max(0, Math.trunc(Number(actor.system?.details?.xp?.unspent) || 0));
+        await actor.update({
+            "system.kpi": closure.entries,
+            "system.details.xp.value": xpValue + rewardXp,
+            "system.details.xp.unspent": xpUnspent + rewardXp
+        });
+        await this._applyKpiLuckReward(String(closure.reward?.luck ?? "none"));
+
+        const xpText = rewardXp > 0 ? ` +${rewardXp} XP` : "";
+        ui.notifications.info(`${actor.name}: KPI ${status}.${xpText}`);
+        this.render(false);
+    }
+
     async _onCombatAdjust(ev) {
         ev.preventDefault();
         const button = ev.currentTarget;
@@ -492,6 +553,23 @@ export class LaundryGMTracker extends Application {
         if (!actor) return;
         await this._applyCombatResourceAdjustment(actor, { resource, delta, warn: true });
         this.render(false);
+    }
+
+    async _applyKpiLuckReward(mode = "none") {
+        if (!game.user?.isGM) return;
+        const rewardMode = String(mode ?? "none").trim().toLowerCase();
+        if (rewardMode === "none") return;
+
+        const currentLuck = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuck")) || 0));
+        const maxLuck = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuckMax")) || 0));
+        if (rewardMode === "refill") {
+            await game.settings.set("laundry-rpg", "teamLuck", maxLuck);
+            return;
+        }
+        if (rewardMode === "plus1") {
+            const next = Math.max(0, Math.min(maxLuck, currentLuck + 1));
+            await game.settings.set("laundry-rpg", "teamLuck", next);
+        }
     }
 
     _clearAutoRefreshTimer() {

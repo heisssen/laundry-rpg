@@ -233,6 +233,24 @@ function main() {
         }
         if (!Array.isArray(enemy?.quickActions)) {
             errors.push(`Enemy "${name}" must declare quickActions array.`);
+        } else {
+            if (!enemy.quickActions.length) {
+                errors.push(`Enemy "${name}" must include at least one quickAction.`);
+            }
+            for (const action of enemy.quickActions) {
+                const actionName = String(action?.name ?? "").trim();
+                const actionKind = String(action?.kind ?? "").trim().toLowerCase();
+                const loweredActionName = actionName.toLowerCase();
+                if (!actionName) {
+                    errors.push(`Enemy "${name}" has a quickAction without a name.`);
+                }
+                if (["action", "attack action", "spell action", "test action", "new action"].includes(loweredActionName)) {
+                    errors.push(`Enemy "${name}" has placeholder quickAction name "${actionName}".`);
+                }
+                if (!["attack", "spell", "test"].includes(actionKind)) {
+                    errors.push(`Enemy "${name}" has invalid quickAction kind "${actionKind}".`);
+                }
+            }
         }
         if (!sourcePage) {
             errors.push(`Enemy "${name}" must define sourcePage.`);

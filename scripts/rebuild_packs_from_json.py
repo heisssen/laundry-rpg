@@ -40,13 +40,13 @@ SKILLS = [
 ]
 
 DEFAULT_ICON_BY_TYPE = {
-    "skill": "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
-    "talent": "systems/laundry-rpg/icons/generated/_defaults/talent.svg",
-    "assignment": "systems/laundry-rpg/icons/generated/_defaults/assignment.svg",
-    "weapon": "systems/laundry-rpg/icons/generated/_defaults/weapon.svg",
-    "armour": "systems/laundry-rpg/icons/generated/_defaults/armour.svg",
-    "gear": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
-    "spell": "systems/laundry-rpg/icons/generated/_defaults/spell.svg"
+    "skill": "systems/laundry-rpg/icons/generated/_defaults/skill.webp",
+    "talent": "systems/laundry-rpg/icons/generated/_defaults/talent.webp",
+    "assignment": "systems/laundry-rpg/icons/generated/_defaults/assignment.webp",
+    "weapon": "systems/laundry-rpg/icons/generated/_defaults/weapon.webp",
+    "armour": "systems/laundry-rpg/icons/generated/_defaults/armour.webp",
+    "gear": "systems/laundry-rpg/icons/generated/_defaults/gear.webp",
+    "spell": "systems/laundry-rpg/icons/generated/_defaults/spell.webp"
 }
 
 DEFAULT_CATEGORY_BY_TYPE = {
@@ -199,7 +199,7 @@ def _normalize_item(item: dict) -> dict:
     normalized_system = _normalize_system(item_type, item.get("system", {}))
     image = str(item.get("img") or "").strip() or DEFAULT_ICON_BY_TYPE.get(
         item_type,
-        "systems/laundry-rpg/icons/generated/_defaults/gear.svg"
+        "systems/laundry-rpg/icons/generated/_defaults/gear.webp"
     )
     if item_type == "gear":
         image = _gear_icon_for_category(normalized_system.get("category"), image)
@@ -556,13 +556,22 @@ def build_assignment_issued_gear(
     return docs
 
 
-def _normalize_enemy_action(action: dict | None = None) -> dict:
+def _normalize_enemy_action(action: dict | None = None, enemy_name: str = "") -> dict:
     src = action if isinstance(action, dict) else {}
     kind_raw = str(src.get("kind") or "attack").strip().lower()
     kind = kind_raw if kind_raw in {"attack", "spell", "test"} else "attack"
+    raw_name = str(src.get("name") or src.get("label") or src.get("title") or "").strip()
+    fallback_name = {
+        "attack": "Signature Attack",
+        "spell": "Occult Effect",
+        "test": "Pressure Test"
+    }.get(kind, "Signature Action")
+    resolved_name = _normalize_display_name(raw_name) or fallback_name
+    if enemy_name and resolved_name == fallback_name:
+        resolved_name = f"{_normalize_display_name(enemy_name)} {fallback_name}"
     return {
-        "id": _stable_id("npc-action", f"{src.get('name', 'Action')}:{kind}", size=12),
-        "name": _normalize_display_name(str(src.get("name") or "Action").strip()) or "Action",
+        "id": _stable_id("npc-action", f"{resolved_name}:{kind}", size=12),
+        "name": resolved_name,
         "kind": kind,
         "pool": max(0, int(src.get("pool", 0) or 0)),
         "dn": max(2, min(6, int(src.get("dn", 4) or 4))),
@@ -618,6 +627,18 @@ def build_enemies() -> list[dict]:
         mind = max(1, int(attrs.get("mind", 1) or 1))
         spirit = max(1, int(attrs.get("spirit", 1) or 1))
         actions = entry.get("quickActions") if isinstance(entry.get("quickActions"), list) else []
+        normalized_actions = [_normalize_enemy_action(action, enemy_name=name) for action in actions]
+        if not normalized_actions:
+            normalized_actions = [_normalize_enemy_action({
+                "name": "Signature Attack",
+                "kind": "attack",
+                "pool": body,
+                "dn": 4,
+                "complexity": 1,
+                "damage": "",
+                "traits": "",
+                "isMagic": False
+            }, enemy_name=name)]
         source = str(entry.get("source") or "").strip()
         source_page = str(entry.get("sourcePage") or "").strip() or _extract_source_page(source, fallback="system-preset")
         category = str(entry.get("category") or "Bestiary").strip()
@@ -685,7 +706,7 @@ def build_enemies() -> list[dict]:
                     "fastDamage": bool(entry.get("fastDamage", True)),
                     "archetype": preset_id,
                     "defeated": False,
-                    "quickActions": [_normalize_enemy_action(action) for action in actions]
+                    "quickActions": normalized_actions
                 }
             },
             "items": _build_enemy_skill_items(preset_id or name, entry.get("skillTraining")),

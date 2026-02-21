@@ -548,7 +548,7 @@ export async function createNpcFromPreset({
     const created = await Actor.create({
         name: actorName,
         type: "npc",
-        img: "systems/laundry-rpg/icons/generated/_defaults/assignment.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/assignment.webp",
         system: {
             threat: preset.threat ?? "minor"
         }
@@ -609,7 +609,7 @@ async function _applyPresetSkillTraining(actor, trainingMap = {}) {
         creations.push({
             name: skillName,
             type: "skill",
-            img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
+            img: "systems/laundry-rpg/icons/generated/_defaults/skill.webp",
             system: {
                 attribute,
                 training,

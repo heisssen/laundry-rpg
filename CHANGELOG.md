@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.20.0 - 2026-02-21
+
+### Fixed
+- Enemy compendium action normalization now accepts `name`/`label`/`title`, prevents placeholder fallback action names, and guarantees at least one usable action per enemy during extraction/rebuild.
+- KPI closure now avoids duplicate rewards by allowing rewards only when closing previously open KPI entries.
+
+### Changed
+- Fully regenerated generated icons into a single noir-style WebP pipeline (`icons/generated/**/*`) with unified defaults and updated image references.
+- Reworked `Endeavours` and `Requisition & Support` into split-pane multi-panel workflows with direct card selection plus fallback dropdown controls.
+- Upgraded KPI flow into GM-controlled closure: players can create/edit open KPIs, but only GM can close/delete; closing now auto-awards XP and team Luck effects from KPI horizon rules.
+- Added KPI board controls to GM Tracker so the GM can close PC KPIs directly from operations view.
+- Added an in-sheet Upgrade Shop for character XP automation: one-click skill training/focus upgrades, attribute upgrades, and talent purchase from compendium with automatic XP deduction.
+
 ## 1.19.5 - 2026-02-21
 
 ### Fixed

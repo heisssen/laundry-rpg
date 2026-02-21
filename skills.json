@@ -2,7 +2,7 @@
   {
     "name": "Academics",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/academics-f82e44.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/academics-f82e44.webp",
     "system": {
       "description": "<p>Research, scholarship, and formal study.</p>",
       "attribute": "mind",
@@ -13,7 +13,7 @@
   {
     "name": "Athletics",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/athletics-c4ff11.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/athletics-c4ff11.webp",
     "system": {
       "description": "<p>Running, climbing, and physical exertion.</p>",
       "attribute": "body",
@@ -24,7 +24,7 @@
   {
     "name": "Awareness",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/awareness-609b23.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/awareness-609b23.webp",
     "system": {
       "description": "<p>Perception, situational awareness, and noticing detail.</p>",
       "attribute": "mind",
@@ -35,7 +35,7 @@
   {
     "name": "Bureaucracy",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/bureaucracy-fa2cf8.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/bureaucracy-fa2cf8.webp",
     "system": {
       "description": "<p>Forms, policy, and institutional procedure.</p>",
       "attribute": "mind",
@@ -46,7 +46,7 @@
   {
     "name": "Close Combat",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/close-combat-71239d.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/close-combat-71239d.webp",
     "system": {
       "description": "<p>Melee fighting, brawling, and close-quarters weapon use.</p>",
       "attribute": "body",
@@ -57,7 +57,7 @@
   {
     "name": "Computers",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/computers-c1ecd1.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/computers-c1ecd1.webp",
     "system": {
       "description": "<p>Programming, digital operations, and computer security.</p>",
       "attribute": "mind",
@@ -68,7 +68,7 @@
   {
     "name": "Dexterity",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/dexterity-e65680.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/dexterity-e65680.webp",
     "system": {
       "description": "<p>Manual precision, sleight of hand, and fine control.</p>",
       "attribute": "body",
@@ -79,7 +79,7 @@
   {
     "name": "Engineering",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/engineering-df635a.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/engineering-df635a.webp",
     "system": {
       "description": "<p>Mechanical systems, repairs, and technical builds.</p>",
       "attribute": "mind",
@@ -90,7 +90,7 @@
   {
     "name": "Fast Talk",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/fast-talk-e9e8e1.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/fast-talk-e9e8e1.webp",
     "system": {
       "description": "<p>Bluffing, persuasion, and social maneuvering.</p>",
       "attribute": "spirit",
@@ -101,7 +101,7 @@
   {
     "name": "Fortitude",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/fortitude-e3b505.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/fortitude-e3b505.webp",
     "system": {
       "description": "<p>Stamina, pain tolerance, and bodily resilience.</p>",
       "attribute": "body",
@@ -112,7 +112,7 @@
   {
     "name": "Intuition",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/intuition-edfc00.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/intuition-edfc00.webp",
     "system": {
       "description": "<p>Instinct, insight, and reading a situation quickly.</p>",
       "attribute": "mind",
@@ -123,7 +123,7 @@
   {
     "name": "Magic",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/magic-660fa5.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/magic-660fa5.webp",
     "system": {
       "description": "<p>Occult practice, ritual technique, and spell control.</p>",
       "attribute": "mind",
@@ -134,7 +134,7 @@
   {
     "name": "Medicine",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/medicine-e3b6d9.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/medicine-e3b6d9.webp",
     "system": {
       "description": "<p>Triage, diagnosis, and emergency treatment.</p>",
       "attribute": "mind",
@@ -145,7 +145,7 @@
   {
     "name": "Might",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/might-d3a8f6.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/might-d3a8f6.webp",
     "system": {
       "description": "<p>Raw strength, lifting, and overpowering force.</p>",
       "attribute": "body",
@@ -156,7 +156,7 @@
   {
     "name": "Occult",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/occult-e65461.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/occult-e65461.webp",
     "system": {
       "description": "<p>Esoteric lore, entities, and supernatural phenomena.</p>",
       "attribute": "mind",
@@ -167,7 +167,7 @@
   {
     "name": "Presence",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/presence-28e578.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/presence-28e578.webp",
     "system": {
       "description": "<p>Commanding attention, confidence, and force of personality.</p>",
       "attribute": "spirit",
@@ -178,7 +178,7 @@
   {
     "name": "Ranged",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/ranged-97f7d5.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/ranged-97f7d5.webp",
     "system": {
       "description": "<p>Firearms, ranged weapons, and precision at distance.</p>",
       "attribute": "body",
@@ -189,7 +189,7 @@
   {
     "name": "Reflexes",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/reflexes-716a88.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/reflexes-716a88.webp",
     "system": {
       "description": "<p>Reaction time, dodging, and rapid motor response.</p>",
       "attribute": "body",
@@ -200,7 +200,7 @@
   {
     "name": "Resolve",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/resolve-1874f5.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/resolve-1874f5.webp",
     "system": {
       "description": "<p>Mental endurance, willpower, and emotional control.</p>",
       "attribute": "spirit",
@@ -211,7 +211,7 @@
   {
     "name": "Science",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/science-8e67e5.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/science-8e67e5.webp",
     "system": {
       "description": "<p>Scientific method, experimentation, and analysis.</p>",
       "attribute": "mind",
@@ -222,7 +222,7 @@
   {
     "name": "Stealth",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/stealth-a4795a.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/stealth-a4795a.webp",
     "system": {
       "description": "<p>Concealment, infiltration, and moving unseen.</p>",
       "attribute": "body",
@@ -233,7 +233,7 @@
   {
     "name": "Survival",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/survival-2c19ea.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/survival-2c19ea.webp",
     "system": {
       "description": "<p>Navigation, fieldcraft, and harsh-environment living.</p>",
       "attribute": "mind",
@@ -244,7 +244,7 @@
   {
     "name": "Technology",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/technology-f6f1b0.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/technology-f6f1b0.webp",
     "system": {
       "description": "<p>Applied tech, operational systems, and hardware use.</p>",
       "attribute": "mind",
@@ -255,7 +255,7 @@
   {
     "name": "Zeal",
     "type": "skill",
-    "img": "systems/laundry-rpg/icons/generated/skills/zeal-7e5d7b.svg",
+    "img": "systems/laundry-rpg/icons/generated/skills/zeal-7e5d7b.webp",
     "system": {
       "description": "<p>Conviction, fervor, and unshakable commitment.</p>",
       "attribute": "spirit",

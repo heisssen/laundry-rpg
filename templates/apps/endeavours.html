@@ -5,85 +5,102 @@
         <p class="notes">Supervisor's Guide reference window: pages 57-64.</p>
     </header>
 
-    <div class="form-group">
-        <label>Downtime Activity</label>
-        <select name="endeavourId">
-            {{#each endeavours as |entry|}}
-            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.label}}</option>
-            {{/each}}
-        </select>
-    </div>
-
-    <div class="laundry-endeavour-details">
-        <p><strong>Rules Summary:</strong> {{summary}}</p>
-
-        {{#if showApproachPicker}}
-        <div class="form-group">
-            <label>Approach</label>
-            <select name="approachId">
-                {{#each approaches as |approach|}}
-                <option value="{{approach.id}}" {{#if approach.selected}}selected{{/if}}>{{approach.label}}</option>
+    <div class="laundry-endeavour-layout">
+        <aside class="laundry-endeavour-catalog">
+            <div class="laundry-endeavour-catalog-head">Downtime Catalogue</div>
+            <div class="laundry-endeavour-cards">
+                {{#each endeavours as |entry|}}
+                <button type="button" class="endeavour-select {{#if entry.selected}}is-selected{{/if}}" data-endeavour-id="{{entry.id}}">
+                    <strong>{{entry.label}}</strong>
+                    <span>{{entry.summary}}</span>
+                </button>
                 {{/each}}
-            </select>
-        </div>
-        {{/if}}
+            </div>
+        </aside>
 
-        {{#if showSkillPicker}}
-        <div class="form-group">
-            <label>Skill</label>
-            <select name="skillName">
-                {{#each skills as |skill|}}
-                <option value="{{skill.name}}" {{#if skill.selected}}selected{{/if}}>{{skill.name}}</option>
-                {{/each}}
-            </select>
-        </div>
-        {{/if}}
+        <section class="laundry-endeavour-workbench">
+            <div class="laundry-endeavour-details">
+                <p><strong>Selected:</strong> {{selectedEndeavourLabel}}</p>
+                <p><strong>Rules Summary:</strong> {{summary}}</p>
 
-        {{#if showTrainingStat}}
-        <div class="form-group">
-            <label>Increase</label>
-            <select name="trainingStat">
-                {{#each trainingStatOptions as |opt|}}
-                <option value="{{opt.id}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
-                {{/each}}
-            </select>
-        </div>
-        {{/if}}
+                <div class="form-group">
+                    <label>Downtime Activity (Dropdown Fallback)</label>
+                    <select name="endeavourId">
+                        {{#each endeavours as |entry|}}
+                        <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.label}}</option>
+                        {{/each}}
+                    </select>
+                </div>
 
-        {{#if showTargetPicker}}
-        <div class="form-group">
-            <label>Treatment Target</label>
-            <select name="targetActorId">
-                {{#each targetActors as |entry|}}
-                <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.name}}</option>
-                {{/each}}
-            </select>
-        </div>
-        {{/if}}
+                {{#if showApproachPicker}}
+                <div class="form-group">
+                    <label>Approach</label>
+                    <select name="approachId">
+                        {{#each approaches as |approach|}}
+                        <option value="{{approach.id}}" {{#if approach.selected}}selected{{/if}}>{{approach.label}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                {{/if}}
 
-        {{#if showDepartmentField}}
-        <div class="form-group">
-            <label>Department Name</label>
-            <input type="text" name="departmentName" value="{{departmentName}}" placeholder="e.g. Internal Logistics" />
-        </div>
-        {{/if}}
+                {{#if showSkillPicker}}
+                <div class="form-group">
+                    <label>Skill</label>
+                    <select name="skillName">
+                        {{#each skills as |skill|}}
+                        <option value="{{skill.name}}" {{#if skill.selected}}selected{{/if}}>{{skill.name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                {{/if}}
 
-        {{#if showFactionField}}
-        <div class="form-group">
-            <label>In-Group Faction</label>
-            <input type="text" name="factionName" value="{{factionName}}" placeholder="e.g. Arcana Analysis old guard" />
-        </div>
-        {{/if}}
+                {{#if showTrainingStat}}
+                <div class="form-group">
+                    <label>Increase</label>
+                    <select name="trainingStat">
+                        {{#each trainingStatOptions as |opt|}}
+                        <option value="{{opt.id}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                {{/if}}
 
-        {{#if showTravelToggle}}
-        <label class="laundry-checkbox-line">
-            <input type="checkbox" name="travelAbroad" {{#if travelAbroad}}checked{{/if}} />
-            Foreign travel involved (roll Spirit/Resolve check).
-        </label>
-        {{/if}}
-    </div>
+                {{#if showTargetPicker}}
+                <div class="form-group">
+                    <label>Treatment Target</label>
+                    <select name="targetActorId">
+                        {{#each targetActors as |entry|}}
+                        <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>{{entry.name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                {{/if}}
 
-    <div class="laundry-endeavour-actions">
-        <button type="button" data-action="submit-endeavour">File Endeavour</button>
+                {{#if showDepartmentField}}
+                <div class="form-group">
+                    <label>Department Name</label>
+                    <input type="text" name="departmentName" value="{{departmentName}}" placeholder="e.g. Internal Logistics" />
+                </div>
+                {{/if}}
+
+                {{#if showFactionField}}
+                <div class="form-group">
+                    <label>In-Group Faction</label>
+                    <input type="text" name="factionName" value="{{factionName}}" placeholder="e.g. Arcana Analysis old guard" />
+                </div>
+                {{/if}}
+
+                {{#if showTravelToggle}}
+                <label class="laundry-checkbox-line">
+                    <input type="checkbox" name="travelAbroad" {{#if travelAbroad}}checked{{/if}} />
+                    Foreign travel involved (roll Spirit/Resolve check).
+                </label>
+                {{/if}}
+            </div>
+
+            <div class="laundry-endeavour-actions">
+                <button type="button" data-action="submit-endeavour">File Endeavour</button>
+            </div>
+        </section>
     </div>
 </section>

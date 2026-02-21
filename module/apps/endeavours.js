@@ -131,6 +131,9 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
     }
 
     _buildContext() {
+        if (!ENDEAVOUR_CHOICES.some(entry => entry.id === this._selectedEndeavour)) {
+            this._selectedEndeavour = ENDEAVOUR_CHOICES[0]?.id ?? "sick-leave";
+        }
         const skills = _collectActorSkills(this.actor);
         if (!this._selectedSkill && skills.length) this._selectedSkill = skills[0].name;
 
@@ -159,8 +162,10 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             actorName: this.actor?.name ?? "Unknown Agent",
             endeavours: ENDEAVOUR_CHOICES.map(entry => ({
                 ...entry,
+                summary: ENDEAVOUR_SUMMARY[entry.id] ?? "",
                 selected: entry.id === this._selectedEndeavour
             })),
+            selectedEndeavourLabel: ENDEAVOUR_CHOICES.find(entry => entry.id === this._selectedEndeavour)?.label ?? "Downtime Activity",
             summary: ENDEAVOUR_SUMMARY[this._selectedEndeavour] ?? "",
             showSkillPicker: needsSkillPicker,
             showTrainingStat: this._selectedEndeavour === "training-course",
@@ -204,6 +209,17 @@ export class EndeavoursApp extends HandlebarsMixin(BaseApplication) {
             this._selectedApproach = "";
             await _rerenderApp(this);
         }, listenerOptions);
+
+        root.querySelectorAll(".endeavour-select").forEach(button => {
+            button.addEventListener("click", async (ev) => {
+                ev.preventDefault();
+                const selectedId = String(ev.currentTarget?.dataset?.endeavourId ?? "").trim();
+                if (!selectedId || selectedId === this._selectedEndeavour) return;
+                this._selectedEndeavour = selectedId;
+                this._selectedApproach = "";
+                await _rerenderApp(this);
+            }, listenerOptions);
+        });
 
         root.querySelector('[name="skillName"]')?.addEventListener("change", (ev) => {
             this._selectedSkill = String(ev.currentTarget?.value ?? "").trim();
@@ -1081,7 +1097,7 @@ async function _getOrCreateSkill(actor, skillName) {
     const created = await actor.createEmbeddedDocuments("Item", [{
         name: skillName,
         type: "skill",
-        img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/skill.webp",
         system: {
             attribute,
             training: 0,

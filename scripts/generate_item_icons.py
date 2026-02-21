@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 """
-Generate Laundry-themed, system-local SVG icons for item sources and write image
-paths back to JSON files.
+Generate painterly, system-local WEBP icons and write image paths back to JSON files.
+The visual style is dark/noir with distressed highlights to match Laundry mood.
 """
 from __future__ import annotations
 
 import hashlib
 import json
+import math
+import random
 import re
 from pathlib import Path
+
+from PIL import Image, ImageChops, ImageColor, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 ICONS_ROOT = ROOT / "icons" / "generated"
 EXTRACTION_ROOT = ROOT / "sources" / "extraction"
 EXTRACTION_STAGES = ("reviewed", "normalized", "raw")
+ICON_SIZE = 512
 
 SOURCES = [
     ("skills.json", "skill"),
@@ -26,45 +31,140 @@ SOURCES = [
     ("enemies.json", "enemy"),
 ]
 
-# Dossier / Laundry palette: muted steel + paper + red-stamp accents.
-TYPE_COLORS = {
-    "skill": ("#283744", "#4e6678"),
-    "talent": ("#452f32", "#7a4a4f"),
-    "spell": ("#2b3b34", "#5f7566"),
-    "weapon": ("#46392c", "#745d42"),
-    "armour": ("#31363e", "#5e6671"),
-    "assignment": ("#4b4336", "#7a6651"),
-    "gear": ("#3c3c3c", "#676767"),
-    "enemy": ("#3a262a", "#6f3a42"),
-}
-
-STAMP_RED = ["#7a1f22", "#8a2b2f", "#6f2023", "#9a3135"]
-PAPER_TONE = ["#e8dfcc", "#e2d8c3", "#ddd2bc", "#d6ccb5"]
-
-TYPE_DEFAULT_SYMBOL = {
-    "skill": "book",
-    "talent": "star",
-    "spell": "rune",
-    "weapon": "sword",
-    "armour": "shield",
-    "assignment": "document",
+TYPE_DIR = {
+    "skill": "skills",
+    "talent": "talents",
+    "spell": "spells",
+    "weapon": "weapons",
+    "armour": "armours",
     "gear": "gear",
-    "enemy": "crosshair",
+    "assignment": "assignments",
+    "enemy": "enemies",
 }
 
-SKILL_SYMBOL = {
+TYPE_DEFAULT_MOTIF = {
+    "skill": "badge",
+    "talent": "badge",
+    "spell": "rune_circle",
+    "weapon": "pistol",
+    "armour": "shield",
+    "gear": "gadget",
+    "assignment": "document",
+    "enemy": "skull",
+}
+
+TYPE_PALETTES = {
+    "skill": {
+        "bg1": "#0b1314",
+        "bg2": "#1c2b2d",
+        "bg3": "#36484b",
+        "metal_shadow": "#090b0b",
+        "metal": "#171c1c",
+        "metal_mid": "#2a3231",
+        "metal_light": "#4a564f",
+        "outline": "#d0bf90",
+        "accent": "#b7a26c",
+        "smoke": "#d4c9ab",
+    },
+    "talent": {
+        "bg1": "#120f10",
+        "bg2": "#2a1f23",
+        "bg3": "#4a343a",
+        "metal_shadow": "#0b0909",
+        "metal": "#1a1516",
+        "metal_mid": "#33282a",
+        "metal_light": "#5f4946",
+        "outline": "#d2bf8b",
+        "accent": "#c8a769",
+        "smoke": "#d9ccb0",
+    },
+    "spell": {
+        "bg1": "#0d1110",
+        "bg2": "#1b2722",
+        "bg3": "#32463a",
+        "metal_shadow": "#080b0a",
+        "metal": "#151b18",
+        "metal_mid": "#2a362f",
+        "metal_light": "#4f6658",
+        "outline": "#d9c88f",
+        "accent": "#d6ae5d",
+        "smoke": "#d9cfae",
+    },
+    "weapon": {
+        "bg1": "#0a0d0d",
+        "bg2": "#1a1f1f",
+        "bg3": "#2d3533",
+        "metal_shadow": "#060707",
+        "metal": "#131717",
+        "metal_mid": "#29302e",
+        "metal_light": "#4e5954",
+        "outline": "#d7c78f",
+        "accent": "#c99f5b",
+        "smoke": "#d5caac",
+    },
+    "armour": {
+        "bg1": "#0e1115",
+        "bg2": "#1b222c",
+        "bg3": "#303c4a",
+        "metal_shadow": "#090b0f",
+        "metal": "#151b22",
+        "metal_mid": "#2c3542",
+        "metal_light": "#536174",
+        "outline": "#d4c595",
+        "accent": "#c2a56d",
+        "smoke": "#d4ccba",
+    },
+    "gear": {
+        "bg1": "#0f0f10",
+        "bg2": "#242427",
+        "bg3": "#424247",
+        "metal_shadow": "#0a0a0b",
+        "metal": "#17181a",
+        "metal_mid": "#313338",
+        "metal_light": "#5a5e68",
+        "outline": "#d7c79a",
+        "accent": "#bfa977",
+        "smoke": "#d7d0bd",
+    },
+    "assignment": {
+        "bg1": "#11100e",
+        "bg2": "#28231b",
+        "bg3": "#483f31",
+        "metal_shadow": "#0a0908",
+        "metal": "#181512",
+        "metal_mid": "#342d23",
+        "metal_light": "#5f513f",
+        "outline": "#d5c18e",
+        "accent": "#bb975b",
+        "smoke": "#d9cfb5",
+    },
+    "enemy": {
+        "bg1": "#130d10",
+        "bg2": "#291920",
+        "bg3": "#472734",
+        "metal_shadow": "#0c0809",
+        "metal": "#1a1115",
+        "metal_mid": "#36202a",
+        "metal_light": "#62424b",
+        "outline": "#ddc691",
+        "accent": "#cf9455",
+        "smoke": "#decfb4",
+    },
+}
+
+SKILL_MOTIFS = {
     "academics": "book",
-    "athletics": "arrow",
+    "athletics": "fist",
     "awareness": "eye",
     "bureaucracy": "document",
-    "close combat": "sword",
+    "close combat": "knife",
     "computers": "chip",
     "dexterity": "hand",
     "engineering": "wrench",
-    "fast talk": "handshake",
+    "fast talk": "mask",
     "fortitude": "shield",
-    "intuition": "orb",
-    "magic": "rune",
+    "intuition": "eye",
+    "magic": "rune_circle",
     "medicine": "cross",
     "might": "fist",
     "occult": "skull",
@@ -79,75 +179,129 @@ SKILL_SYMBOL = {
     "zeal": "flame",
 }
 
-KEYWORD_SYMBOLS = [
-    ("ward", "shield"),
-    ("geas", "rune"),
-    ("binding", "lock"),
-    ("banish", "flame"),
-    ("detect", "eye"),
+KEYWORD_MOTIFS = [
+    ("glock", "pistol"),
+    ("pistol", "pistol"),
+    ("gun", "pistol"),
+    ("shotgun", "rifle"),
+    ("rifle", "rifle"),
+    ("mp5", "rifle"),
+    ("sniper", "rifle"),
+    ("knife", "knife"),
+    ("blade", "knife"),
+    ("baton", "baton"),
+    ("taser", "taser"),
+    ("spray", "spray"),
+    ("grenade", "grenade"),
+    ("ward", "rune_circle"),
+    ("geas", "rune_circle"),
+    ("binding", "rune_circle"),
+    ("magic", "rune_circle"),
+    ("summon", "rune_circle"),
+    ("gateway", "rune_circle"),
     ("projection", "orb"),
-    ("gateway", "spiral"),
     ("psychometry", "orb"),
-    ("truth", "badge"),
-    ("glamour", "mask"),
-    ("temperature", "flame"),
+    ("prognost", "orb"),
     ("energy", "bolt"),
-    ("curse", "skull"),
+    ("temperature", "flame"),
+    ("exorc", "flame"),
+    ("banish", "flame"),
+    ("truth", "badge"),
     ("silence", "lock"),
-    ("magic", "rune"),
-    ("knife", "sword"),
-    ("baton", "fist"),
-    ("strike", "fist"),
-    ("glock", "crosshair"),
-    ("taser", "bolt"),
-    ("spray", "vial"),
-    ("mp5", "crosshair"),
-    ("shotgun", "crosshair"),
-    ("rifle", "crosshair"),
-    ("grenade", "burst"),
-    ("kevlar", "shield"),
-    ("shield", "shield"),
-    ("warded", "rune"),
+    ("curse", "skull"),
+    ("glamour", "mask"),
+    ("detect", "eye"),
+    ("smart car", "vehicle"),
+    ("violin", "violin"),
+    ("gravedust", "vial"),
+    ("hand of glory", "hand"),
+    ("necronomiphone", "phone"),
+    ("tape", "tape"),
+    ("smart card", "card"),
+    ("thaumometer", "scanner"),
+    ("resonator", "scanner"),
+    ("scanner", "scanner"),
+    ("microdrone", "drone"),
+    ("locator bugs", "bug"),
+    ("laser microphone", "scanner"),
+    ("fibre optic", "scanner"),
+    ("keystroke", "chip"),
+    ("nausea flash", "grenade"),
+    ("book", "book"),
+    ("archive", "book"),
+    ("clerk", "document"),
+    ("analyst", "document"),
+    ("research", "document"),
+    ("investigator", "badge"),
+    ("liaison", "badge"),
+    ("officer", "badge"),
+    ("support", "chip"),
+    ("it", "chip"),
+    ("medic", "cross"),
+    ("wrangler", "skull"),
+    ("exorcist", "flame"),
+    ("demonolog", "rune_circle"),
+    ("forensics", "eye"),
+    ("laundry", "document"),
     ("cop", "badge"),
-    ("doctor", "cross"),
-    ("engineer", "wrench"),
-    ("hacker", "chip"),
-    ("friend", "handshake"),
-    ("sniper", "crosshair"),
-    ("field", "compass"),
+    ("fire", "flame"),
+    ("reload", "pistol"),
+    ("shot", "crosshair"),
+    ("aim", "crosshair"),
+    ("disguise", "mask"),
+    ("vision", "eye"),
+    ("sense", "eye"),
+    ("voice", "mask"),
+    ("grip", "hand"),
+    ("knowledge", "book"),
+    ("sorcery", "rune_circle"),
+    ("magician", "rune_circle"),
+    ("combat", "knife"),
+    ("driving", "vehicle"),
+    ("tech", "chip"),
+    ("tinkerer", "wrench"),
+    ("coordinator", "badge"),
 ]
 
-ENEMY_KEYWORD_SYMBOLS = [
-    ("cult", "mask"),
-    ("wizard", "rune"),
-    ("sorcer", "rune"),
-    ("priest", "flame"),
-    ("hound", "skull"),
-    ("wolf", "skull"),
-    ("ghoul", "skull"),
-    ("vamp", "skull"),
+ENEMY_MOTIFS = [
+    ("shoggoth", "tentacle"),
+    ("elder thing", "tentacle"),
+    ("cthonian", "tentacle"),
+    ("ghost", "orb"),
+    ("psychic", "orb"),
+    ("poltergeist", "orb"),
+    ("succub", "mask"),
     ("zombie", "skull"),
-    ("shoggoth", "burst"),
-    ("elder thing", "burst"),
-    ("deep one", "leaf"),
-    ("soldier", "crosshair"),
-    ("sniper", "crosshair"),
-    ("police", "badge"),
-    ("agent", "badge"),
-    ("assassin", "sword"),
-    ("beast", "skull"),
-    ("entity", "spiral"),
+    ("cult", "mask"),
+    ("security", "crosshair"),
+    ("field agent", "badge"),
+    ("civilian", "eye"),
+    ("creature", "skull"),
+    ("aberration", "tentacle"),
 ]
 
-TYPE_DIR = {
-    "skill": "skills",
-    "talent": "talents",
-    "spell": "spells",
-    "weapon": "weapons",
-    "armour": "armours",
-    "gear": "gear",
-    "assignment": "assignments",
-    "enemy": "enemies",
+EXACT_NAME_MOTIFS = {
+    "erich zann violin": "violin",
+    "enhanced smart car": "vehicle",
+    "necronomiphone": "phone",
+    "smart card": "card",
+    "locator bugs": "bug",
+    "microdrone": "drone",
+    "gravedust rig": "vial",
+    "thaumometer": "scanner",
+    "tillinghast resonator": "scanner",
+    "t-ray scanner": "scanner",
+    "fibre optic probe": "scanner",
+    "laser microphone": "scanner",
+    "keystroke logger": "chip",
+    "3-w laser": "scanner",
+    "warding tape (class 3)": "tape",
+    "warding tape (class 4)": "tape",
+    "hand of glory (class 1/4)": "hand",
+    "hand of glory (class 2-3)": "hand",
+    "personal wards (class 1-2)": "rune_circle",
+    "personal wards (class 3)": "rune_circle",
+    "personal wards (class 4)": "rune_circle",
 }
 
 
@@ -164,305 +318,18 @@ def hash_suffix(text: str, size: int = 6) -> str:
     return _stable_hash(text)[:size]
 
 
-def escape_xml(text: str) -> str:
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&apos;")
-    )
+def _rng_for(item_type: str, name: str) -> random.Random:
+    digest = _stable_hash(f"{item_type}:{name}")
+    return random.Random(int(digest[:16], 16))
 
 
-def _paper_for(item_type: str, name: str) -> str:
-    digest = _stable_hash(f"paper:{item_type}:{name}")
-    idx = int(digest[:2], 16) % len(PAPER_TONE)
-    return PAPER_TONE[idx]
+def _rgba(hex_color: str, alpha: int = 255) -> tuple[int, int, int, int]:
+    r, g, b = ImageColor.getrgb(hex_color)
+    return r, g, b, max(0, min(255, int(alpha)))
 
 
-def _stamp_for(item_type: str, name: str) -> str:
-    digest = _stable_hash(f"stamp:{item_type}:{name}")
-    idx = int(digest[:2], 16) % len(STAMP_RED)
-    return STAMP_RED[idx]
-
-
-def _choose_symbol(item_type: str, name: str, system: dict) -> str:
-    lowered_name = str(name or "").strip().lower()
-    if item_type == "skill":
-        return SKILL_SYMBOL.get(lowered_name, TYPE_DEFAULT_SYMBOL["skill"])
-    if item_type == "enemy":
-        blob = " ".join(
-            [
-                lowered_name,
-                str(system.get("category") or "").lower(),
-                str(system.get("threat") or "").lower(),
-                str(system.get("npcClass") or "").lower(),
-                " ".join(str(tag or "").lower() for tag in (system.get("tags") or [])),
-            ]
-        )
-        for keyword, symbol in ENEMY_KEYWORD_SYMBOLS:
-            if keyword in blob:
-                return symbol
-        npc_class = str(system.get("npcClass") or "").strip().lower()
-        threat = str(system.get("threat") or "").strip().lower()
-        if npc_class == "boss" or threat in {"extreme", "major"}:
-            return "skull"
-        if npc_class == "minion":
-            return "mask"
-        return TYPE_DEFAULT_SYMBOL["enemy"]
-
-    blob = " ".join(
-        [
-            lowered_name,
-            str(system.get("description") or "").lower(),
-            str(system.get("traits") or "").lower(),
-            str(system.get("school") or "").lower(),
-        ]
-    )
-    for keyword, symbol in KEYWORD_SYMBOLS:
-        if keyword in blob:
-            return symbol
-    return TYPE_DEFAULT_SYMBOL.get(item_type, "gear")
-
-
-def _symbol_svg(symbol: str, ink: str, fill: str) -> str:
-    if symbol == "book":
-        return (
-            f'<rect x="68" y="78" width="120" height="100" rx="10" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<line x1="128" y1="82" x2="128" y2="174" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="80" y1="105" x2="116" y2="105" stroke="{ink}" stroke-width="5" opacity="0.75" />'
-            f'<line x1="140" y1="105" x2="176" y2="105" stroke="{ink}" stroke-width="5" opacity="0.75" />'
-        )
-    if symbol == "eye":
-        return (
-            f'<path d="M52 128 C76 88 180 88 204 128 C180 168 76 168 52 128 Z" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<circle cx="128" cy="128" r="26" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<circle cx="128" cy="128" r="10" fill="{fill}" />'
-        )
-    if symbol == "document":
-        return (
-            f'<rect x="76" y="62" width="104" height="132" rx="10" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<line x1="94" y1="104" x2="162" y2="104" stroke="{ink}" stroke-width="7" />'
-            f'<line x1="94" y1="126" x2="162" y2="126" stroke="{ink}" stroke-width="7" />'
-            f'<line x1="94" y1="148" x2="150" y2="148" stroke="{ink}" stroke-width="7" />'
-        )
-    if symbol == "sword":
-        return (
-            f'<path d="M128 52 L148 86 L140 94 L160 164 L128 196 L96 164 L116 94 L108 86 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<rect x="100" y="166" width="56" height="10" rx="4" fill="{ink}" />'
-            f'<rect x="122" y="176" width="12" height="24" rx="4" fill="{ink}" />'
-        )
-    if symbol == "chip":
-        pins = "".join(
-            [
-                f'<line x1="{70 + i*16}" y1="64" x2="{70 + i*16}" y2="48" stroke="{ink}" stroke-width="6" />'
-                f'<line x1="{70 + i*16}" y1="208" x2="{70 + i*16}" y2="192" stroke="{ink}" stroke-width="6" />'
-                for i in range(8)
-            ]
-        )
-        pins += "".join(
-            [
-                f'<line x1="64" y1="{70 + i*16}" x2="48" y2="{70 + i*16}" stroke="{ink}" stroke-width="6" />'
-                f'<line x1="208" y1="{70 + i*16}" x2="192" y2="{70 + i*16}" stroke="{ink}" stroke-width="6" />'
-                for i in range(8)
-            ]
-        )
-        return (
-            f'<rect x="64" y="64" width="128" height="128" rx="12" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<rect x="96" y="96" width="64" height="64" rx="6" fill="none" stroke="{ink}" stroke-width="8" />'
-            + pins
-        )
-    if symbol == "hand":
-        return (
-            f'<rect x="98" y="100" width="60" height="74" rx="16" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<rect x="88" y="84" width="12" height="54" rx="6" fill="{ink}" />'
-            f'<rect x="106" y="74" width="12" height="54" rx="6" fill="{ink}" />'
-            f'<rect x="124" y="70" width="12" height="54" rx="6" fill="{ink}" />'
-            f'<rect x="142" y="76" width="12" height="54" rx="6" fill="{ink}" />'
-            f'<rect x="160" y="92" width="12" height="54" rx="6" fill="{ink}" />'
-        )
-    if symbol == "wrench":
-        return (
-            f'<circle cx="166" cy="88" r="24" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<rect x="80" y="120" width="94" height="22" rx="11" transform="rotate(-35 127 131)" fill="{ink}" />'
-            f'<circle cx="90" cy="172" r="16" fill="none" stroke="{ink}" stroke-width="8" />'
-        )
-    if symbol == "handshake":
-        return (
-            f'<path d="M60 138 L96 110 L126 128 L102 154 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<path d="M196 138 L160 110 L130 128 L154 154 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<rect x="106" y="122" width="44" height="20" rx="8" fill="{ink}" />'
-        )
-    if symbol == "shield":
-        return f'<path d="M128 54 L186 76 L176 144 Q164 188 128 208 Q92 188 80 144 L70 76 Z" fill="none" stroke="{ink}" stroke-width="10" />'
-    if symbol == "orb":
-        return (
-            f'<circle cx="128" cy="118" r="54" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<path d="M88 174 Q128 138 168 174" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<circle cx="110" cy="100" r="10" fill="{fill}" opacity="0.9" />'
-        )
-    if symbol == "rune":
-        return (
-            f'<path d="M84 180 L128 72 L172 180" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<line x1="102" y1="138" x2="154" y2="138" stroke="{ink}" stroke-width="10" />'
-            f'<circle cx="128" cy="96" r="9" fill="{fill}" />'
-        )
-    if symbol == "cross":
-        return (
-            f'<rect x="114" y="76" width="28" height="104" rx="6" fill="{ink}" />'
-            f'<rect x="76" y="114" width="104" height="28" rx="6" fill="{ink}" />'
-        )
-    if symbol == "fist":
-        return (
-            f'<rect x="88" y="108" width="80" height="60" rx="16" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<rect x="86" y="88" width="18" height="26" rx="6" fill="{ink}" />'
-            f'<rect x="106" y="84" width="18" height="30" rx="6" fill="{ink}" />'
-            f'<rect x="126" y="84" width="18" height="30" rx="6" fill="{ink}" />'
-            f'<rect x="146" y="88" width="18" height="26" rx="6" fill="{ink}" />'
-        )
-    if symbol == "skull":
-        return (
-            f'<circle cx="128" cy="110" r="48" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<circle cx="110" cy="108" r="10" fill="{ink}" />'
-            f'<circle cx="146" cy="108" r="10" fill="{ink}" />'
-            f'<rect x="106" y="148" width="44" height="24" rx="6" fill="none" stroke="{ink}" stroke-width="8" />'
-        )
-    if symbol == "badge":
-        return (
-            f'<path d="M128 64 L146 102 L188 108 L156 136 L164 178 L128 158 L92 178 L100 136 L68 108 L110 102 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<circle cx="128" cy="122" r="12" fill="{fill}" />'
-        )
-    if symbol == "crosshair":
-        return (
-            f'<circle cx="128" cy="128" r="56" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<circle cx="128" cy="128" r="18" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="128" y1="58" x2="128" y2="86" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="128" y1="170" x2="128" y2="198" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="58" y1="128" x2="86" y2="128" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="170" y1="128" x2="198" y2="128" stroke="{ink}" stroke-width="8" />'
-        )
-    if symbol == "bolt":
-        return f'<path d="M140 54 L86 140 H124 L112 202 L170 114 H132 Z" fill="{ink}" />'
-    if symbol == "lock":
-        return (
-            f'<rect x="78" y="112" width="100" height="84" rx="12" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<path d="M96 112 V92 C96 74 110 60 128 60 C146 60 160 74 160 92 V112" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<circle cx="128" cy="146" r="10" fill="{ink}" />'
-        )
-    if symbol == "atom":
-        return (
-            f'<ellipse cx="128" cy="128" rx="58" ry="22" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<ellipse cx="128" cy="128" rx="58" ry="22" transform="rotate(60 128 128)" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<ellipse cx="128" cy="128" rx="58" ry="22" transform="rotate(-60 128 128)" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<circle cx="128" cy="128" r="9" fill="{fill}" />'
-        )
-    if symbol == "mask":
-        return (
-            f'<path d="M72 100 Q128 70 184 100 Q176 164 128 188 Q80 164 72 100 Z" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<ellipse cx="108" cy="122" rx="14" ry="9" fill="{ink}" />'
-            f'<ellipse cx="148" cy="122" rx="14" ry="9" fill="{ink}" />'
-        )
-    if symbol == "leaf":
-        return (
-            f'<path d="M72 160 C84 86 180 72 190 136 C178 210 86 212 72 160 Z" fill="none" stroke="{ink}" stroke-width="10" />'
-            f'<path d="M88 170 C110 150 134 130 172 102" fill="none" stroke="{ink}" stroke-width="8" />'
-        )
-    if symbol == "network":
-        return (
-            f'<line x1="88" y1="96" x2="168" y2="84" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="88" y1="96" x2="112" y2="168" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="168" y1="84" x2="160" y2="164" stroke="{ink}" stroke-width="8" />'
-            f'<line x1="112" y1="168" x2="160" y2="164" stroke="{ink}" stroke-width="8" />'
-            f'<circle cx="88" cy="96" r="10" fill="{fill}" />'
-            f'<circle cx="168" cy="84" r="10" fill="{fill}" />'
-            f'<circle cx="112" cy="168" r="10" fill="{fill}" />'
-            f'<circle cx="160" cy="164" r="10" fill="{fill}" />'
-        )
-    if symbol == "flame":
-        return f'<path d="M130 58 C158 96 174 118 170 146 C166 182 144 202 118 198 C90 194 74 168 78 142 C82 120 98 102 124 82 C120 100 126 114 138 124 C136 102 136 80 130 58 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-    if symbol == "vial":
-        return (
-            f'<rect x="110" y="62" width="36" height="30" rx="6" fill="{ink}" />'
-            f'<path d="M108 92 H148 V126 L164 168 Q168 184 152 190 H104 Q88 184 92 168 L108 126 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<path d="M104 154 H152" stroke="{fill}" stroke-width="8" opacity="0.9" />'
-        )
-    if symbol == "spiral":
-        return f'<path d="M128 84 C154 84 170 100 170 122 C170 152 146 170 120 170 C94 170 76 152 76 128 C76 102 96 84 124 84 C146 84 158 98 158 116 C158 138 140 150 124 150 C108 150 98 138 98 126 C98 112 108 102 122 102" fill="none" stroke="{ink}" stroke-width="8" />'
-    if symbol == "burst":
-        return f'<path d="M128 70 L140 108 L180 96 L154 126 L188 144 L146 148 L152 188 L128 160 L104 188 L110 148 L68 144 L102 126 L76 96 L116 108 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-    if symbol == "compass":
-        return (
-            f'<circle cx="128" cy="128" r="60" fill="none" stroke="{ink}" stroke-width="8" />'
-            f'<path d="M150 94 L138 138 L106 150 L118 106 Z" fill="{ink}" />'
-            f'<circle cx="128" cy="128" r="8" fill="{fill}" />'
-        )
-    if symbol == "gear":
-        parts = []
-        for angle in range(0, 360, 45):
-            parts.append(
-                f'<rect x="121" y="52" width="14" height="30" rx="4" fill="{ink}" transform="rotate({angle} 128 128)" />'
-            )
-        parts.append(f'<circle cx="128" cy="128" r="52" fill="none" stroke="{ink}" stroke-width="10" />')
-        parts.append(f'<circle cx="128" cy="128" r="18" fill="none" stroke="{ink}" stroke-width="10" />')
-        return "".join(parts)
-    if symbol == "arrow":
-        return (
-            f'<path d="M80 168 L176 88" stroke="{ink}" stroke-width="12" stroke-linecap="round" />'
-            f'<path d="M150 88 H176 V114" fill="none" stroke="{ink}" stroke-width="12" stroke-linecap="round" />'
-            f'<path d="M80 168 H112 V136" fill="none" stroke="{ink}" stroke-width="12" stroke-linecap="round" />'
-        )
-    if symbol == "star":
-        return f'<path d="M128 68 L144 108 L188 108 L152 134 L166 176 L128 150 L90 176 L104 134 L68 108 L112 108 Z" fill="none" stroke="{ink}" stroke-width="8" />'
-
-    return f'<circle cx="128" cy="128" r="48" fill="none" stroke="{ink}" stroke-width="10" />'
-
-
-def build_svg(name: str, item_type: str, symbol: str) -> str:
-    left, right = TYPE_COLORS.get(item_type, ("#2f2f2f", "#666f6f"))
-    paper = _paper_for(item_type, name)
-    stamp = _stamp_for(item_type, name)
-    label = escape_xml(name)
-
-    symbol_markup = _symbol_svg(symbol, ink="#1f1d1a", fill=stamp)
-
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="{label}">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="{left}" />
-      <stop offset="100%" stop-color="{right}" />
-    </linearGradient>
-    <pattern id="crosshatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="12" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2" />
-    </pattern>
-    <radialGradient id="paperFade" cx="50%" cy="45%" r="58%">
-      <stop offset="0%" stop-color="{paper}" stop-opacity="0.94" />
-      <stop offset="100%" stop-color="{paper}" stop-opacity="0.38" />
-    </radialGradient>
-  </defs>
-
-  <rect x="8" y="8" width="240" height="240" rx="24" fill="url(#bg)" stroke="#111" stroke-opacity="0.55" stroke-width="4" />
-  <rect x="8" y="8" width="240" height="240" rx="24" fill="url(#crosshatch)" />
-
-  <circle cx="128" cy="128" r="90" fill="url(#paperFade)" />
-  <circle cx="128" cy="128" r="82" fill="none" stroke="{stamp}" stroke-width="10" stroke-opacity="0.85" />
-  <circle cx="128" cy="128" r="72" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="2" />
-
-  <path d="M128 82 L140 110 L170 112 L146 130 L154 160 L128 146 L102 160 L110 130 L86 112 L116 110 Z" fill="none" stroke="#000" stroke-opacity="0.10" stroke-width="4" />
-
-  {symbol_markup}
-
-  <circle cx="196" cy="58" r="18" fill="{stamp}" fill-opacity="0.22" stroke="{stamp}" stroke-width="2" />
-  <line x1="186" y1="58" x2="206" y2="58" stroke="{stamp}" stroke-width="2" />
-  <line x1="196" y1="48" x2="196" y2="68" stroke="{stamp}" stroke-width="2" />
-
-  <rect x="14" y="14" width="228" height="228" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="2" />
-</svg>
-"""
-
-
-def write_json(path: Path, payload: list[dict]) -> None:
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+def _palette_for(item_type: str) -> dict[str, str]:
+    return TYPE_PALETTES.get(item_type, TYPE_PALETTES["gear"])
 
 
 def _iter_source_paths(file_name: str) -> list[Path]:
@@ -483,6 +350,1282 @@ def _is_expected_record(item: dict, item_type: str) -> bool:
     return str(item.get("type") or "").strip().lower() == item_type
 
 
+def write_json(path: Path, payload: list[dict]) -> None:
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _clear_generated_dirs() -> None:
+    dirs = set(TYPE_DIR.values()) | {"_defaults"}
+    for sub in dirs:
+        path = ICONS_ROOT / sub
+        path.mkdir(parents=True, exist_ok=True)
+        for file_path in path.glob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in {".webp", ".png", ".svg"}:
+                file_path.unlink()
+
+
+def _compose_rotated_sprite(
+    layer: Image.Image,
+    sprite: Image.Image,
+    center: tuple[float, float],
+    angle: float = 0.0,
+    scale: float = 1.0,
+) -> None:
+    working = sprite
+    if abs(scale - 1.0) > 1e-6:
+        width = max(16, int(sprite.width * scale))
+        height = max(16, int(sprite.height * scale))
+        working = working.resize((width, height), Image.Resampling.LANCZOS)
+    if abs(angle) > 1e-3:
+        working = working.rotate(angle, expand=True, resample=Image.Resampling.BICUBIC)
+
+    x = int(round(center[0] - working.width / 2))
+    y = int(round(center[1] - working.height / 2))
+    layer.alpha_composite(working, (x, y))
+
+
+def _paint_background(canvas: Image.Image, palette: dict[str, str], rng: random.Random) -> None:
+    size = canvas.width
+
+    angle = rng.randint(-25, 25)
+    linear_mask = Image.linear_gradient("L").resize((size, size), Image.Resampling.BICUBIC)
+    linear_mask = linear_mask.rotate(angle, expand=False)
+
+    bg_a = Image.new("RGBA", (size, size), _rgba(palette["bg1"]))
+    bg_b = Image.new("RGBA", (size, size), _rgba(palette["bg2"]))
+    base = Image.composite(bg_b, bg_a, linear_mask)
+    canvas.alpha_composite(base)
+
+    radial = Image.radial_gradient("L").resize((size, size), Image.Resampling.BICUBIC)
+    radial = ImageOps.invert(radial)
+    glow_mask = radial.point(lambda p: int(p * 0.72))
+    glow = Image.new("RGBA", (size, size), _rgba(palette["bg3"], 145))
+    canvas.paste(glow, (0, 0), glow_mask)
+
+    smoke_layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    smoke_draw = ImageDraw.Draw(smoke_layer)
+    smoke_color = _rgba(palette["smoke"], 28)
+
+    for _ in range(18):
+        rx = rng.randint(size // 9, size // 3)
+        ry = rng.randint(size // 10, size // 3)
+        cx = rng.randint(-rx // 2, size + rx // 2)
+        cy = rng.randint(-ry // 2, size + ry // 2)
+        smoke_draw.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=smoke_color)
+
+    smoke_layer = smoke_layer.filter(ImageFilter.GaussianBlur(radius=size * 0.04))
+    canvas.alpha_composite(smoke_layer)
+
+    vignette_mask = Image.new("L", (size, size), 255)
+    vd = ImageDraw.Draw(vignette_mask)
+    margin = int(size * 0.075)
+    vd.ellipse((margin, margin, size - margin, size - margin), fill=130)
+    vignette_mask = vignette_mask.filter(ImageFilter.GaussianBlur(radius=size * 0.09))
+
+    vignette = Image.new("RGBA", (size, size), (0, 0, 0, 185))
+    canvas.paste(vignette, (0, 0), vignette_mask)
+
+
+def _add_global_grit(canvas: Image.Image, palette: dict[str, str], rng: random.Random) -> None:
+    size = canvas.width
+
+    grime = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(grime)
+    for _ in range(950):
+        x = rng.randint(0, size - 1)
+        y = rng.randint(0, size - 1)
+        r = rng.randint(1, 3)
+        alpha = rng.randint(8, 28)
+        color = _rgba(palette["outline"], alpha)
+        gd.ellipse((x - r, y - r, x + r, y + r), fill=color)
+
+    for _ in range(24):
+        rx = rng.randint(size // 30, size // 14)
+        ry = rng.randint(size // 30, size // 12)
+        cx = rng.randint(0, size)
+        cy = rng.randint(0, size)
+        tone = _rgba(palette["metal_shadow"], rng.randint(25, 55))
+        gd.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=tone)
+
+    grime = grime.filter(ImageFilter.GaussianBlur(radius=1.1))
+    canvas.alpha_composite(grime)
+
+
+def _base_subject_layer(size: int = ICON_SIZE) -> Image.Image:
+    return Image.new("RGBA", (size, size), (0, 0, 0, 0))
+
+
+def _draw_rune_scratches(sprite: Image.Image, color: tuple[int, int, int, int], rng: random.Random) -> None:
+    d = ImageDraw.Draw(sprite)
+    width, height = sprite.size
+    y = int(height * 0.35)
+    x0 = int(width * 0.46)
+    for _ in range(8):
+        x = x0 + rng.randint(-22, 160)
+        h = rng.randint(8, 24)
+        d.line((x, y, x + rng.randint(-8, 8), y + h), fill=color, width=rng.randint(2, 4))
+
+
+def _motif_pistol(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 430), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 235)
+    metal = _rgba(palette["metal"], 255)
+    mid = _rgba(palette["metal_mid"], 255)
+    light = _rgba(palette["metal_light"], 255)
+    dark = _rgba(palette["metal_shadow"], 255)
+
+    d.rounded_rectangle((70, 108, 560, 202), radius=24, fill=outline)
+    d.rounded_rectangle((78, 116, 552, 196), radius=20, fill=mid)
+    d.rounded_rectangle((90, 128, 530, 186), radius=16, fill=metal)
+
+    d.rounded_rectangle((126, 186, 462, 280), radius=26, fill=outline)
+    d.rounded_rectangle((136, 194, 454, 272), radius=22, fill=mid)
+    d.rounded_rectangle((150, 206, 442, 264), radius=18, fill=metal)
+
+    d.polygon([(188, 248), (328, 250), (282, 404), (118, 390)], fill=outline)
+    d.polygon([(198, 258), (316, 260), (274, 392), (132, 382)], fill=mid)
+    d.polygon([(210, 266), (304, 270), (266, 384), (146, 374)], fill=metal)
+
+    d.rounded_rectangle((478, 126, 590, 190), radius=20, fill=outline)
+    d.rounded_rectangle((490, 136, 582, 182), radius=16, fill=dark)
+    d.ellipse((540, 142, 578, 178), fill=outline)
+    d.ellipse((548, 148, 574, 174), fill=dark)
+
+    d.rounded_rectangle((260, 260, 368, 334), radius=24, fill=outline)
+    d.rounded_rectangle((272, 272, 356, 324), radius=20, fill=dark)
+    d.rounded_rectangle((292, 274, 326, 334), radius=12, fill=mid)
+
+    d.rounded_rectangle((112, 188, 152, 224), radius=9, fill=light)
+    d.rounded_rectangle((198, 324, 240, 350), radius=9, fill=light)
+
+    _draw_rune_scratches(sprite, _rgba(palette["accent"], 210), rng)
+
+    return sprite, -17.0 + rng.uniform(-4.0, 3.5), 0.98
+
+
+def _motif_rifle(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (700, 310), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 235)
+    metal = _rgba(palette["metal"], 255)
+    mid = _rgba(palette["metal_mid"], 255)
+    light = _rgba(palette["metal_light"], 255)
+    dark = _rgba(palette["metal_shadow"], 255)
+
+    d.rounded_rectangle((60, 132, 646, 188), radius=18, fill=outline)
+    d.rounded_rectangle((70, 140, 638, 180), radius=14, fill=mid)
+    d.rounded_rectangle((84, 146, 626, 174), radius=12, fill=metal)
+
+    d.rounded_rectangle((90, 118, 182, 146), radius=10, fill=outline)
+    d.rounded_rectangle((98, 124, 176, 142), radius=8, fill=dark)
+
+    d.polygon([(190, 178), (320, 178), (294, 278), (136, 272)], fill=outline)
+    d.polygon([(202, 186), (310, 186), (286, 266), (148, 260)], fill=mid)
+    d.polygon([(212, 194), (300, 194), (278, 258), (162, 254)], fill=metal)
+
+    d.rounded_rectangle((332, 174, 392, 238), radius=12, fill=outline)
+    d.rounded_rectangle((342, 182, 382, 230), radius=10, fill=dark)
+
+    d.rounded_rectangle((470, 116, 576, 146), radius=10, fill=outline)
+    d.rounded_rectangle((478, 122, 568, 142), radius=8, fill=dark)
+
+    d.rounded_rectangle((620, 140, 684, 168), radius=8, fill=outline)
+    d.rounded_rectangle((628, 144, 676, 164), radius=6, fill=dark)
+
+    for i in range(7):
+        x = 228 + i * 38
+        d.line((x, 152, x + 18, 152), fill=light, width=3)
+
+    return sprite, -12.0 + rng.uniform(-3.0, 3.0), 0.98
+
+
+def _motif_knife(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 420), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 235)
+    metal = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal_shadow"], 255)
+    accent = _rgba(palette["accent"], 230)
+
+    blade = [(82, 210), (342, 96), (452, 118), (198, 244)]
+    d.polygon(blade, fill=outline)
+    blade_inner = [(98, 208), (342, 112), (430, 128), (204, 234)]
+    d.polygon(blade_inner, fill=metal)
+
+    d.polygon([(190, 240), (340, 284), (292, 370), (138, 316)], fill=outline)
+    d.polygon([(200, 246), (328, 282), (286, 358), (150, 314)], fill=dark)
+
+    d.rounded_rectangle((188, 234, 238, 260), radius=8, fill=accent)
+    d.line((114, 214, 352, 122), fill=_rgba("#e7dcc4", 130), width=3)
+
+    return sprite, -24.0 + rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_baton(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (580, 360), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outline = _rgba(palette["outline"], 235)
+    metal = _rgba(palette["metal"], 255)
+    mid = _rgba(palette["metal_mid"], 255)
+
+    d.rounded_rectangle((82, 152, 500, 214), radius=24, fill=outline)
+    d.rounded_rectangle((94, 162, 488, 204), radius=20, fill=mid)
+    d.rounded_rectangle((110, 170, 476, 196), radius=14, fill=metal)
+
+    d.rounded_rectangle((430, 150, 520, 216), radius=16, fill=outline)
+    d.rounded_rectangle((440, 160, 510, 206), radius=12, fill=mid)
+    for i in range(4):
+        x = 148 + i * 56
+        d.rounded_rectangle((x, 164, x + 22, 202), radius=5, fill=_rgba(palette["metal_light"], 180))
+
+    return sprite, -19.0 + rng.uniform(-3.0, 3.0), 1.0
+
+
+def _motif_taser(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite, angle, scale = _motif_pistol(palette, rng)
+    d = ImageDraw.Draw(sprite)
+    bolt = _rgba(palette["accent"], 230)
+    d.polygon([(430, 154), (452, 154), (440, 178), (460, 178), (430, 214), (438, 188), (418, 188)], fill=bolt)
+    return sprite, angle, scale
+
+
+def _motif_spray(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (460, 520), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 235)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+    smoke = _rgba(palette["smoke"], 110)
+
+    d.rounded_rectangle((170, 56, 292, 118), radius=18, fill=outline)
+    d.rounded_rectangle((184, 66, 280, 110), radius=14, fill=dark)
+
+    d.rounded_rectangle((126, 104, 338, 412), radius=44, fill=outline)
+    d.rounded_rectangle((142, 120, 322, 398), radius=36, fill=body)
+    d.rounded_rectangle((156, 144, 306, 376), radius=32, fill=dark)
+
+    d.rounded_rectangle((174, 210, 290, 232), radius=8, fill=_rgba(palette["accent"], 190))
+    d.rounded_rectangle((174, 252, 290, 274), radius=8, fill=_rgba(palette["accent"], 170))
+
+    for i in range(6):
+        cx = 280 + i * 20
+        cy = 88 - i * 10
+        r = 32 + i * 3
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=smoke)
+
+    return sprite, 14.0 + rng.uniform(-3.0, 3.0), 1.0
+
+
+def _motif_grenade(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (460, 500), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 235)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((166, 76, 292, 146), radius=16, fill=outline)
+    d.rounded_rectangle((176, 86, 282, 138), radius=12, fill=dark)
+
+    d.rounded_rectangle((126, 132, 334, 392), radius=104, fill=outline)
+    d.rounded_rectangle((138, 146, 322, 378), radius=94, fill=body)
+    d.rounded_rectangle((152, 160, 308, 364), radius=86, fill=dark)
+
+    for i in range(6):
+        y = 190 + i * 28
+        d.rounded_rectangle((172, y, 288, y + 12), radius=4, fill=_rgba(palette["metal_light"], 180))
+
+    d.polygon([(282, 108), (360, 78), (392, 104), (314, 136)], fill=outline)
+    d.polygon([(290, 110), (358, 84), (384, 104), (316, 130)], fill=dark)
+
+    return sprite, -8.0 + rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_shield(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 240)
+    body = _rgba(palette["metal_mid"], 255)
+    core = _rgba(palette["metal"], 255)
+
+    outer = [(260, 54), (434, 126), (390, 402), (260, 552), (130, 402), (86, 126)]
+    inner = [(260, 78), (412, 142), (374, 390), (260, 524), (146, 390), (108, 142)]
+    core_shape = [(260, 108), (388, 156), (356, 372), (260, 488), (164, 372), (132, 156)]
+
+    d.polygon(outer, fill=outline)
+    d.polygon(inner, fill=body)
+    d.polygon(core_shape, fill=core)
+
+    d.line((260, 120, 260, 474), fill=_rgba(palette["metal_light"], 180), width=8)
+    d.line((170, 212, 352, 212), fill=_rgba(palette["accent"], 190), width=8)
+
+    return sprite, rng.uniform(-5.0, 5.0), 1.0
+
+
+def _motif_vest(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (540, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 240)
+    body = _rgba(palette["metal_mid"], 255)
+    core = _rgba(palette["metal"], 255)
+
+    outer = [(120, 88), (208, 88), (252, 152), (286, 152), (332, 88), (420, 88), (458, 170), (436, 520), (104, 520), (82, 170)]
+    inner = [(140, 106), (214, 106), (250, 164), (288, 164), (326, 106), (400, 106), (434, 178), (414, 500), (126, 500), (106, 178)]
+    core_shape = [(162, 126), (222, 126), (258, 182), (280, 182), (318, 126), (378, 126), (404, 186), (386, 478), (154, 478), (136, 186)]
+
+    d.polygon(outer, fill=outline)
+    d.polygon(inner, fill=body)
+    d.polygon(core_shape, fill=core)
+
+    d.rounded_rectangle((204, 228, 336, 252), radius=8, fill=_rgba(palette["accent"], 190))
+    d.rounded_rectangle((194, 280, 346, 304), radius=8, fill=_rgba(palette["metal_light"], 170))
+
+    return sprite, rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_document(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (500, 580), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 238)
+    paper = _rgba("#d8ccb0", 230)
+    ink = _rgba(palette["metal_shadow"], 220)
+
+    d.rounded_rectangle((98, 72, 412, 508), radius=26, fill=outline)
+    d.rounded_rectangle((110, 86, 398, 494), radius=20, fill=paper)
+    d.polygon([(326, 86), (398, 86), (398, 164)], fill=_rgba("#c7b58f", 215))
+
+    for i in range(9):
+        y = 154 + i * 34
+        left = 150
+        right = 362 - (18 if i % 3 == 0 else 0)
+        d.rounded_rectangle((left, y, right, y + 8), radius=4, fill=ink)
+
+    d.ellipse((156, 438, 246, 482), outline=_rgba(palette["accent"], 230), width=7)
+    d.line((176, 460, 228, 460), fill=_rgba(palette["accent"], 230), width=5)
+
+    return sprite, -8.0 + rng.uniform(-3.0, 3.0), 1.0
+
+
+def _motif_book(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 520), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 235)
+    cover = _rgba(palette["metal_mid"], 255)
+    spine = _rgba(palette["metal"], 255)
+    edge = _rgba("#d2c4a5", 220)
+
+    d.polygon([(84, 148), (302, 112), (542, 160), (328, 204)], fill=outline)
+    d.polygon([(96, 160), (302, 126), (530, 170), (326, 214)], fill=cover)
+    d.polygon([(328, 204), (542, 160), (542, 388), (328, 434)], fill=outline)
+    d.polygon([(326, 216), (530, 172), (530, 378), (326, 422)], fill=spine)
+    d.polygon([(84, 148), (328, 204), (326, 434), (84, 380)], fill=outline)
+    d.polygon([(96, 160), (316, 212), (314, 422), (96, 370)], fill=cover)
+
+    for i in range(6):
+        x = 134 + i * 30
+        d.line((x, 168, x + 204, 214), fill=edge, width=2)
+
+    d.rounded_rectangle((236, 246, 398, 292), radius=12, outline=_rgba(palette["accent"], 210), width=5)
+
+    return sprite, -14.0 + rng.uniform(-2.0, 2.5), 0.95
+
+
+def _motif_badge(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 520), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 238)
+    core = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+    accent = _rgba(palette["accent"], 230)
+
+    outer = [(260, 66), (318, 176), (440, 196), (352, 278), (374, 402), (260, 346), (146, 402), (168, 278), (80, 196), (202, 176)]
+    inner = [(260, 92), (308, 186), (412, 202), (336, 274), (354, 382), (260, 336), (166, 382), (184, 274), (108, 202), (212, 186)]
+
+    d.polygon(outer, fill=outline)
+    d.polygon(inner, fill=core)
+    d.ellipse((206, 200, 314, 308), fill=dark, outline=accent, width=6)
+    d.ellipse((234, 228, 286, 280), fill=accent)
+
+    return sprite, rng.uniform(-5.0, 5.0), 1.02
+
+
+def _motif_chip(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 560), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 238)
+    core = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+    accent = _rgba(palette["accent"], 210)
+
+    d.rounded_rectangle((110, 110, 450, 450), radius=28, fill=outline)
+    d.rounded_rectangle((124, 124, 436, 436), radius=22, fill=core)
+    d.rounded_rectangle((176, 176, 384, 384), radius=18, fill=dark)
+
+    for i in range(10):
+        x = 142 + i * 28
+        d.rounded_rectangle((x, 76, x + 10, 120), radius=3, fill=accent)
+        d.rounded_rectangle((x, 440, x + 10, 484), radius=3, fill=accent)
+        y = 142 + i * 28
+        d.rounded_rectangle((76, y, 120, y + 10), radius=3, fill=accent)
+        d.rounded_rectangle((440, y, 484, y + 10), radius=3, fill=accent)
+
+    d.rounded_rectangle((230, 230, 330, 330), radius=12, outline=accent, width=6)
+
+    return sprite, rng.uniform(-8.0, 8.0), 1.0
+
+
+def _motif_wrench(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 560), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outline = _rgba(palette["outline"], 235)
+    metal = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.ellipse((314, 104, 490, 280), fill=outline)
+    d.ellipse((340, 130, 464, 254), fill=dark)
+    d.polygon([(354, 104), (428, 132), (404, 170), (332, 142)], fill=dark)
+
+    d.polygon([(98, 372), (166, 304), (372, 508), (304, 576)], fill=outline)
+    d.polygon([(112, 372), (166, 320), (356, 510), (304, 562)], fill=metal)
+
+    d.ellipse((70, 410, 176, 516), fill=outline)
+    d.ellipse((94, 434, 152, 492), fill=dark)
+
+    return sprite, -18.0 + rng.uniform(-6.0, 6.0), 0.95
+
+
+def _motif_hand(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 560), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outline = _rgba(palette["outline"], 236)
+    skin = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((146, 208, 374, 468), radius=46, fill=outline)
+    d.rounded_rectangle((160, 222, 360, 454), radius=38, fill=skin)
+    d.rounded_rectangle((174, 236, 346, 442), radius=34, fill=dark)
+
+    finger_x = [146, 188, 230, 272, 314]
+    finger_h = [166, 184, 196, 182, 166]
+    for x, h in zip(finger_x, finger_h):
+        d.rounded_rectangle((x, h, x + 54, 262), radius=18, fill=outline)
+        d.rounded_rectangle((x + 8, h + 10, x + 46, 254), radius=14, fill=skin)
+
+    d.rounded_rectangle((110, 246, 166, 366), radius=18, fill=outline)
+    d.rounded_rectangle((118, 256, 158, 356), radius=14, fill=skin)
+
+    return sprite, -9.0 + rng.uniform(-5.0, 5.0), 1.0
+
+
+def _motif_eye(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (580, 420), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outline = _rgba(palette["outline"], 238)
+    iris = _rgba(palette["accent"], 220)
+    dark = _rgba(palette["metal"], 255)
+
+    d.polygon([(70, 210), (168, 118), (412, 118), (510, 210), (412, 302), (168, 302)], fill=outline)
+    d.polygon([(98, 210), (178, 138), (402, 138), (482, 210), (402, 282), (178, 282)], fill=_rgba(palette["metal_mid"], 255))
+
+    d.ellipse((210, 138, 370, 298), fill=dark)
+    d.ellipse((242, 170, 338, 266), fill=iris)
+    d.ellipse((274, 202, 306, 234), fill=dark)
+
+    return sprite, rng.uniform(-5.0, 5.0), 1.0
+
+
+def _motif_cross(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (500, 500), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outline = _rgba(palette["outline"], 238)
+    core = _rgba(palette["accent"], 220)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((212, 84, 288, 414), radius=20, fill=outline)
+    d.rounded_rectangle((88, 208, 412, 286), radius=20, fill=outline)
+    d.rounded_rectangle((224, 98, 276, 400), radius=14, fill=core)
+    d.rounded_rectangle((102, 220, 398, 274), radius=14, fill=core)
+    d.ellipse((228, 224, 272, 268), fill=dark)
+
+    return sprite, rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_skull(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 560), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outline = _rgba(palette["outline"], 236)
+    bone = _rgba("#d8c8a5", 232)
+    dark = _rgba(palette["metal"], 255)
+
+    d.ellipse((96, 70, 424, 396), fill=outline)
+    d.ellipse((116, 92, 404, 376), fill=bone)
+
+    d.rounded_rectangle((154, 286, 366, 470), radius=44, fill=outline)
+    d.rounded_rectangle((170, 302, 350, 454), radius=34, fill=bone)
+
+    d.ellipse((170, 172, 244, 248), fill=dark)
+    d.ellipse((276, 172, 350, 248), fill=dark)
+    d.polygon([(260, 244), (278, 286), (242, 286)], fill=dark)
+
+    for i in range(6):
+        x = 188 + i * 26
+        d.rounded_rectangle((x, 364, x + 14, 430), radius=4, fill=dark)
+
+    d.line((172, 136, 220, 180), fill=_rgba(palette["metal_shadow"], 165), width=4)
+
+    return sprite, rng.uniform(-6.0, 6.0), 1.0
+
+
+def _motif_mask(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 520), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outline = _rgba(palette["outline"], 238)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    outer = [(92, 176), (186, 102), (374, 102), (468, 176), (434, 360), (126, 360)]
+    inner = [(116, 186), (196, 120), (364, 120), (444, 186), (416, 342), (144, 342)]
+    core = [(136, 198), (206, 134), (354, 134), (424, 198), (398, 328), (162, 328)]
+
+    d.polygon(outer, fill=outline)
+    d.polygon(inner, fill=body)
+    d.polygon(core, fill=dark)
+
+    d.ellipse((186, 206, 252, 258), fill=_rgba(palette["accent"], 185))
+    d.ellipse((308, 206, 374, 258), fill=_rgba(palette["accent"], 185))
+
+    return sprite, rng.uniform(-9.0, 9.0), 1.0
+
+
+def _motif_rune_circle(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    accent = _rgba(palette["accent"], 220)
+    core = _rgba(palette["metal_mid"], 255)
+
+    d.ellipse((70, 70, 550, 550), outline=outer, width=12)
+    d.ellipse((118, 118, 502, 502), outline=accent, width=8)
+    d.ellipse((168, 168, 452, 452), outline=outer, width=6)
+
+    for i in range(12):
+        angle = math.radians(i * 30 + rng.uniform(-5.0, 5.0))
+        r0 = 222
+        r1 = 258
+        cx = 310
+        cy = 310
+        x0 = cx + math.cos(angle) * r0
+        y0 = cy + math.sin(angle) * r0
+        x1 = cx + math.cos(angle) * r1
+        y1 = cy + math.sin(angle) * r1
+        d.line((x0, y0, x1, y1), fill=outer, width=6)
+
+    for i in range(9):
+        angle = math.radians(i * 40 + 12)
+        r = 190
+        x = 310 + math.cos(angle) * r
+        y = 310 + math.sin(angle) * r
+        d.polygon(
+            [(x - 12, y), (x, y - 12), (x + 12, y), (x, y + 12)],
+            fill=accent,
+        )
+
+    d.ellipse((236, 236, 384, 384), fill=core, outline=outer, width=6)
+
+    return sprite, rng.uniform(-8.0, 8.0), 1.0
+
+
+def _motif_orb(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 600), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    orb = _rgba(palette["metal_mid"], 255)
+    glow = _rgba(palette["accent"], 210)
+    dark = _rgba(palette["metal"], 255)
+
+    for i in range(6):
+        r = 184 + i * 12
+        alpha = max(24, 110 - i * 14)
+        d.ellipse((280 - r, 282 - r, 280 + r, 282 + r), fill=_rgba(palette["smoke"], alpha))
+
+    d.ellipse((126, 128, 434, 436), fill=outer)
+    d.ellipse((146, 148, 414, 416), fill=orb)
+    d.ellipse((176, 178, 384, 386), fill=dark)
+
+    d.ellipse((206, 206, 354, 354), fill=glow)
+    d.ellipse((242, 244, 316, 318), fill=dark)
+    d.rounded_rectangle((228, 442, 332, 482), radius=14, fill=outer)
+
+    return sprite, rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_flame(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 238)
+    fire = _rgba(palette["accent"], 220)
+    dark = _rgba(palette["metal"], 255)
+
+    outer_path = [(262, 70), (356, 212), (386, 316), (332, 456), (262, 540), (180, 450), (140, 318), (170, 218)]
+    inner_path = [(262, 124), (334, 226), (350, 316), (310, 424), (258, 488), (206, 420), (174, 316), (194, 230)]
+    core_path = [(262, 176), (310, 260), (316, 326), (282, 400), (258, 430), (226, 384), (216, 320), (228, 256)]
+
+    d.polygon(outer_path, fill=outer)
+    d.polygon(inner_path, fill=fire)
+    d.polygon(core_path, fill=dark)
+
+    return sprite, rng.uniform(-7.0, 7.0), 1.0
+
+
+def _motif_vial(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (460, 600), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 238)
+    glass = _rgba(palette["metal_mid"], 240)
+    fluid = _rgba(palette["accent"], 220)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((168, 80, 292, 158), radius=14, fill=outer)
+    d.rounded_rectangle((178, 90, 282, 150), radius=10, fill=dark)
+
+    d.polygon([(140, 154), (320, 154), (356, 478), (104, 478)], fill=outer)
+    d.polygon([(156, 168), (304, 168), (332, 460), (128, 460)], fill=glass)
+    d.polygon([(142, 338), (318, 338), (332, 460), (128, 460)], fill=fluid)
+
+    d.line((168, 198, 238, 438), fill=_rgba("#ffffff", 96), width=6)
+
+    return sprite, rng.uniform(-8.0, 8.0), 1.0
+
+
+def _motif_vehicle(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (660, 420), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((90, 182, 570, 312), radius=38, fill=outer)
+    d.rounded_rectangle((108, 196, 552, 298), radius=30, fill=body)
+
+    roof = [(178, 196), (268, 122), (412, 122), (500, 196)]
+    roof_in = [(196, 196), (276, 138), (404, 138), (482, 196)]
+    d.polygon(roof, fill=outer)
+    d.polygon(roof_in, fill=dark)
+
+    for cx in (214, 450):
+        d.ellipse((cx - 64, 248, cx + 64, 376), fill=outer)
+        d.ellipse((cx - 44, 268, cx + 44, 356), fill=dark)
+
+    d.rounded_rectangle((290, 212, 370, 244), radius=10, fill=_rgba(palette["accent"], 180))
+
+    return sprite, -3.0 + rng.uniform(-3.0, 3.0), 0.98
+
+
+def _motif_violin(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (500, 660), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    wood = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+    accent = _rgba(palette["accent"], 220)
+
+    d.ellipse((132, 180, 368, 392), fill=outer)
+    d.ellipse((142, 188, 358, 384), fill=wood)
+    d.ellipse((158, 296, 342, 500), fill=outer)
+    d.ellipse((168, 304, 332, 490), fill=wood)
+
+    d.rounded_rectangle((224, 68, 276, 228), radius=16, fill=outer)
+    d.rounded_rectangle((234, 84, 266, 220), radius=12, fill=dark)
+
+    d.rounded_rectangle((208, 498, 292, 544), radius=14, fill=dark)
+    d.line((208, 246, 292, 246), fill=accent, width=5)
+    d.line((208, 272, 292, 272), fill=accent, width=5)
+    for x in (232, 246, 260, 274):
+        d.line((x, 90, x, 518), fill=_rgba("#d8d0bf", 190), width=2)
+
+    return sprite, -9.0 + rng.uniform(-3.0, 3.0), 0.98
+
+
+def _motif_drone(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((248, 248, 372, 372), radius=26, fill=outer)
+    d.rounded_rectangle((262, 262, 358, 358), radius=20, fill=body)
+
+    arms = [
+        (190, 190, 272, 272),
+        (348, 190, 430, 272),
+        (190, 348, 272, 430),
+        (348, 348, 430, 430),
+    ]
+    for x0, y0, x1, y1 in arms:
+        d.rounded_rectangle((x0, y0, x1, y1), radius=22, fill=outer)
+        d.rounded_rectangle((x0 + 10, y0 + 10, x1 - 10, y1 - 10), radius=16, fill=dark)
+
+    d.line((272, 272, 248, 248), fill=outer, width=16)
+    d.line((348, 272, 372, 248), fill=outer, width=16)
+    d.line((272, 348, 248, 372), fill=outer, width=16)
+    d.line((348, 348, 372, 372), fill=outer, width=16)
+
+    return sprite, rng.uniform(-9.0, 9.0), 1.0
+
+
+def _motif_tape(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 560), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    ring = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.ellipse((92, 92, 468, 468), fill=outer)
+    d.ellipse((128, 128, 432, 432), fill=ring)
+    d.ellipse((188, 188, 372, 372), fill=dark)
+
+    d.arc((76, 76, 452, 452), start=216, end=330, fill=_rgba(palette["accent"], 220), width=18)
+    d.rounded_rectangle((336, 122, 426, 176), radius=14, fill=outer)
+
+    return sprite, -12.0 + rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_phone(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (420, 660), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((82, 62, 338, 598), radius=48, fill=outer)
+    d.rounded_rectangle((98, 80, 322, 582), radius=36, fill=body)
+    d.rounded_rectangle((116, 136, 304, 496), radius=24, fill=dark)
+
+    d.rounded_rectangle((176, 102, 244, 114), radius=6, fill=_rgba("#d7ceb8", 180))
+    d.ellipse((196, 522, 224, 550), fill=_rgba(palette["accent"], 180))
+
+    return sprite, -6.0 + rng.uniform(-3.0, 3.0), 1.0
+
+
+def _motif_card(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 420), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    card = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((88, 92, 532, 332), radius=28, fill=outer)
+    d.rounded_rectangle((102, 106, 518, 318), radius=20, fill=card)
+
+    d.rounded_rectangle((122, 132, 496, 178), radius=10, fill=dark)
+    d.rounded_rectangle((146, 216, 254, 282), radius=10, fill=_rgba(palette["accent"], 190))
+    d.rounded_rectangle((276, 220, 486, 238), radius=8, fill=dark)
+    d.rounded_rectangle((276, 254, 456, 272), radius=8, fill=dark)
+
+    return sprite, -13.0 + rng.uniform(-3.0, 3.0), 1.0
+
+
+def _motif_scanner(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+    outer = _rgba(palette["outline"], 236)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+    accent = _rgba(palette["accent"], 210)
+
+    d.rounded_rectangle((96, 72, 464, 548), radius=44, fill=outer)
+    d.rounded_rectangle((112, 90, 448, 532), radius=34, fill=body)
+    d.rounded_rectangle((138, 132, 422, 362), radius=24, fill=dark)
+
+    d.ellipse((198, 188, 362, 352), fill=_rgba(palette["metal_light"], 190), outline=accent, width=6)
+    d.ellipse((232, 224, 328, 320), fill=dark)
+
+    for i in range(4):
+        y = 396 + i * 32
+        d.rounded_rectangle((166, y, 394, y + 16), radius=6, fill=_rgba(palette["metal_shadow"], 180))
+
+    return sprite, rng.uniform(-5.0, 5.0), 1.0
+
+
+def _motif_fist(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    return _motif_hand(palette, rng)
+
+
+def _motif_crosshair(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 560), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 236)
+    accent = _rgba(palette["accent"], 220)
+
+    d.ellipse((86, 86, 474, 474), outline=outline, width=14)
+    d.ellipse((170, 170, 390, 390), outline=outline, width=10)
+    d.ellipse((238, 238, 322, 322), fill=_rgba(palette["metal"], 255), outline=accent, width=6)
+
+    d.line((280, 52, 280, 178), fill=outline, width=10)
+    d.line((280, 382, 280, 508), fill=outline, width=10)
+    d.line((52, 280, 178, 280), fill=outline, width=10)
+    d.line((382, 280, 508, 280), fill=outline, width=10)
+
+    return sprite, rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_leaf(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 236)
+    leaf = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    shape = [(126, 426), (108, 300), (166, 176), (286, 104), (390, 146), (428, 262), (398, 406), (282, 516)]
+    inner = [(142, 410), (128, 304), (176, 196), (286, 126), (374, 162), (406, 264), (378, 394), (282, 492)]
+    core = [(160, 392), (152, 308), (190, 218), (286, 152), (356, 178), (382, 266), (360, 382), (286, 462)]
+
+    d.polygon(shape, fill=outline)
+    d.polygon(inner, fill=leaf)
+    d.polygon(core, fill=dark)
+
+    d.line((176, 386, 340, 220), fill=_rgba(palette["accent"], 205), width=6)
+
+    return sprite, -14.0 + rng.uniform(-4.0, 4.0), 1.0
+
+
+def _motif_network(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    node = _rgba(palette["outline"], 236)
+    edge = _rgba(palette["accent"], 180)
+    core = _rgba(palette["metal"], 255)
+
+    points = [(154, 198), (314, 128), (472, 214), (422, 418), (236, 466), (126, 330)]
+    lines = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3), (1, 4)]
+
+    for a, b in lines:
+        d.line((*points[a], *points[b]), fill=edge, width=10)
+
+    for x, y in points:
+        d.ellipse((x - 36, y - 36, x + 36, y + 36), fill=node)
+        d.ellipse((x - 20, y - 20, x + 20, y + 20), fill=core)
+
+    return sprite, rng.uniform(-7.0, 7.0), 1.0
+
+
+def _motif_bolt(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (460, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 238)
+    bolt = _rgba(palette["accent"], 220)
+
+    outer = [(250, 64), (138, 296), (232, 296), (184, 546), (326, 264), (232, 264)]
+    inner = [(246, 104), (164, 278), (254, 278), (216, 486), (300, 284), (218, 284)]
+
+    d.polygon(outer, fill=outline)
+    d.polygon(inner, fill=bolt)
+
+    return sprite, rng.uniform(-6.0, 6.0), 1.0
+
+
+def _motif_lock(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (520, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outline = _rgba(palette["outline"], 236)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.rounded_rectangle((106, 256, 414, 528), radius=36, fill=outline)
+    d.rounded_rectangle((124, 276, 396, 510), radius=28, fill=body)
+    d.rounded_rectangle((154, 306, 366, 488), radius=22, fill=dark)
+
+    d.arc((148, 92, 372, 324), start=198, end=342, fill=outline, width=24)
+    d.arc((168, 116, 352, 300), start=202, end=338, fill=_rgba(palette["metal_light"], 190), width=14)
+
+    d.ellipse((232, 352, 288, 408), fill=_rgba(palette["accent"], 210))
+
+    return sprite, rng.uniform(-5.0, 5.0), 1.0
+
+
+def _motif_atom(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    ring = _rgba(palette["outline"], 232)
+    nucleus = _rgba(palette["accent"], 220)
+    dark = _rgba(palette["metal"], 255)
+
+    d.ellipse((120, 246, 500, 374), outline=ring, width=10)
+    d.ellipse((120, 246, 500, 374), outline=ring, width=10)
+
+    orbit1 = Image.new("RGBA", sprite.size, (0, 0, 0, 0))
+    od = ImageDraw.Draw(orbit1)
+    od.ellipse((120, 246, 500, 374), outline=ring, width=10)
+    orbit1 = orbit1.rotate(60, resample=Image.Resampling.BICUBIC)
+    sprite.alpha_composite(orbit1)
+
+    orbit2 = Image.new("RGBA", sprite.size, (0, 0, 0, 0))
+    od2 = ImageDraw.Draw(orbit2)
+    od2.ellipse((120, 246, 500, 374), outline=ring, width=10)
+    orbit2 = orbit2.rotate(-60, resample=Image.Resampling.BICUBIC)
+    sprite.alpha_composite(orbit2)
+
+    d.ellipse((254, 254, 366, 366), fill=dark)
+    d.ellipse((278, 278, 342, 342), fill=nucleus)
+
+    return sprite, rng.uniform(-8.0, 8.0), 1.0
+
+
+def _motif_bug(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (560, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outer = _rgba(palette["outline"], 236)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    d.ellipse((176, 156, 384, 430), fill=outer)
+    d.ellipse((194, 174, 366, 412), fill=body)
+    d.ellipse((220, 224, 340, 396), fill=dark)
+
+    d.ellipse((208, 94, 352, 210), fill=outer)
+    d.ellipse((222, 108, 338, 196), fill=dark)
+
+    legs = [
+        (188, 230, 90, 200),
+        (186, 280, 74, 280),
+        (186, 332, 90, 360),
+        (372, 230, 470, 200),
+        (374, 280, 486, 280),
+        (374, 332, 470, 360),
+    ]
+    for x0, y0, x1, y1 in legs:
+        d.line((x0, y0, x1, y1), fill=outer, width=10)
+
+    d.line((238, 98, 184, 44), fill=outer, width=8)
+    d.line((322, 98, 376, 44), fill=outer, width=8)
+
+    return sprite, rng.uniform(-8.0, 8.0), 1.0
+
+
+def _motif_tentacle(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    sprite = Image.new("RGBA", (620, 620), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sprite)
+
+    outer = _rgba(palette["outline"], 236)
+    body = _rgba(palette["metal_mid"], 255)
+    dark = _rgba(palette["metal"], 255)
+
+    for offset in (-110, -30, 40, 120):
+        points = []
+        for t in range(0, 9):
+            y = 560 - t * 58
+            x = 310 + offset + int(math.sin((t + offset / 45) * 0.75) * 58)
+            points.append((x, y))
+
+        for i in range(len(points) - 1):
+            x0, y0 = points[i]
+            x1, y1 = points[i + 1]
+            width = max(12, 36 - i * 3)
+            d.line((x0, y0, x1, y1), fill=outer, width=width)
+            d.line((x0 + 2, y0 + 2, x1 + 2, y1 + 2), fill=body, width=max(8, width - 10))
+
+        tip_x, tip_y = points[-1]
+        d.ellipse((tip_x - 18, tip_y - 18, tip_x + 18, tip_y + 18), fill=dark)
+
+    for _ in range(11):
+        x = rng.randint(170, 450)
+        y = rng.randint(170, 470)
+        r = rng.randint(7, 14)
+        d.ellipse((x - r, y - r, x + r, y + r), fill=_rgba(palette["accent"], 176))
+
+    return sprite, rng.uniform(-8.0, 8.0), 1.0
+
+
+def _motif_gadget(palette: dict[str, str], rng: random.Random) -> tuple[Image.Image, float, float]:
+    return _motif_scanner(palette, rng)
+
+
+MOTIF_RENDERERS = {
+    "pistol": _motif_pistol,
+    "rifle": _motif_rifle,
+    "knife": _motif_knife,
+    "baton": _motif_baton,
+    "taser": _motif_taser,
+    "spray": _motif_spray,
+    "grenade": _motif_grenade,
+    "shield": _motif_shield,
+    "vest": _motif_vest,
+    "document": _motif_document,
+    "book": _motif_book,
+    "badge": _motif_badge,
+    "chip": _motif_chip,
+    "wrench": _motif_wrench,
+    "hand": _motif_hand,
+    "eye": _motif_eye,
+    "cross": _motif_cross,
+    "skull": _motif_skull,
+    "mask": _motif_mask,
+    "rune_circle": _motif_rune_circle,
+    "orb": _motif_orb,
+    "flame": _motif_flame,
+    "vial": _motif_vial,
+    "vehicle": _motif_vehicle,
+    "violin": _motif_violin,
+    "drone": _motif_drone,
+    "tape": _motif_tape,
+    "phone": _motif_phone,
+    "card": _motif_card,
+    "scanner": _motif_scanner,
+    "gadget": _motif_gadget,
+    "fist": _motif_fist,
+    "crosshair": _motif_crosshair,
+    "leaf": _motif_leaf,
+    "network": _motif_network,
+    "bolt": _motif_bolt,
+    "lock": _motif_lock,
+    "atom": _motif_atom,
+    "bug": _motif_bug,
+    "tentacle": _motif_tentacle,
+}
+
+
+def _choose_motif(item_type: str, name: str, system: dict) -> str:
+    lowered_name = str(name or "").strip().lower()
+    if lowered_name in EXACT_NAME_MOTIFS:
+        return EXACT_NAME_MOTIFS[lowered_name]
+
+    if item_type == "skill":
+        return SKILL_MOTIFS.get(lowered_name, TYPE_DEFAULT_MOTIF["skill"])
+
+    if item_type == "enemy":
+        blob = " ".join(
+            [
+                lowered_name,
+                str(system.get("category") or "").lower(),
+                str(system.get("threat") or "").lower(),
+                str(system.get("npcClass") or "").lower(),
+                " ".join(str(tag or "").lower() for tag in (system.get("tags") or [])),
+            ]
+        )
+        for keyword, motif in ENEMY_MOTIFS:
+            if keyword in blob:
+                return motif
+        npc_class = str(system.get("npcClass") or "").strip().lower()
+        threat = str(system.get("threat") or "").strip().lower()
+        if npc_class == "boss" or threat in {"extreme", "major"}:
+            return "tentacle"
+        if npc_class == "minion":
+            return "mask"
+        return TYPE_DEFAULT_MOTIF["enemy"]
+
+    blob = " ".join(
+        [
+            lowered_name,
+            str(system.get("description") or "").lower(),
+            str(system.get("traits") or "").lower(),
+            str(system.get("school") or "").lower(),
+            str(system.get("category") or "").lower(),
+        ]
+    )
+
+    if "unarmed" in blob or "strike" in blob:
+        return "fist"
+    if item_type == "armour":
+        if "shield" in blob:
+            return "shield"
+        if "ward" in blob:
+            return "rune_circle"
+        return "vest"
+
+    for keyword, motif in KEYWORD_MOTIFS:
+        if keyword in blob:
+            return motif
+
+    return TYPE_DEFAULT_MOTIF.get(item_type, "gadget")
+
+
+def _add_subject_effects(
+    canvas: Image.Image,
+    subject: Image.Image,
+    palette: dict[str, str],
+    rng: random.Random,
+    motif: str,
+) -> None:
+    alpha = subject.split()[-1]
+
+    shadow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    shadow_color = Image.new("RGBA", canvas.size, (0, 0, 0, 195))
+    shadow_mask = alpha.filter(ImageFilter.GaussianBlur(radius=18))
+    shifted_shadow = ImageChops.offset(shadow_mask, rng.randint(10, 20), rng.randint(12, 24))
+    shadow.paste(shadow_color, (0, 0), shifted_shadow)
+    canvas.alpha_composite(shadow)
+
+    ring_outer = alpha.filter(ImageFilter.MaxFilter(11))
+    ring = ImageChops.subtract(ring_outer, alpha)
+    rim = Image.new("RGBA", canvas.size, _rgba(palette["outline"], 96))
+    canvas.paste(rim, (0, 0), ring)
+
+    canvas.alpha_composite(subject)
+    lit_subject = ImageEnhance.Brightness(subject).enhance(1.42)
+    canvas.alpha_composite(lit_subject)
+
+    distress = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    dd = ImageDraw.Draw(distress)
+    bbox = alpha.getbbox()
+    if bbox:
+        x0, y0, x1, y1 = bbox
+        width = x1 - x0
+        height = y1 - y0
+
+        for _ in range(72):
+            x = rng.randint(x0, x1)
+            y = rng.randint(y0, y1)
+            r = rng.randint(1, 3)
+            dd.ellipse((x - r, y - r, x + r, y + r), fill=_rgba(palette["metal_shadow"], rng.randint(45, 95)))
+
+        scratches = 10 if motif in {"pistol", "rifle", "knife", "baton", "taser"} else 6
+        for _ in range(scratches):
+            sx = rng.randint(x0 + 10, x1 - 10)
+            sy = rng.randint(y0 + 10, y1 - 10)
+            ex = sx + rng.randint(-45, 45)
+            ey = sy + rng.randint(-18, 18)
+            dd.line((sx, sy, ex, ey), fill=_rgba(palette["accent"], rng.randint(120, 200)), width=rng.randint(2, 4))
+
+        if motif in {"pistol", "rifle", "spray"}:
+            muzzle_x = x1 + rng.randint(-10, 40)
+            muzzle_y = y0 + rng.randint(10, 80)
+            smoke = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+            sd = ImageDraw.Draw(smoke)
+            for i in range(6):
+                rad = rng.randint(24, 52) + i * 8
+                sd.ellipse(
+                    (
+                        muzzle_x + i * 8 - rad,
+                        muzzle_y - i * 14 - rad,
+                        muzzle_x + i * 8 + rad,
+                        muzzle_y - i * 14 + rad,
+                    ),
+                    fill=_rgba(palette["smoke"], max(22, 110 - i * 12)),
+                )
+            smoke = smoke.filter(ImageFilter.GaussianBlur(radius=6.0))
+            canvas.alpha_composite(smoke)
+
+        if motif in {"rune_circle", "orb", "flame", "tentacle", "skull"}:
+            aura = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+            ad = ImageDraw.Draw(aura)
+            for _ in range(22):
+                cx = rng.randint(x0 - 20, x1 + 20)
+                cy = rng.randint(y0 - 20, y1 + 20)
+                r = rng.randint(4, 10)
+                ad.ellipse((cx - r, cy - r, cx + r, cy + r), fill=_rgba(palette["accent"], rng.randint(70, 140)))
+            aura = aura.filter(ImageFilter.GaussianBlur(radius=2.4))
+            canvas.alpha_composite(aura)
+
+    distress = distress.filter(ImageFilter.GaussianBlur(radius=0.8))
+    canvas.alpha_composite(distress)
+
+
+def _render_motif(motif: str, palette: dict[str, str], rng: random.Random) -> Image.Image:
+    renderer = MOTIF_RENDERERS.get(motif, _motif_gadget)
+    sprite, angle, scale = renderer(palette, rng)
+
+    subject = _base_subject_layer()
+    _compose_rotated_sprite(
+        subject,
+        sprite,
+        center=(ICON_SIZE * 0.5 + rng.uniform(-16.0, 16.0), ICON_SIZE * 0.54 + rng.uniform(-12.0, 12.0)),
+        angle=angle,
+        scale=scale,
+    )
+    return subject
+
+
+def _paint_subject_texture(subject: Image.Image, palette: dict[str, str], rng: random.Random) -> None:
+    alpha = subject.split()[-1]
+    bbox = alpha.getbbox()
+    if not bbox:
+        return
+
+    x0, y0, x1, y1 = bbox
+    width, height = subject.size
+
+    texture = Image.new("RGBA", subject.size, (0, 0, 0, 0))
+    td = ImageDraw.Draw(texture)
+
+    for _ in range(110):
+        cx = rng.randint(x0, x1)
+        cy = rng.randint(y0, y1)
+        rx = rng.randint(8, 28)
+        ry = rng.randint(6, 22)
+        tone = _rgba(palette["metal_shadow"], rng.randint(26, 52))
+        td.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=tone)
+
+    for _ in range(80):
+        cx = rng.randint(x0, x1)
+        cy = rng.randint(y0, y1)
+        rx = rng.randint(8, 24)
+        ry = rng.randint(6, 20)
+        tone = _rgba(palette["metal_light"], rng.randint(16, 40))
+        td.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=tone)
+
+    for _ in range(32):
+        sx = rng.randint(x0, x1)
+        sy = rng.randint(y0, y1)
+        ex = sx + rng.randint(-60, 60)
+        ey = sy + rng.randint(-24, 24)
+        td.line((sx, sy, ex, ey), fill=_rgba(palette["accent"], rng.randint(34, 76)), width=rng.randint(2, 3))
+
+    texture = texture.filter(ImageFilter.GaussianBlur(radius=2.1))
+    subject.paste(texture, (0, 0), alpha)
+
+    top_grad = Image.linear_gradient("L").resize((width, height), Image.Resampling.BICUBIC).rotate(35, expand=False)
+    highlight_mask = ImageChops.multiply(alpha, top_grad).point(lambda p: int(p * 0.40))
+    highlight = Image.new("RGBA", subject.size, _rgba(palette["outline"], 122))
+    subject.paste(highlight, (0, 0), highlight_mask)
+
+    low_grad = ImageOps.invert(top_grad)
+    shadow_mask = ImageChops.multiply(alpha, low_grad).point(lambda p: int(p * 0.35))
+    shade = Image.new("RGBA", subject.size, _rgba(palette["metal_shadow"], 58))
+    subject.paste(shade, (0, 0), shadow_mask)
+
+    lift_mask = alpha.point(lambda p: int(p * 0.28))
+    lift = Image.new("RGBA", subject.size, _rgba(palette["metal_light"], 56))
+    subject.paste(lift, (0, 0), lift_mask)
+
+
+def build_icon(name: str, item_type: str, motif: str) -> Image.Image:
+    rng = _rng_for(item_type, name)
+    palette = _palette_for(item_type)
+
+    canvas = Image.new("RGBA", (ICON_SIZE, ICON_SIZE), (0, 0, 0, 0))
+    _paint_background(canvas, palette, rng)
+
+    subject = _render_motif(motif, palette, rng)
+    _add_subject_effects(canvas, subject, palette, rng, motif)
+    _add_global_grit(canvas, palette, rng)
+
+    return canvas
+
+
+def _save_icon(image: Image.Image, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, format="WEBP", quality=88, method=4)
+
+
 def generate_for_file(source_path: Path, item_type: str) -> tuple[int, int]:
     data = json.loads(source_path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
@@ -495,6 +1638,7 @@ def generate_for_file(source_path: Path, item_type: str) -> tuple[int, int]:
     for item in data:
         if not isinstance(item, dict):
             continue
+
         name = str(item.get("name") or "").strip()
         if not name:
             continue
@@ -508,13 +1652,16 @@ def generate_for_file(source_path: Path, item_type: str) -> tuple[int, int]:
                 "category": item.get("category"),
                 "threat": item.get("threat"),
                 "npcClass": item.get("npcClass"),
-                "tags": item.get("tags") if isinstance(item.get("tags"), list) else []
+                "tags": item.get("tags") if isinstance(item.get("tags"), list) else [],
             }
-        symbol = _choose_symbol(item_type, name, system)
+
+        motif = _choose_motif(item_type, name, system)
+        image = build_icon(name, item_type, motif)
+
         slug = slugify(name)
         unique = hash_suffix(f"{item_type}:{name}")
-        file_out = out_dir / f"{slug}-{unique}.svg"
-        file_out.write_text(build_svg(name, item_type, symbol), encoding="utf-8")
+        file_out = out_dir / f"{slug}-{unique}.webp"
+        _save_icon(image, file_out)
 
         rel = file_out.relative_to(ROOT).as_posix()
         item["img"] = f"systems/laundry-rpg/{rel}"
@@ -528,23 +1675,34 @@ def generate_type_defaults() -> None:
     defaults_dir = ICONS_ROOT / "_defaults"
     defaults_dir.mkdir(parents=True, exist_ok=True)
 
-    default_types = ["skill", "talent", "assignment", "weapon", "armour", "gear", "spell"]
-    for item_type in default_types:
-        file_out = defaults_dir / f"{item_type}.svg"
-        symbol = TYPE_DEFAULT_SYMBOL.get(item_type, "gear")
-        file_out.write_text(build_svg(item_type.capitalize(), item_type, symbol), encoding="utf-8")
+    defaults = [
+        ("skill", "Skill", "badge"),
+        ("talent", "Talent", "badge"),
+        ("assignment", "Assignment", "document"),
+        ("weapon", "Weapon", "pistol"),
+        ("armour", "Armour", "shield"),
+        ("gear", "Gear", "gadget"),
+        ("spell", "Spell", "rune_circle"),
+    ]
+
+    for item_type, name, motif in defaults:
+        file_out = defaults_dir / f"{item_type}.webp"
+        image = build_icon(name, item_type, motif)
+        _save_icon(image, file_out)
 
 
 def main() -> None:
-    total_written = 0
+    _clear_generated_dirs()
     generate_type_defaults()
     print("wrote defaults in icons/generated/_defaults")
 
+    total_written = 0
     for file_name, item_type in SOURCES:
         source_paths = _iter_source_paths(file_name)
         if not source_paths:
             print(f"{file_name}: source not found")
             continue
+
         for source_path in source_paths:
             total, written = generate_for_file(source_path, item_type)
             rel = source_path.relative_to(ROOT).as_posix()

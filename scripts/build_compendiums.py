@@ -552,7 +552,7 @@ def build():
             '_id': new_id(),
             'name': name,
             'type': 'skill',
-            'img': 'systems/laundry-rpg/icons/generated/_defaults/skill.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/skill.webp',
             'system': {
                 'attribute': attr,
                 'training': 0,
@@ -572,7 +572,7 @@ def build():
             '_id': new_id(),
             'name': name,
             'type': 'talent',
-            'img': 'systems/laundry-rpg/icons/generated/_defaults/talent.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/talent.webp',
             'system': {
                 'requirements': req,
                 'description': desc
@@ -588,7 +588,7 @@ def build():
             '_id': new_id(),
             'name': a['name'],
             'type': 'assignment',
-            'img': 'systems/laundry-rpg/icons/generated/_defaults/assignment.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/assignment.webp',
             'system': {
                 'attributes': a['attributes'],
                 'coreSkills': a['coreSkills'],
@@ -608,7 +608,7 @@ def build():
             '_id': new_id(),
             'name': s['name'],
             'type': 'spell',
-            'img': 'systems/laundry-rpg/icons/generated/_defaults/spell.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/spell.webp',
             'system': s['system'],
             'effects': [],
             'flags': {}
@@ -624,7 +624,7 @@ def build():
             '_id': new_id(),
             'name': w['name'],
             'type': 'weapon',
-            'img': 'systems/laundry-rpg/icons/generated/_defaults/weapon.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/weapon.webp',
             'system': {
                 'damage': damage,
                 'range': '',
@@ -644,7 +644,7 @@ def build():
             '_id': new_id(),
             'name': a['name'],
             'type': 'armour',
-            'img': 'systems/laundry-rpg/icons/generated/_defaults/armour.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/armour.webp',
             'system': {
                 'protection': int(a.get('armour', '0') or 0),
                 'traits': a.get('prereq', ''),
@@ -665,7 +665,7 @@ def build():
             '_id': new_id(),
             'name': g['name'],
             'type': 'gear',
-            'img': 'systems/laundry-rpg/icons/generated/_defaults/gear.svg',
+            'img': 'systems/laundry-rpg/icons/generated/_defaults/gear.webp',
             'system': {
                 'quantity': 1,
                 'weight': 0,

@@ -2236,6 +2236,74 @@
     letter-spacing: 0.06em;
 }
 
+.laundry-rpg .kpi-status-static {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    min-height: 22px;
+    padding: 2px 6px;
+    display: flex;
+    align-items: center;
+}
+
+.laundry-rpg .kpi-close-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    grid-column: 1 / -1;
+}
+
+.laundry-rpg .kpi-close-actions button {
+    min-height: 26px;
+    font-size: 10px;
+}
+
+.laundry-rpg .kpi-close-note {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    color: var(--laundry-ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.laundry-rpg .kpi-shop-panel {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.3);
+    padding: 8px;
+}
+
+.laundry-rpg .kpi-shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.laundry-rpg .kpi-shop-card {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.45);
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+}
+
+.laundry-rpg .kpi-shop-card label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .kpi-shop-actions {
+    display: grid;
+    gap: 6px;
+}
+
+.laundry-rpg .kpi-shop-actions button {
+    min-height: 28px;
+}
+
 .laundry-rpg .kpi-meta select,
 .laundry-rpg .kpi-meta input {
     border: 1px solid var(--laundry-line);
@@ -2417,6 +2485,59 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+}
+
+.laundry-rpg .gm-kpi-board {
+    border: 1px dashed var(--laundry-line);
+    background: rgba(255,255,255,0.3);
+    padding: 6px;
+    display: grid;
+    gap: 5px;
+}
+
+.laundry-rpg .gm-kpi-list {
+    display: grid;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.laundry-rpg .gm-kpi-row {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.52);
+    padding: 5px;
+    display: grid;
+    gap: 4px;
+}
+
+.laundry-rpg .gm-kpi-main {
+    display: grid;
+    gap: 2px;
+}
+
+.laundry-rpg .gm-kpi-main strong {
+    font-size: 10px;
+    color: var(--laundry-ink);
+}
+
+.laundry-rpg .gm-kpi-main span {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg .gm-kpi-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.laundry-rpg .gm-kpi-actions button {
+    min-height: 24px;
+    font-size: 10px;
+    padding: 2px 6px;
 }
 
 .laundry-rpg .gm-spawn-grid {
@@ -3603,6 +3724,89 @@
     padding: 0.45rem 0.55rem;
 }
 
+.laundry-support-request-app .laundry-support-layout,
+.laundry-endeavours-app .laundry-endeavour-layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+}
+
+.laundry-support-request-app .laundry-support-catalog,
+.laundry-endeavours-app .laundry-endeavour-catalog {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255, 255, 255, 0.33);
+    padding: 0.4rem;
+    display: grid;
+    gap: 0.4rem;
+    max-height: 72vh;
+    overflow: auto;
+}
+
+.laundry-support-request-app .laundry-support-workbench,
+.laundry-endeavours-app .laundry-endeavour-workbench {
+    display: grid;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.laundry-endeavours-app .laundry-endeavour-catalog-head {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-endeavours-app .laundry-endeavour-cards,
+.laundry-support-request-app .laundry-support-card-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.laundry-support-request-app .laundry-support-type-toggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem;
+}
+
+.laundry-endeavours-app .endeavour-select,
+.laundry-support-request-app .request-type-select,
+.laundry-support-request-app .department-select-card,
+.laundry-support-request-app .gear-select-card {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.58);
+    color: var(--laundry-ink);
+    text-align: left;
+    padding: 0.35rem 0.4rem;
+    min-height: 34px;
+    display: grid;
+    gap: 0.1rem;
+}
+
+.laundry-endeavours-app .endeavour-select strong,
+.laundry-support-request-app .department-select-card strong,
+.laundry-support-request-app .gear-select-card strong {
+    font-size: 0.72rem;
+}
+
+.laundry-endeavours-app .endeavour-select span,
+.laundry-support-request-app .department-select-card span,
+.laundry-support-request-app .gear-select-card span {
+    font-size: 0.64rem;
+    color: var(--laundry-ink-muted);
+    text-transform: none;
+    letter-spacing: 0.01em;
+}
+
+.laundry-endeavours-app .endeavour-select.is-selected,
+.laundry-support-request-app .request-type-select.is-selected,
+.laundry-support-request-app .department-select-card.is-selected,
+.laundry-support-request-app .gear-select-card.is-selected {
+    border-color: var(--laundry-stamp);
+    background: rgba(178, 31, 31, 0.1);
+    color: var(--laundry-stamp);
+}
+
 .laundry-support-request-app .laundry-requisition-builder {
     display: grid;
     gap: 0.45rem;
@@ -3700,12 +3904,30 @@
         grid-template-columns: 1fr;
     }
 
+    .laundry-rpg .kpi-shop-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .gm-kpi-actions {
+        grid-template-columns: 1fr;
+    }
+
     .laundry-rpg .bio-profile-grid {
         grid-template-columns: 1fr;
     }
 
     .laundry-support-request-app .laundry-requisition-add-row {
         grid-template-columns: 1fr;
+    }
+
+    .laundry-support-request-app .laundry-support-layout,
+    .laundry-endeavours-app .laundry-endeavour-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-support-request-app .laundry-support-catalog,
+    .laundry-endeavours-app .laundry-endeavour-catalog {
+        max-height: none;
     }
 
     .laundry-support-request-app .laundry-requisition-line {

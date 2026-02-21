@@ -6,6 +6,7 @@ import {
     KPI_HORIZONS,
     KPI_PRIORITIES,
     KPI_STATUSES,
+    closeKpiAtIndex,
     createNewKpi,
     normalizeKpiEntries,
     summarizeKpiEntries
@@ -85,7 +86,17 @@ export class LaundryActorSheet extends ActorSheet {
         context.miscGear   = items.filter(i => i.type === "gear");
         const normalizedKpi = normalizeKpiEntries(actorData.kpi);
         const kpiSummary = summarizeKpiEntries(normalizedKpi);
+        const kpiCanEdit = Boolean(this.actor.isOwner || game.user?.isGM);
+        const kpiCanClose = Boolean(game.user?.isGM);
+        const kpiCanDelete = Boolean(game.user?.isGM);
+        const kpiCanAdd = Boolean(this.actor.isOwner || game.user?.isGM);
         context.kpiSummary = kpiSummary;
+        context.kpiPermissions = {
+            canEdit: kpiCanEdit,
+            canClose: kpiCanClose,
+            canDelete: kpiCanDelete,
+            canAdd: kpiCanAdd
+        };
         context.kpiOptions = {
             horizons: KPI_HORIZONS.map(option => ({
                 key: option.key,
@@ -108,7 +119,10 @@ export class LaundryActorSheet extends ActorSheet {
                 .map(entry => ({
                     ...entry,
                     statusCss: KPI_STATUS_CSS[entry.status] ?? "kpi-open",
-                    resolved: entry.status === "completed" || entry.status === "failed"
+                    resolved: entry.status === "completed" || entry.status === "failed",
+                    canClose: kpiCanClose && entry.status === "open",
+                    closedDateLabel: entry.closedAt ? new Date(entry.closedAt).toLocaleDateString() : "",
+                    rewardLabel: entry.rewardedXp > 0 ? `+${entry.rewardedXp} XP` : "No XP"
                 }))
         }));
 
@@ -123,7 +137,7 @@ export class LaundryActorSheet extends ActorSheet {
             return {
                 name: def.name,
                 itemId: item?._id ?? null,
-                img: item?.img ?? "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
+                img: item?.img ?? "systems/laundry-rpg/icons/generated/_defaults/skill.webp",
                 attribute,
                 attributeLabel: CONFIG.LAUNDRY.attributes?.[attribute]?.label ?? attribute,
                 attrValue,
@@ -133,6 +147,18 @@ export class LaundryActorSheet extends ActorSheet {
                 trained: training > 0
             };
         });
+        context.upgradeShop = {
+            enabled: context.actor.type === "character" && (this.actor.isOwner || game.user?.isGM),
+            unspentXp: Math.max(0, Math.trunc(Number(actorData.details?.xp?.unspent) || 0)),
+            skills: context.skillRows
+                .map(row => ({ name: row.name, training: row.training, focus: row.focus }))
+                .sort((a, b) => a.name.localeCompare(b.name)),
+            attributes: [
+                { id: "body", label: game.i18n.localize("LAUNDRY.Body"), value: Math.max(1, Math.trunc(Number(actorData.attributes?.body?.value) || 1)) },
+                { id: "mind", label: game.i18n.localize("LAUNDRY.Mind"), value: Math.max(1, Math.trunc(Number(actorData.attributes?.mind?.value) || 1)) },
+                { id: "spirit", label: game.i18n.localize("LAUNDRY.Spirit"), value: Math.max(1, Math.trunc(Number(actorData.attributes?.spirit?.value) || 1)) }
+            ]
+        };
 
         // The Ladder combat ratings now come from Actor derived data.
         context.ladder = {
@@ -306,7 +332,7 @@ export class LaundryActorSheet extends ActorSheet {
         return {
             id: statusId,
             name: entry?.name ?? statusId,
-            img: entry?.img ?? "systems/laundry-rpg/icons/generated/_defaults/talent.svg"
+            img: entry?.img ?? "systems/laundry-rpg/icons/generated/_defaults/talent.webp"
         };
     }
 
@@ -319,15 +345,15 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".call-support").click(this._onCallSupport.bind(this));
         html.find(".open-endeavours").click(this._onOpenEndeavours.bind(this));
         html.find(".take-downtime").click(this._onOpenEndeavours.bind(this));
-        html.find(".npc-import-world").click(this._onNpcImportWorld.bind(this));
-        html.find(".npc-preset-apply").click(this._onNpcPresetApply.bind(this));
-        html.find(".npc-action-add").click(this._onNpcActionAdd.bind(this));
-        html.find(".npc-action-autofill").click(this._onNpcActionAutofill.bind(this));
-        html.find(".npc-action-delete").click(this._onNpcActionDelete.bind(this));
-        html.find(".npc-action-duplicate").click(this._onNpcActionDuplicate.bind(this));
-        html.find(".npc-action-move").click(this._onNpcActionMove.bind(this));
-        html.find(".npc-action-roll").click(this._onNpcActionRoll.bind(this));
-        html.find(".npc-reset-defeated").click(this._onNpcResetDefeated.bind(this));
+        html.on("click", ".npc-import-world", (ev) => this._onNpcImportWorld(ev));
+        html.on("click", ".npc-preset-apply", (ev) => this._onNpcPresetApply(ev));
+        html.on("click", ".npc-action-add", (ev) => this._onNpcActionAdd(ev));
+        html.on("click", ".npc-action-autofill", (ev) => this._onNpcActionAutofill(ev));
+        html.on("click", ".npc-action-delete", (ev) => this._onNpcActionDelete(ev));
+        html.on("click", ".npc-action-duplicate", (ev) => this._onNpcActionDuplicate(ev));
+        html.on("click", ".npc-action-move", (ev) => this._onNpcActionMove(ev));
+        html.on("click", ".npc-action-roll", (ev) => this._onNpcActionRoll(ev));
+        html.on("click", ".npc-reset-defeated", (ev) => this._onNpcResetDefeated(ev));
         html.on("change", ".npc-action-field", (ev) => this._onNpcActionFieldChange(ev));
 
         // Render only for owners
@@ -352,7 +378,10 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
+        html.find(".kpi-close").click(this._onKpiClose.bind(this));
         html.on("change", ".kpi-field", (ev) => this._onKpiFieldChange(ev));
+        html.find(".kpi-shop-buy").click(this._onKpiShopBuy.bind(this));
+        html.find(".kpi-shop-buy-talent").click(this._onKpiShopBuyTalent.bind(this));
 
         // Item editing
         html.find(".item-edit").click(ev => {
@@ -531,7 +560,7 @@ export class LaundryActorSheet extends ActorSheet {
         const created = await this.actor.createEmbeddedDocuments("Item", [{
             name: skillName,
             type: "skill",
-            img: "systems/laundry-rpg/icons/generated/_defaults/skill.svg",
+            img: "systems/laundry-rpg/icons/generated/_defaults/skill.webp",
             system: {
                 attribute,
                 training: 0,
@@ -713,30 +742,34 @@ export class LaundryActorSheet extends ActorSheet {
     }
 
     async _onNpcImportWorld(ev) {
-        ev.preventDefault();
+        ev?.preventDefault?.();
         if (this.actor.type !== "npc") return;
 
         const canModify = this.actor?.canUserModify?.(game.user, "update");
         if (this.isEditable || canModify) {
             ui.notifications.info("This NPC is already editable.");
-            return;
+            return this.actor;
         }
 
         const copyData = this._buildNpcWorldCopyData();
         const created = await Actor.create(copyData);
         if (!created) {
             ui.notifications.warn("Failed to create editable NPC copy.");
-            return;
+            return null;
         }
 
         ui.notifications.info(`${created.name}: editable copy created in Actor Directory.`);
         created.sheet?.render(true);
+        return created;
     }
 
     async _onNpcPresetApply(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
-        if (!this._ensureNpcEditable()) return;
+        if (!this._ensureNpcEditable()) {
+            if (this.actor.pack) await this._onNpcImportWorld();
+            return;
+        }
         const root = this.element?.[0];
         const presetId = String(root?.querySelector('[name="npcPreset"]')?.value ?? "").trim();
         if (!presetId) {
@@ -756,12 +789,16 @@ export class LaundryActorSheet extends ActorSheet {
     async _onNpcActionAdd(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
-        if (!this._ensureNpcEditable()) return;
+        if (!this._ensureNpcEditable()) {
+            if (this.actor.pack) await this._onNpcImportWorld();
+            return;
+        }
         const requestedKind = String(ev.currentTarget?.dataset?.actionKind ?? "attack").trim().toLowerCase();
         const kind = ["attack", "spell", "test"].includes(requestedKind) ? requestedKind : "attack";
         const actions = this._collectNpcQuickActionsFromSheet();
         actions.push(this._createNpcQuickAction(kind));
         await this._setNpcQuickActions(actions);
+        ui.notifications.info(`${this.actor.name}: added ${kind} one-line action.`);
         this.render(false);
     }
 
@@ -839,11 +876,14 @@ export class LaundryActorSheet extends ActorSheet {
         const isMagic = Boolean(action.isMagic || isSpell);
         const attackMode = String(action.traits ?? "").toLowerCase().includes("melee") ? "melee" : "ranged";
         const flavour = `${action.name} (${this.actor.name})`;
+        const pool = Math.max(1, Math.trunc(Number(action.pool) || 0));
+        const dn = Math.max(2, Math.min(6, Math.trunc(Number(action.dn) || 4)));
+        const complexity = Math.max(1, Math.trunc(Number(action.complexity) || 1));
 
         await rollDice({
-            pool: Math.max(0, Math.trunc(Number(action.pool) || 0)),
-            dn: Math.max(2, Math.min(6, Math.trunc(Number(action.dn) || 4))),
-            complexity: Math.max(1, Math.trunc(Number(action.complexity) || 1)),
+            pool,
+            dn,
+            complexity,
             flavor: flavour,
             damage: String(action.damage ?? "").trim(),
             isWeaponAttack,
@@ -878,7 +918,10 @@ export class LaundryActorSheet extends ActorSheet {
     async _onNpcActionAutofill(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
-        if (!this._ensureNpcEditable()) return;
+        if (!this._ensureNpcEditable()) {
+            if (this.actor.pack) await this._onNpcImportWorld();
+            return;
+        }
         const generated = this._buildNpcSuggestedQuickActions();
         if (!generated.length) {
             ui.notifications.warn("No usable loadout found. Add a weapon/spell or use Add Attack/Test/Spell.");
@@ -1113,11 +1156,16 @@ export class LaundryActorSheet extends ActorSheet {
             syncLocalSource();
         } catch (error) {
             console.error("Laundry RPG | Failed to write system.npc.quickActions, falling back to flags.", error);
-            await this.actor.update({
-                "flags.laundry-rpg.npcQuickActions": normalized
-            });
-            syncLocalSource();
-            ui.notifications.warn("Saved NPC one-line actions to fallback storage (flags).");
+            try {
+                await this.actor.update({
+                    "flags.laundry-rpg.npcQuickActions": normalized
+                });
+                syncLocalSource();
+                ui.notifications.warn("Saved NPC one-line actions to fallback storage (flags).");
+            } catch (fallbackError) {
+                console.error("Laundry RPG | Failed to persist NPC quick actions to flags fallback.", fallbackError);
+                ui.notifications.error("Failed to save NPC one-line actions. Duplicate/import this NPC into world and try again.");
+            }
         }
     }
 
@@ -1154,6 +1202,7 @@ export class LaundryActorSheet extends ActorSheet {
 
     async _onKpiAdd(ev) {
         ev.preventDefault();
+        if (!(this.actor.isOwner || game.user?.isGM)) return;
         const requested = String(ev.currentTarget?.dataset?.kpiHorizon ?? "short");
         const horizon = KPI_HORIZONS.some(option => option.key === requested)
             ? requested
@@ -1165,6 +1214,10 @@ export class LaundryActorSheet extends ActorSheet {
 
     async _onKpiDelete(ev) {
         ev.preventDefault();
+        if (!game.user?.isGM) {
+            ui.notifications.warn("Only the GM can delete KPI entries.");
+            return;
+        }
         const index = Number(ev.currentTarget.dataset.kpiIndex);
         if (!Number.isInteger(index) || index < 0) return;
         const kpis = this._getActorKpis();
@@ -1173,12 +1226,55 @@ export class LaundryActorSheet extends ActorSheet {
         await this.actor.update({ "system.kpi": kpis });
     }
 
+    async _onKpiClose(ev) {
+        ev.preventDefault();
+        if (!game.user?.isGM) {
+            ui.notifications.warn("Only the GM can close KPIs.");
+            return;
+        }
+
+        const index = Number(ev.currentTarget?.dataset?.kpiIndex);
+        const requested = String(ev.currentTarget?.dataset?.kpiResult ?? "completed").trim().toLowerCase();
+        if (!Number.isInteger(index) || index < 0) return;
+        const result = requested === "failed" ? "failed" : "completed";
+
+        const closure = closeKpiAtIndex(this._getActorKpis(), {
+            index,
+            status: result,
+            userId: game.user.id,
+            closedAt: Date.now()
+        });
+        if (!closure.changed) return;
+
+        const rewardXp = Math.max(0, Math.trunc(Number(closure.reward?.xp) || 0));
+        const actorXpTotal = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.value) || 0));
+        const actorXpUnspent = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.unspent) || 0));
+        const update = {
+            "system.kpi": closure.entries,
+            "system.details.xp.value": actorXpTotal + rewardXp,
+            "system.details.xp.unspent": actorXpUnspent + rewardXp
+        };
+        await this.actor.update(update);
+        await this._applyKpiLuckReward(String(closure.reward?.luck ?? "none"));
+
+        const statusLabel = result === "completed" ? "completed" : "failed";
+        const xpLabel = rewardXp > 0 ? ` (+${rewardXp} XP)` : "";
+        ui.notifications.info(`${this.actor.name}: KPI ${statusLabel}${xpLabel}.`);
+    }
+
     async _onKpiFieldChange(ev) {
         const index = Number(ev.currentTarget.dataset.kpiIndex);
         const key = String(ev.currentTarget.dataset.kpiKey ?? "");
+        if (!(this.actor.isOwner || game.user?.isGM)) return;
         if (!Number.isInteger(index) || index < 0) return;
         const kpis = this._getActorKpis();
         if (!kpis[index]) return;
+        if (!game.user?.isGM && kpis[index].status !== "open") return;
+        if (key === "status" && !game.user?.isGM) {
+            ui.notifications.warn("Only the GM can close KPIs.");
+            ev.currentTarget.value = String(kpis[index].status ?? "open");
+            return;
+        }
 
         switch (key) {
             case "text":
@@ -1206,6 +1302,12 @@ export class LaundryActorSheet extends ActorSheet {
                 if (KPI_STATUSES.some(option => option.key === value)) {
                     kpis[index].status = value;
                     if (value === "completed") kpis[index].progress = 100;
+                    if (value === "open") {
+                        kpis[index].closedAt = 0;
+                        kpis[index].closedBy = "";
+                        kpis[index].rewardedXp = 0;
+                        kpis[index].rewardLuckMode = "none";
+                    }
                 }
                 break;
             }
@@ -1241,8 +1343,198 @@ export class LaundryActorSheet extends ActorSheet {
             priority: entry.priority,
             dueDate: entry.dueDate,
             progress: entry.progress,
-            owner: entry.owner
+            owner: entry.owner,
+            closedAt: entry.closedAt,
+            closedBy: entry.closedBy,
+            rewardedXp: entry.rewardedXp,
+            rewardLuckMode: entry.rewardLuckMode
         }));
+    }
+
+    async _applyKpiLuckReward(mode = "none") {
+        if (!game.user?.isGM) return;
+        const rewardMode = String(mode ?? "none").trim().toLowerCase();
+        if (rewardMode === "none") return;
+
+        const currentLuck = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuck")) || 0));
+        const maxLuck = Math.max(0, Math.trunc(Number(game.settings.get("laundry-rpg", "teamLuckMax")) || 0));
+        if (rewardMode === "refill") {
+            await game.settings.set("laundry-rpg", "teamLuck", maxLuck);
+            return;
+        }
+        if (rewardMode === "plus1") {
+            const next = Math.max(0, Math.min(maxLuck, currentLuck + 1));
+            await game.settings.set("laundry-rpg", "teamLuck", next);
+        }
+    }
+
+    async _onKpiShopBuy(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "character") return;
+        if (!(this.actor.isOwner || game.user?.isGM)) {
+            ui.notifications.warn("Only the GM or actor owner can purchase upgrades.");
+            return;
+        }
+
+        const root = this.element?.[0];
+        if (!root) return;
+        const kind = String(ev.currentTarget?.dataset?.shopKind ?? "").trim().toLowerCase();
+        if (kind === "skill-training" || kind === "skill-focus") {
+            const skillName = String(root.querySelector('[name="kpiShopSkill"]')?.value ?? "").trim();
+            const stat = kind === "skill-focus" ? "focus" : "training";
+            await this._buySkillUpgrade(skillName, stat);
+            return;
+        }
+        if (kind === "attribute") {
+            const attribute = String(root.querySelector('[name="kpiShopAttribute"]')?.value ?? "").trim().toLowerCase();
+            await this._buyAttributeUpgrade(attribute);
+        }
+    }
+
+    async _buySkillUpgrade(skillName, stat = "training") {
+        const safeName = String(skillName ?? "").trim();
+        if (!safeName) {
+            ui.notifications.warn("Select a skill first.");
+            return;
+        }
+        const key = stat === "focus" ? "focus" : "training";
+        const skill = this.actor.items.find(item => item.type === "skill" && item.name === safeName);
+        if (!skill) {
+            ui.notifications.warn(`Skill not found on actor: ${safeName}.`);
+            return;
+        }
+        const current = Math.max(0, Math.trunc(Number(skill.system?.[key]) || 0));
+        if (current >= 4) {
+            ui.notifications.warn(`${safeName} ${key} is already at maximum rank.`);
+            return;
+        }
+        const next = current + 1;
+        const cost = _skillUpgradeCost(next);
+        if (!Number.isFinite(cost) || cost <= 0) return;
+
+        const unspent = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.unspent) || 0));
+        if (unspent < cost) {
+            ui.notifications.warn(`Not enough XP. Need ${cost}, have ${unspent}.`);
+            return;
+        }
+
+        await skill.update({ [`system.${key}`]: next });
+        await this.actor.update({ "system.details.xp.unspent": unspent - cost });
+        ui.notifications.info(`${this.actor.name}: ${safeName} ${key} ${current} -> ${next} (cost ${cost} XP).`);
+    }
+
+    async _buyAttributeUpgrade(attribute = "") {
+        const key = ["body", "mind", "spirit"].includes(String(attribute ?? "").toLowerCase())
+            ? String(attribute).toLowerCase()
+            : "";
+        if (!key) {
+            ui.notifications.warn("Select an attribute first.");
+            return;
+        }
+
+        const current = Math.max(1, Math.trunc(Number(this.actor.system?.attributes?.[key]?.value) || 1));
+        if (current >= 4) {
+            ui.notifications.warn(`${key.toUpperCase()} is already at maximum rank.`);
+            return;
+        }
+        const next = current + 1;
+        const cost = _attributeUpgradeCost(current);
+        if (cost <= 0) return;
+
+        const unspent = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.unspent) || 0));
+        if (unspent < cost) {
+            ui.notifications.warn(`Not enough XP. Need ${cost}, have ${unspent}.`);
+            return;
+        }
+
+        await this.actor.update({
+            [`system.attributes.${key}.value`]: next,
+            "system.details.xp.unspent": unspent - cost
+        });
+        ui.notifications.info(`${this.actor.name}: ${key.toUpperCase()} ${current} -> ${next} (cost ${cost} XP).`);
+    }
+
+    async _onKpiShopBuyTalent(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "character") return;
+        if (!(this.actor.isOwner || game.user?.isGM)) {
+            ui.notifications.warn("Only the GM or actor owner can purchase upgrades.");
+            return;
+        }
+
+        const TALENT_COST = 4;
+        const unspent = Math.max(0, Math.trunc(Number(this.actor.system?.details?.xp?.unspent) || 0));
+        if (unspent < TALENT_COST) {
+            ui.notifications.warn(`Not enough XP. Need ${TALENT_COST}, have ${unspent}.`);
+            return;
+        }
+
+        const pack = game.packs.get("laundry-rpg.talents") ?? null;
+        if (!pack) {
+            ui.notifications.warn("Talents compendium is unavailable.");
+            return;
+        }
+
+        const talent = await this._pickTalentFromCompendium(pack);
+        if (!talent) return;
+
+        const talentName = String(talent.name ?? "").trim();
+        const duplicate = this.actor.items.some(item =>
+            item.type === "talent" && String(item.name ?? "").trim().toLowerCase() === talentName.toLowerCase()
+        );
+        if (duplicate) {
+            ui.notifications.warn(`${this.actor.name} already has "${talentName}".`);
+            return;
+        }
+
+        await this.actor.createEmbeddedDocuments("Item", [talent.toObject()]);
+        await this.actor.update({ "system.details.xp.unspent": unspent - TALENT_COST });
+        ui.notifications.info(`${this.actor.name}: purchased talent "${talentName}" (${TALENT_COST} XP).`);
+    }
+
+    async _pickTalentFromCompendium(pack) {
+        const docs = await pack.getDocuments();
+        const talents = docs
+            .filter(doc => String(doc.type ?? "").trim().toLowerCase() === "talent")
+            .sort((a, b) => String(a.name ?? "").localeCompare(String(b.name ?? "")));
+        if (!talents.length) {
+            ui.notifications.warn("No talents found in compendium.");
+            return null;
+        }
+
+        const optionsHtml = talents
+            .map(doc => `<option value="${foundry.utils.escapeHTML(doc.id)}">${foundry.utils.escapeHTML(doc.name ?? "Talent")}</option>`)
+            .join("");
+        const content = `
+            <form class="laundry-talent-shop">
+                <div class="form-group">
+                    <label>Select Talent</label>
+                    <select name="talentId">${optionsHtml}</select>
+                </div>
+            </form>
+        `;
+
+        const selectedId = await new Promise(resolve => {
+            new Dialog({
+                title: "Upgrade Shop: Buy Talent (4 XP)",
+                content,
+                buttons: {
+                    buy: {
+                        label: "Buy",
+                        callback: html => resolve(String(html.find('[name=\"talentId\"]').val() ?? "").trim())
+                    },
+                    cancel: {
+                        label: "Cancel",
+                        callback: () => resolve("")
+                    }
+                },
+                default: "buy",
+                close: () => resolve("")
+            }).render(true);
+        });
+
+        if (!selectedId) return null;
+        return talents.find(doc => doc.id === selectedId) ?? null;
     }
 
     // ─── Drag & Drop: Assignment ───────────────────────────────────────────────
@@ -1294,6 +1586,23 @@ export class LaundryActorSheet extends ActorSheet {
             overwriteBiography: false
         });
     }
+}
+
+function _skillUpgradeCost(targetRank) {
+    const rank = Math.max(1, Math.trunc(Number(targetRank) || 1));
+    if (rank <= 1) return 1;
+    if (rank === 2) return 2;
+    if (rank === 3) return 3;
+    if (rank === 4) return 4;
+    return 0;
+}
+
+function _attributeUpgradeCost(currentRank) {
+    const rank = Math.max(1, Math.trunc(Number(currentRank) || 1));
+    if (rank === 1) return 3;
+    if (rank === 2) return 5;
+    if (rank === 3) return 10;
+    return 0;
 }
 
 export class LaundryNpcSheet extends LaundryActorSheet {

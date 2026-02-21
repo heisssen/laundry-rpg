@@ -138,7 +138,9 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
             showMethodSelector: this._requestType === "gear",
             methodOptions,
             departments,
+            selectedDepartmentId: this._selectedDepartment,
             gearCategories,
+            gearRows,
             pendingGearQty: sanitizePositiveInt(this._pendingGearQty, 1),
             hasRequestedGear: requestedGearLines.length > 0,
             requestedGearLines,
@@ -198,6 +200,35 @@ export class LaundrySupportRequestApp extends HandlebarsMixin(BaseApplication) {
             this._requestType = next === "gear" ? "gear" : "department";
             await _rerenderApp(this);
         }, listenerOptions);
+
+        root.querySelectorAll(".request-type-select").forEach(button => {
+            button.addEventListener("click", async (ev) => {
+                ev.preventDefault();
+                const next = String(ev.currentTarget?.dataset?.requestType ?? "").trim().toLowerCase();
+                this._requestType = next === "gear" ? "gear" : "department";
+                await _rerenderApp(this);
+            }, listenerOptions);
+        });
+
+        root.querySelectorAll(".department-select-card").forEach(button => {
+            button.addEventListener("click", async (ev) => {
+                ev.preventDefault();
+                const next = String(ev.currentTarget?.dataset?.departmentId ?? "").trim();
+                if (!next || next === this._selectedDepartment) return;
+                this._selectedDepartment = next;
+                await _rerenderApp(this);
+            }, listenerOptions);
+        });
+
+        root.querySelectorAll(".gear-select-card").forEach(button => {
+            button.addEventListener("click", async (ev) => {
+                ev.preventDefault();
+                const next = String(ev.currentTarget?.dataset?.gearId ?? "").trim();
+                if (!next) return;
+                this._selectedGear = next;
+                await _rerenderApp(this);
+            }, listenerOptions);
+        });
 
         root.querySelector('[name="gearId"]')?.addEventListener("change", (ev) => {
             this._selectedGear = String(ev.currentTarget?.value ?? "").trim();
@@ -823,7 +854,7 @@ async function _grantGearQuantity(actor, itemData, quantity, { overrideExistingQ
     });
 
     doc.type = "gear";
-    doc.img = String(doc.img ?? "").trim() || "systems/laundry-rpg/icons/generated/_defaults/gear.svg";
+    doc.img = String(doc.img ?? "").trim() || "systems/laundry-rpg/icons/generated/_defaults/gear.webp";
     doc.system = {
         ...(doc.system ?? {}),
         quantity: quantityResult.addedQuantity,
@@ -848,7 +879,7 @@ function _buildFallbackGearItemData(line, quantity) {
     return {
         name,
         type: "gear",
-        img: "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+        img: "systems/laundry-rpg/icons/generated/_defaults/gear.webp",
         system: {
             description: descriptionParts.join("\n"),
             quantity: sanitizePositiveInt(quantity, 1),

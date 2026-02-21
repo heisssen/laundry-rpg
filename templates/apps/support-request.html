@@ -4,162 +4,194 @@
         <p>Requester: <strong>{{actorName}}</strong></p>
     </header>
 
-    <div class="form-group">
-        <label>Request Line</label>
-        <select name="requestType">
-            {{#each requestTypes as |entry|}}
-            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
-                {{entry.label}}
-            </option>
-            {{/each}}
-        </select>
-    </div>
+    <div class="laundry-support-layout">
+        <aside class="laundry-support-catalog">
+            <div class="laundry-support-type-toggle">
+                {{#each requestTypes as |entry|}}
+                <button type="button" class="request-type-select {{#if entry.selected}}is-selected{{/if}}" data-request-type="{{entry.id}}">{{entry.label}}</button>
+                {{/each}}
+            </div>
 
-    {{#if (laundryEq requestType "department")}}
-    <div class="form-group">
-        <label>Department</label>
-        <select name="departmentId">
-            {{#each departments as |department|}}
-            <option value="{{department.id}}" {{#if department.selected}}selected{{/if}}>
-                {{department.name}} (DN {{department.dn}}:{{department.complexity}})
-            </option>
-            {{/each}}
-        </select>
-    </div>
-    {{else}}
-    <div class="laundry-requisition-builder">
-        <div class="form-group">
-            <label>Add Requisition Line</label>
-            <div class="laundry-requisition-add-row">
-                <select name="gearId">
-                    {{#each gearCategories as |group|}}
-                    <optgroup label="{{group.name}}">
-                        {{#each group.entries as |entry|}}
-                        <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
-                            {{entry.name}} (DN {{entry.dn}}:{{entry.complexity}})
-                        </option>
-                        {{/each}}
-                    </optgroup>
+            {{#if (laundryEq requestType "department")}}
+            <div class="laundry-support-card-list">
+                {{#each departments as |department|}}
+                <button type="button" class="department-select-card {{#if department.selected}}is-selected{{/if}}" data-department-id="{{department.id}}">
+                    <strong>{{department.name}}</strong>
+                    <span>DN {{department.dn}}:{{department.complexity}}</span>
+                </button>
+                {{/each}}
+            </div>
+            {{else}}
+            <div class="laundry-support-card-list">
+                {{#each gearRows as |entry|}}
+                <button type="button" class="gear-select-card {{#if entry.selected}}is-selected{{/if}}" data-gear-id="{{entry.id}}">
+                    <strong>{{entry.name}}</strong>
+                    <span>{{entry.category}} // DN {{entry.dn}}:{{entry.complexity}}</span>
+                </button>
+                {{/each}}
+            </div>
+            {{/if}}
+        </aside>
+
+        <section class="laundry-support-workbench">
+            <div class="form-group">
+                <label>Request Line (Dropdown Fallback)</label>
+                <select name="requestType">
+                    {{#each requestTypes as |entry|}}
+                    <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
+                        {{entry.label}}
+                    </option>
                     {{/each}}
                 </select>
-                <input type="number" name="pendingGearQty" min="1" step="1" value="{{pendingGearQty}}" />
-                <button type="button" data-action="add-gear-line">Add</button>
             </div>
-        </div>
 
-        {{#if hasRequestedGear}}
-        <div class="laundry-requisition-lines">
-            {{#each requestedGearLines as |line|}}
-            <div class="laundry-requisition-line">
-                <div class="laundry-requisition-line-main">
-                    <strong>{{line.name}}</strong>
-                    <span>DN {{line.dn}}:{{line.complexity}} each</span>
-                </div>
-                <div class="laundry-requisition-line-controls">
-                    <input
-                        type="number"
-                        data-gear-qty-for="{{line.id}}"
-                        min="1"
-                        step="1"
-                        value="{{line.quantity}}" />
-                    <button type="button" data-action="remove-gear-line" data-gear-id="{{line.id}}">Remove</button>
-                </div>
+            {{#if (laundryEq requestType "department")}}
+            <div class="form-group">
+                <label>Department</label>
+                <select name="departmentId">
+                    {{#each departments as |department|}}
+                    <option value="{{department.id}}" {{#if department.selected}}selected{{/if}}>
+                        {{department.name}} (DN {{department.dn}}:{{department.complexity}})
+                    </option>
+                    {{/each}}
+                </select>
             </div>
-            {{/each}}
-        </div>
-        <div class="laundry-support-actions">
-            <button type="button" data-action="clear-gear-lines">Clear Requisition Bundle</button>
-        </div>
-        {{else}}
-        <p class="notes">No requisition lines queued yet.</p>
-        {{/if}}
-    </div>
-    {{/if}}
+            {{else}}
+            <div class="laundry-requisition-builder">
+                <div class="form-group">
+                    <label>Add Requisition Line</label>
+                    <div class="laundry-requisition-add-row">
+                        <select name="gearId">
+                            {{#each gearCategories as |group|}}
+                            <optgroup label="{{group.name}}">
+                                {{#each group.entries as |entry|}}
+                                <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
+                                    {{entry.name}} (DN {{entry.dn}}:{{entry.complexity}})
+                                </option>
+                                {{/each}}
+                            </optgroup>
+                            {{/each}}
+                        </select>
+                        <input type="number" name="pendingGearQty" min="1" step="1" value="{{pendingGearQty}}" />
+                        <button type="button" data-action="add-gear-line">Add</button>
+                    </div>
+                </div>
 
-    {{#if showMethodSelector}}
-    <div class="form-group">
-        <label>Request Method</label>
-        <select name="requestMethod">
-            {{#each methodOptions as |entry|}}
-            <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
-                {{entry.label}}
-            </option>
-            {{/each}}
-        </select>
-    </div>
-    {{/if}}
-
-    {{#if showPreview}}
-    <div class="laundry-support-preview">
-        <p><strong>Target:</strong> {{previewName}}</p>
-        <p><strong>Test:</strong> Mind (Bureaucracy/Presence) DN {{previewDn}}:{{previewComplexity}}</p>
-        {{#if previewRequirements}}
-        <p><strong>Requirements:</strong> {{previewRequirements}}</p>
-        {{/if}}
-        <p><strong>On Success:</strong> {{previewSummary}}</p>
-        {{#if previewSource}}
-        <p><strong>Source:</strong> {{previewSource}}</p>
-        {{/if}}
-
-        {{#if hasForecast}}
-        <div class="laundry-support-forecast">
-            <p><strong>Forecast:</strong> {{forecastChancePct}}% approval chance</p>
-            <p><strong>Roll Pool:</strong> {{forecastPool}}d6 via Mind ({{forecastSkillName}})</p>
-            <p><strong>Target Successes:</strong> {{forecastRequiredSuccesses}} (base {{forecastRequiredWithoutBonus}})</p>
-            <p><strong>Per-Die Success:</strong> {{forecastPerDieChancePct}}% | <strong>Expected Successes:</strong> {{forecastExpectedSuccesses}}</p>
-            {{#if forecastPaperworkBonus}}
-            <p>Filing Paperwork bonus is active and included in this forecast.</p>
+                {{#if hasRequestedGear}}
+                <div class="laundry-requisition-lines">
+                    {{#each requestedGearLines as |line|}}
+                    <div class="laundry-requisition-line">
+                        <div class="laundry-requisition-line-main">
+                            <strong>{{line.name}}</strong>
+                            <span>DN {{line.dn}}:{{line.complexity}} each</span>
+                        </div>
+                        <div class="laundry-requisition-line-controls">
+                            <input
+                                type="number"
+                                data-gear-qty-for="{{line.id}}"
+                                min="1"
+                                step="1"
+                                value="{{line.quantity}}" />
+                            <button type="button" data-action="remove-gear-line" data-gear-id="{{line.id}}">Remove</button>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+                <div class="laundry-support-actions">
+                    <button type="button" data-action="clear-gear-lines">Clear Requisition Bundle</button>
+                </div>
+                {{else}}
+                <p class="notes">No requisition lines queued yet.</p>
+                {{/if}}
+            </div>
             {{/if}}
-        </div>
-        {{/if}}
 
-        {{#if previewIsBundle}}
-        <p><strong>Bundle:</strong> {{bundleLineCount}} line(s), {{bundleTotalQty}} total item(s)</p>
-        <div class="laundry-support-bundle-list">
-            {{#each requestedGearLines as |line|}}
-            <p>{{line.name}} ×{{line.quantity}} (DN {{line.dn}}:{{line.complexity}})</p>
-            {{/each}}
-        </div>
-        {{/if}}
-
-        {{#if hasCriticalInjuries}}
-        <div class="laundry-support-critical-list">
-            <p><strong>Active Critical Injuries:</strong></p>
-            <div class="laundry-critical-columns">
-                <div class="laundry-critical-column">
-                    <p><strong>Physical</strong></p>
-                    {{#if hasPhysicalCriticalInjuries}}
-                    {{#each physicalCriticalInjuries as |injury|}}
-                    <p>{{injury.name}}{{#if injury.statusId}} [{{injury.statusId}}]{{/if}}</p>
+            {{#if showMethodSelector}}
+            <div class="form-group">
+                <label>Request Method</label>
+                <select name="requestMethod">
+                    {{#each methodOptions as |entry|}}
+                    <option value="{{entry.id}}" {{#if entry.selected}}selected{{/if}}>
+                        {{entry.label}}
+                    </option>
                     {{/each}}
-                    {{else}}
-                    <p>None</p>
+                </select>
+            </div>
+            {{/if}}
+
+            {{#if showPreview}}
+            <div class="laundry-support-preview">
+                <p><strong>Target:</strong> {{previewName}}</p>
+                <p><strong>Test:</strong> Mind (Bureaucracy/Presence) DN {{previewDn}}:{{previewComplexity}}</p>
+                {{#if previewRequirements}}
+                <p><strong>Requirements:</strong> {{previewRequirements}}</p>
+                {{/if}}
+                <p><strong>On Success:</strong> {{previewSummary}}</p>
+                {{#if previewSource}}
+                <p><strong>Source:</strong> {{previewSource}}</p>
+                {{/if}}
+
+                {{#if hasForecast}}
+                <div class="laundry-support-forecast">
+                    <p><strong>Forecast:</strong> {{forecastChancePct}}% approval chance</p>
+                    <p><strong>Roll Pool:</strong> {{forecastPool}}d6 via Mind ({{forecastSkillName}})</p>
+                    <p><strong>Target Successes:</strong> {{forecastRequiredSuccesses}} (base {{forecastRequiredWithoutBonus}})</p>
+                    <p><strong>Per-Die Success:</strong> {{forecastPerDieChancePct}}% | <strong>Expected Successes:</strong> {{forecastExpectedSuccesses}}</p>
+                    {{#if forecastPaperworkBonus}}
+                    <p>Filing Paperwork bonus is active and included in this forecast.</p>
                     {{/if}}
                 </div>
-                <div class="laundry-critical-column">
-                    <p><strong>Psychological</strong></p>
-                    {{#if hasPsychologicalCriticalInjuries}}
-                    {{#each psychologicalCriticalInjuries as |injury|}}
-                    <p>{{injury.name}}{{#if injury.statusId}} [{{injury.statusId}}]{{/if}}</p>
-                    {{/each}}
-                    {{else}}
-                    <p>None</p>
-                    {{/if}}
-                </div>
-            </div>
-            <div class="laundry-support-actions laundry-critical-heal-actions">
-                <button type="button" data-action="heal-critical-injury" data-injury-kind="physical" {{#unless hasPhysicalCriticalInjuries}}disabled{{/unless}}>Heal 1 Physical Injury</button>
-                <button type="button" data-action="heal-critical-injury" data-injury-kind="psychological" {{#unless hasPsychologicalCriticalInjuries}}disabled{{/unless}}>Heal 1 Psychological Injury</button>
-                <button type="button" data-action="heal-critical-injury" data-injury-kind="any">Heal Oldest Injury</button>
-            </div>
-        </div>
-        {{else}}
-        <p><strong>Active Critical Injuries:</strong> None detected.</p>
-        {{/if}}
-    </div>
-    {{/if}}
+                {{/if}}
 
-    <div class="laundry-support-actions">
-        <button type="button" data-action="request-support">Process Request</button>
+                {{#if previewIsBundle}}
+                <p><strong>Bundle:</strong> {{bundleLineCount}} line(s), {{bundleTotalQty}} total item(s)</p>
+                <div class="laundry-support-bundle-list">
+                    {{#each requestedGearLines as |line|}}
+                    <p>{{line.name}} ×{{line.quantity}} (DN {{line.dn}}:{{line.complexity}})</p>
+                    {{/each}}
+                </div>
+                {{/if}}
+
+                {{#if hasCriticalInjuries}}
+                <div class="laundry-support-critical-list">
+                    <p><strong>Active Critical Injuries:</strong></p>
+                    <div class="laundry-critical-columns">
+                        <div class="laundry-critical-column">
+                            <p><strong>Physical</strong></p>
+                            {{#if hasPhysicalCriticalInjuries}}
+                            {{#each physicalCriticalInjuries as |injury|}}
+                            <p>{{injury.name}}{{#if injury.statusId}} [{{injury.statusId}}]{{/if}}</p>
+                            {{/each}}
+                            {{else}}
+                            <p>None</p>
+                            {{/if}}
+                        </div>
+                        <div class="laundry-critical-column">
+                            <p><strong>Psychological</strong></p>
+                            {{#if hasPsychologicalCriticalInjuries}}
+                            {{#each psychologicalCriticalInjuries as |injury|}}
+                            <p>{{injury.name}}{{#if injury.statusId}} [{{injury.statusId}}]{{/if}}</p>
+                            {{/each}}
+                            {{else}}
+                            <p>None</p>
+                            {{/if}}
+                        </div>
+                    </div>
+                    <div class="laundry-support-actions laundry-critical-heal-actions">
+                        <button type="button" data-action="heal-critical-injury" data-injury-kind="physical" {{#unless hasPhysicalCriticalInjuries}}disabled{{/unless}}>Heal 1 Physical Injury</button>
+                        <button type="button" data-action="heal-critical-injury" data-injury-kind="psychological" {{#unless hasPsychologicalCriticalInjuries}}disabled{{/unless}}>Heal 1 Psychological Injury</button>
+                        <button type="button" data-action="heal-critical-injury" data-injury-kind="any">Heal Oldest Injury</button>
+                    </div>
+                </div>
+                {{else}}
+                <p><strong>Active Critical Injuries:</strong> None detected.</p>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            <div class="laundry-support-actions">
+                <button type="button" data-action="request-support">Process Request</button>
+            </div>
+        </section>
     </div>
 </section>

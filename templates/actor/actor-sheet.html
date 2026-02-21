@@ -646,12 +646,15 @@
                     <span class="kpi-summary-chip">{{localize "LAUNDRY.KPIStatusOpen"}}: <strong>{{kpiSummary.open}}</strong></span>
                     <span class="kpi-summary-chip">{{localize "LAUNDRY.KPIStatusCompleted"}}: <strong>{{kpiSummary.completed}}</strong></span>
                     <span class="kpi-summary-chip">{{localize "LAUNDRY.KPIStatusFailed"}}: <strong>{{kpiSummary.failed}}</strong></span>
+                    <span class="kpi-summary-chip">Unspent XP: <strong>{{upgradeShop.unspentXp}}</strong></span>
                 </div>
                 {{#each kpiGroups as |group|}}
                 <div class="kpi-group">
                     <div class="kpi-group-head">
                         <h4>{{group.label}}</h4>
+                        {{#if @root.kpiPermissions.canAdd}}
                         <button type="button" class="kpi-add" data-kpi-horizon="{{group.key}}">{{localize "LAUNDRY.AddKPI"}}</button>
+                        {{/if}}
                     </div>
                     <ol class="items-list compact-list kpi-list">
                         {{#each group.entries as |kpi|}}
@@ -664,6 +667,8 @@
                                     data-kpi-key="text"
                                     value="{{kpi.text}}"
                                     placeholder="{{localize 'LAUNDRY.KPIPlaceholder'}}"
+                                    {{#unless @root.kpiPermissions.canEdit}}disabled{{/unless}}
+                                    {{#if kpi.resolved}}disabled{{/if}}
                                 />
                                 <input
                                     type="text"
@@ -672,20 +677,22 @@
                                     data-kpi-key="owner"
                                     value="{{kpi.owner}}"
                                     placeholder="{{localize 'LAUNDRY.KPIOwner'}}"
+                                    {{#unless @root.kpiPermissions.canEdit}}disabled{{/unless}}
+                                    {{#if kpi.resolved}}disabled{{/if}}
                                 />
                             </div>
                             <div class="kpi-meta">
                                 <label>
                                     {{localize "LAUNDRY.KPIStatus"}}
-                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="status">
-                                        {{#each @root.kpiOptions.statuses as |option|}}
-                                        <option value="{{option.key}}" {{#if (laundryEq option.key ../status)}}selected{{/if}}>{{option.label}}</option>
-                                        {{/each}}
-                                    </select>
+                                    <div class="kpi-status-static">
+                                        {{#if (laundryEq kpi.status "open")}}{{localize "LAUNDRY.KPIStatusOpen"}}{{/if}}
+                                        {{#if (laundryEq kpi.status "completed")}}{{localize "LAUNDRY.KPIStatusCompleted"}}{{/if}}
+                                        {{#if (laundryEq kpi.status "failed")}}{{localize "LAUNDRY.KPIStatusFailed"}}{{/if}}
+                                    </div>
                                 </label>
                                 <label>
                                     {{localize "LAUNDRY.KPIPriority"}}
-                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="priority">
+                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="priority" {{#unless @root.kpiPermissions.canEdit}}disabled{{/unless}} {{#if kpi.resolved}}disabled{{/if}}>
                                         {{#each @root.kpiOptions.priorities as |option|}}
                                         <option value="{{option.key}}" {{#if (laundryEq option.key ../priority)}}selected{{/if}}>{{option.label}}</option>
                                         {{/each}}
@@ -693,29 +700,84 @@
                                 </label>
                                 <label>
                                     {{localize "LAUNDRY.KPIDueDate"}}
-                                    <input type="date" class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="dueDate" value="{{kpi.dueDate}}" />
+                                    <input type="date" class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="dueDate" value="{{kpi.dueDate}}" {{#unless @root.kpiPermissions.canEdit}}disabled{{/unless}} {{#if kpi.resolved}}disabled{{/if}} />
                                 </label>
                                 <label>
                                     {{localize "LAUNDRY.KPIProgress"}}
-                                    <input type="number" min="0" max="100" class="kpi-field kpi-progress-input" data-kpi-index="{{kpi.index}}" data-kpi-key="progress" value="{{kpi.progress}}" />
+                                    <input type="number" min="0" max="100" class="kpi-field kpi-progress-input" data-kpi-index="{{kpi.index}}" data-kpi-key="progress" value="{{kpi.progress}}" {{#unless @root.kpiPermissions.canEdit}}disabled{{/unless}} {{#if kpi.resolved}}disabled{{/if}} />
                                 </label>
                                 <label>
                                     {{localize "LAUNDRY.KPIType"}}
-                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="horizon">
+                                    <select class="kpi-field" data-kpi-index="{{kpi.index}}" data-kpi-key="horizon" {{#unless @root.kpiPermissions.canEdit}}disabled{{/unless}} {{#if kpi.resolved}}disabled{{/if}}>
                                         {{#each @root.kpiOptions.horizons as |option|}}
                                         <option value="{{option.key}}" {{#if (laundryEq option.key ../horizon)}}selected{{/if}}>{{option.label}}</option>
                                         {{/each}}
                                     </select>
                                 </label>
+                                {{#if kpi.canClose}}
+                                <div class="kpi-close-actions">
+                                    <button type="button" class="kpi-close" data-kpi-index="{{kpi.index}}" data-kpi-result="completed">Close: Complete</button>
+                                    <button type="button" class="kpi-close" data-kpi-index="{{kpi.index}}" data-kpi-result="failed">Close: Fail</button>
+                                </div>
+                                {{else}}
+                                {{#if kpi.resolved}}
+                                <div class="kpi-close-note">{{kpi.rewardLabel}}{{#if kpi.closedDateLabel}} • {{kpi.closedDateLabel}}{{/if}}</div>
+                                {{/if}}
+                                {{/if}}
                             </div>
+                            {{#if @root.kpiPermissions.canDelete}}
                             <a class="item-control kpi-delete" data-kpi-index="{{kpi.index}}" title="{{localize 'LAUNDRY.Delete'}}">
                                 <i class="fas fa-trash"></i>
                             </a>
+                            {{/if}}
                         </li>
                         {{/each}}
                     </ol>
                 </div>
                 {{/each}}
+
+                {{#if upgradeShop.enabled}}
+                <div class="kpi-shop-panel">
+                    <div class="kpi-group-head">
+                        <h4>Upgrade Shop</h4>
+                    </div>
+                    <p class="combat-note">Spend XP with one click. Costs follow core advancement tables.</p>
+                    <div class="kpi-shop-grid">
+                        <div class="kpi-shop-card">
+                            <label>Skill Upgrade Target</label>
+                            <select name="kpiShopSkill">
+                                {{#each upgradeShop.skills as |entry|}}
+                                <option value="{{entry.name}}">{{entry.name}} (TR {{entry.training}} / FO {{entry.focus}})</option>
+                                {{/each}}
+                            </select>
+                            <div class="kpi-shop-actions">
+                                <button type="button" class="kpi-shop-buy" data-shop-kind="skill-training">Buy +1 Training</button>
+                                <button type="button" class="kpi-shop-buy" data-shop-kind="skill-focus">Buy +1 Focus</button>
+                            </div>
+                        </div>
+
+                        <div class="kpi-shop-card">
+                            <label>Attribute Upgrade Target</label>
+                            <select name="kpiShopAttribute">
+                                {{#each upgradeShop.attributes as |entry|}}
+                                <option value="{{entry.id}}">{{entry.label}} ({{entry.value}})</option>
+                                {{/each}}
+                            </select>
+                            <div class="kpi-shop-actions">
+                                <button type="button" class="kpi-shop-buy" data-shop-kind="attribute">Buy +1 Attribute</button>
+                            </div>
+                        </div>
+
+                        <div class="kpi-shop-card">
+                            <label>Talent Purchase</label>
+                            <p class="notes">Buys one talent directly from compendium.</p>
+                            <div class="kpi-shop-actions">
+                                <button type="button" class="kpi-shop-buy-talent">Buy Talent (4 XP)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{/if}}
             </section>
         </div>
 
