@@ -388,7 +388,6 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".combat-adrenaline-action").click(this._onCombatAdrenalineAction.bind(this));
         html.find(".take-breather").click(this._onTakeBreather.bind(this));
         html.find(".standard-rest").click(this._onStandardRest.bind(this));
-        html.on("change", ".xp-field", (ev) => this._onXpFieldChange(ev));
         html.find(".bio-autofill").click(this._onBioAutofill.bind(this));
         html.find(".kpi-add").click(this._onKpiAdd.bind(this));
         html.find(".kpi-delete").click(this._onKpiDelete.bind(this));
@@ -431,6 +430,20 @@ export class LaundryActorSheet extends ActorSheet {
 
         // Rollable items and attributes
         html.find(".rollable").click(this._onRoll.bind(this));
+    }
+
+    /** @override */
+    async _onChangeInput(event) {
+        const target = event?.currentTarget ?? event?.target;
+        const isXpField = Boolean(target?.classList?.contains("xp-field"));
+
+        if (isXpField && game.user?.isGM && this.actor.type === "character") {
+            event?.preventDefault?.();
+            await this._onXpFieldChange(event);
+            return;
+        }
+
+        return super._onChangeInput(event);
     }
 
     // ─── Item creation ────────────────────────────────────────────────────────
