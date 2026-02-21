@@ -43,7 +43,8 @@
         "traits": "",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/cultist-cell-8bf909.svg"
   },
   {
     "id": "security",
@@ -89,7 +90,8 @@
         "traits": "Suppressive",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/security-team-15d54c.svg"
   },
   {
     "id": "field-agent",
@@ -135,7 +137,8 @@
         "traits": "Crushing",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/hostile-field-agent-cab8c7.svg"
   },
   {
     "id": "aberration",
@@ -181,7 +184,8 @@
         "traits": "Area",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/aberration-9b2ffe.svg"
   },
   {
     "id": "civilian",
@@ -226,7 +230,8 @@
         "traits": "",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/panicked-civilian-fe0f56.svg"
   },
   {
     "id": "mundane-small",
@@ -263,7 +268,8 @@
         "traits": "Close, Piercing",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/small-mundane-creature-a1938c.svg"
   },
   {
     "id": "mundane-medium",
@@ -300,7 +306,8 @@
         "traits": "Close, Piercing",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/medium-mundane-creature-dd05ff.svg"
   },
   {
     "id": "mundane-large",
@@ -337,7 +344,8 @@
         "traits": "Close, Crushing, Piercing",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/large-mundane-creature-0aedd9.svg"
   },
   {
     "id": "poltergeist",
@@ -384,7 +392,8 @@
         "traits": "Range (Medium), Improvised",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/poltergeist-psychic-echo-4506ea.svg"
   },
   {
     "id": "ghost-psychic-echo",
@@ -428,7 +437,8 @@
         "traits": "Range (Medium), Psychological",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/ghost-psychic-echo-9d48b7.svg"
   },
   {
     "id": "zombie-rhr",
@@ -462,7 +472,8 @@
         "traits": "Close, Piercing",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/zombie-rhr-unit-76a9bf.svg"
   },
   {
     "id": "succubus",
@@ -500,7 +511,8 @@
         "traits": "Close, Psychological",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/succubus-60ba79.svg"
   },
   {
     "id": "deep-one-type-i",
@@ -551,7 +563,8 @@
         "traits": "Range (Medium), Stunning",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-i-035032.svg"
   },
   {
     "id": "deep-one-type-ii",
@@ -597,7 +610,8 @@
         "traits": "Range (Short), Brutal, Loud, Two-Handed",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-ii-4945df.svg"
   },
   {
     "id": "deep-one-type-iii",
@@ -648,7 +662,8 @@
         "traits": "Range (Medium), Blast (2), Stunning",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/blue-hades-type-iii-7db566.svg"
   },
   {
     "id": "deep-seven-cthonian",
@@ -685,7 +700,8 @@
         "traits": "Restraining, Weakened (on hit)",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/deep-seven-cthonian-1f4dca.svg"
   },
   {
     "id": "anning-blue-skull",
@@ -736,7 +752,8 @@
         "traits": "Range (Medium), Weakened (on hit)",
         "isMagic": true
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/anning-blue-skull-elder-thing-47c939.svg"
   },
   {
     "id": "anning-black-shoggoth",
@@ -771,6 +788,7 @@
         "traits": "Crushing, Restraining",
         "isMagic": false
       }
-    ]
+    ],
+    "img": "systems/laundry-rpg/icons/generated/enemies/anning-black-shoggoth-5dfb1e.svg"
   }
 ]

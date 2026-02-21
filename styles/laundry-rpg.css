@@ -672,6 +672,7 @@
 
 .laundry-rpg .npc-preset-row button,
 .laundry-rpg .npc-action-add,
+.laundry-rpg .npc-action-autofill,
 .laundry-rpg .npc-reset-defeated {
     border: 1px solid var(--laundry-line-dark);
     background: rgba(255,255,255,0.75);
@@ -686,6 +687,7 @@
 
 .laundry-rpg .npc-preset-row button:hover,
 .laundry-rpg .npc-action-add:hover,
+.laundry-rpg .npc-action-autofill:hover,
 .laundry-rpg .npc-reset-defeated:hover {
     border-color: var(--laundry-stamp);
     color: var(--laundry-stamp);
@@ -698,8 +700,17 @@
     margin-bottom: 8px;
 }
 
+.laundry-rpg .npc-actions-toolbar.npc-actions-toolbar-inline {
+    margin: 4px 0 0;
+}
+
 .laundry-rpg .npc-actions-toolbar .npc-action-add {
     flex: 1 1 132px;
+    text-align: center;
+}
+
+.laundry-rpg .npc-actions-toolbar .npc-action-autofill {
+    flex: 1 1 182px;
     text-align: center;
 }
 
@@ -728,6 +739,70 @@
 .laundry-rpg .npc-import-world:hover {
     border-color: var(--laundry-stamp);
     color: var(--laundry-stamp);
+}
+
+.laundry-rpg.sheet-npc-min .npc-advanced-toggle {
+    margin-top: 6px;
+    border: 1px dashed var(--laundry-line-dark);
+    background: rgba(255,255,255,0.36);
+    padding: 4px 6px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-advanced-toggle summary {
+    cursor: pointer;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg.sheet-npc-min .npc-advanced-controls {
+    margin-top: 6px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-quick-rolls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 6px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-quick-roll {
+    display: grid;
+    gap: 2px;
+    text-align: left;
+    border: 1px solid rgba(47, 74, 93, 0.45);
+    background: rgba(47,74,93,0.1);
+    color: var(--laundry-accent);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    padding: 5px 7px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-quick-roll strong {
+    font-size: 11px;
+    color: var(--laundry-ink);
+    letter-spacing: 0.02em;
+}
+
+.laundry-rpg.sheet-npc-min .npc-quick-roll span {
+    font-size: 9px;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg.sheet-npc-min .npc-loadout-toggle {
+    margin-top: 6px;
+    border-top: 1px dashed var(--laundry-line);
+    padding-top: 6px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-loadout-toggle summary {
+    cursor: pointer;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
 }
 
 .laundry-rpg.sheet-npc-min .clearance-select-row {
@@ -843,6 +918,123 @@
     border-color: var(--laundry-stamp);
     color: var(--laundry-stamp);
     background: rgba(178,31,31,0.1);
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact {
+    overflow: visible;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .item {
+    min-width: 0;
+    display: block;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-row {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.52);
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-main {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) 88px 70px 64px;
+    gap: 5px;
+    align-items: center;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-main input,
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-main select {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    color: var(--laundry-ink);
+    min-height: 26px;
+    padding: 2px 4px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-roll-primary {
+    min-height: 26px;
+    border: 1px solid var(--laundry-accent);
+    background: rgba(47,74,93,0.12);
+    color: var(--laundry-accent);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-controls button {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.78);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-controls .npc-action-delete {
+    border-color: var(--laundry-stamp);
+    color: var(--laundry-stamp);
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-advanced {
+    margin-top: 6px;
+    border-top: 1px dashed var(--laundry-line);
+    padding-top: 6px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-advanced summary {
+    cursor: pointer;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-advanced-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-advanced-grid label {
+    display: grid;
+    gap: 2px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--laundry-ink-muted);
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-advanced-grid input {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    color: var(--laundry-ink);
+    min-height: 24px;
+    padding: 2px 4px;
+}
+
+.laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-advanced-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 @media (max-width: 980px) {
@@ -3568,7 +3760,8 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .laundry-rpg .npc-actions-toolbar .npc-action-add {
+    .laundry-rpg .npc-actions-toolbar .npc-action-add,
+    .laundry-rpg .npc-actions-toolbar .npc-action-autofill {
         min-height: 32px;
         padding: 5px 6px;
     }
@@ -3632,6 +3825,31 @@
         flex: 1 1 72px;
         text-align: center;
     }
+
+    .laundry-rpg.sheet-npc-min .npc-quick-rolls {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-row {
+        display: block;
+        grid-template-columns: none;
+    }
+
+    .laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-main {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-roll-primary {
+        grid-column: 1 / -1;
+    }
+
+    .laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-main input[data-action-key="name"] {
+        grid-column: 1 / -1;
+    }
+
+    .laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-advanced-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 520px) {
@@ -3656,6 +3874,10 @@
     }
 
     .laundry-rpg .npc-actions-list .npc-action-row {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg.sheet-npc-min .npc-actions-list--compact .npc-action-card-main {
         grid-template-columns: 1fr;
     }
 

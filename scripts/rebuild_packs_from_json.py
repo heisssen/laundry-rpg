@@ -10,6 +10,7 @@ PACKS = ROOT / "packs"
 EXTRACTION_ROOT = ROOT / "sources" / "extraction"
 EXTRACTION_STAGES = ("reviewed", "normalized", "raw")
 SOURCE_PAGE_PATTERN = re.compile(r"\bp\.?\s*(\d+(?:\s*-\s*\d+)?)\b", re.IGNORECASE)
+ROMAN_PATTERN = re.compile(r"^[IVXLCDM]+$", re.IGNORECASE)
 
 SKILLS = [
     ("Academics", "mind"),
@@ -120,13 +121,16 @@ def _normalize_search_terms(values) -> list[str]:
 def _gear_icon_for_category(category: str, fallback: str) -> str:
     lowered = str(category or "").casefold()
     if "spy" in lowered:
-        return "icons/svg/eye.svg"
+        return fallback
     if "occult" in lowered:
-        return "icons/svg/black-orb.svg"
+        return fallback
     return fallback
 
 
 def _enemy_icon(entry: dict) -> str:
+    explicit = str(entry.get("img") or "").strip()
+    if explicit:
+        return explicit
     npc_class = str(entry.get("npcClass") or "elite").strip().lower()
     threat = str(entry.get("threat") or "minor").strip().lower()
     if npc_class == "boss" or threat in {"extreme", "major"}:
@@ -134,6 +138,40 @@ def _enemy_icon(entry: dict) -> str:
     if npc_class == "minion" and threat == "minor":
         return "icons/svg/mystery-man.svg"
     return "icons/svg/target.svg"
+
+
+def _normalize_display_name(value: str) -> str:
+    text = re.sub(r"\s+", " ", str(value or "").strip())
+    if not text:
+        return ""
+
+    acronyms = {
+        "NPC", "GM", "DN", "ADR", "BAU", "IT", "UK", "US", "EU",
+        "MP5", "L115A3", "COWEU", "DNA", "CPU", "API"
+    }
+
+    parts = re.split(r"(\W+)", text)
+    out: list[str] = []
+    for token in parts:
+        if not token:
+            continue
+        if not re.search(r"[A-Za-z]", token):
+            out.append(token)
+            continue
+        if token.upper() in acronyms:
+            out.append(token.upper())
+            continue
+        if any(char.isdigit() for char in token):
+            out.append(token.upper())
+            continue
+        if ROMAN_PATTERN.fullmatch(token):
+            out.append(token.upper())
+            continue
+        if token.isupper() and len(token) > 3:
+            out.append(token.title())
+            continue
+        out.append(token)
+    return "".join(out)
 
 
 def _build_item_search_terms(item_type: str, item_name: str, system: dict) -> list[str]:
@@ -157,7 +195,7 @@ def _build_item_search_terms(item_type: str, item_name: str, system: dict) -> li
 
 def _normalize_item(item: dict) -> dict:
     item_type = item["type"]
-    item_name = item["name"]
+    item_name = _normalize_display_name(item["name"])
     normalized_system = _normalize_system(item_type, item.get("system", {}))
     image = str(item.get("img") or "").strip() or DEFAULT_ICON_BY_TYPE.get(
         item_type,
@@ -524,7 +562,7 @@ def _normalize_enemy_action(action: dict | None = None) -> dict:
     kind = kind_raw if kind_raw in {"attack", "spell", "test"} else "attack"
     return {
         "id": _stable_id("npc-action", f"{src.get('name', 'Action')}:{kind}", size=12),
-        "name": str(src.get("name") or "Action").strip() or "Action",
+        "name": _normalize_display_name(str(src.get("name") or "Action").strip()) or "Action",
         "kind": kind,
         "pool": max(0, int(src.get("pool", 0) or 0)),
         "dn": max(2, min(6, int(src.get("dn", 4) or 4))),
@@ -539,7 +577,7 @@ def _build_enemy_skill_items(preset_id: str, skill_training: dict | None) -> lis
     src = skill_training if isinstance(skill_training, dict) else {}
     docs: list[dict] = []
     for skill_name, raw_training in src.items():
-        name = str(skill_name or "").strip()
+        name = _normalize_display_name(str(skill_name or "").strip())
         if not name:
             continue
         attribute = SKILL_ATTRIBUTE_BY_NAME.get(name.casefold(), "mind")
@@ -572,7 +610,7 @@ def build_enemies() -> list[dict]:
         if not isinstance(entry, dict):
             continue
         preset_id = str(entry.get("id") or "").strip().lower()
-        name = str(entry.get("name") or "").strip()
+        name = _normalize_display_name(str(entry.get("name") or "").strip())
         if not name:
             continue
         attrs = entry.get("attributes") if isinstance(entry.get("attributes"), dict) else {}

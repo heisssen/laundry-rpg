@@ -2,7 +2,7 @@
   {
     "name": "Banishment Round",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/banishment-round-641a55.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -32,7 +32,7 @@
   {
     "name": "Basilisk Gun",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/basilisk-gun-5bf1ca.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -62,7 +62,7 @@
   {
     "name": "Concealed Weapon",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/concealed-weapon-312d94.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -92,7 +92,7 @@
   {
     "name": "Enhanced Smart Car",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/enhanced-smart-car-0e83d9.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -122,7 +122,7 @@
   {
     "name": "Erich Zann Violin",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/erich-zann-violin-c23e40.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -152,7 +152,7 @@
   {
     "name": "Gravedust Rig",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/gravedust-rig-908487.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -182,7 +182,7 @@
   {
     "name": "Hand of Glory (Class 1/4)",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/hand-of-glory-class-1-4-ba17a0.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -212,7 +212,7 @@
   {
     "name": "Hand of Glory (Class 2-3)",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/hand-of-glory-class-2-3-926afb.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -242,7 +242,7 @@
   {
     "name": "Necronomiphone",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/necronomiphone-ab60ec.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -272,7 +272,7 @@
   {
     "name": "Personal Wards (Class 1-2)",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/personal-wards-class-1-2-36295d.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -302,7 +302,7 @@
   {
     "name": "Personal Wards (Class 3)",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/personal-wards-class-3-ae04a0.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -332,7 +332,7 @@
   {
     "name": "Personal Wards (Class 4)",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/personal-wards-class-4-e93413.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -362,7 +362,7 @@
   {
     "name": "Thaumometer",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/thaumometer-a73d66.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -392,7 +392,7 @@
   {
     "name": "Tillinghast Resonator",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/tillinghast-resonator-1bfbcc.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -422,7 +422,7 @@
   {
     "name": "Warding Tape (Class 3)",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/warding-tape-class-3-e3b329.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -452,7 +452,7 @@
   {
     "name": "Warding Tape (Class 4)",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/warding-tape-class-4-6e23e2.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -482,7 +482,7 @@
   {
     "name": "3-W Laser",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/3-w-laser-4ccc9f.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -512,7 +512,7 @@
   {
     "name": "Fibre Optic Probe",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/fibre-optic-probe-085199.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -542,7 +542,7 @@
   {
     "name": "Keystroke Logger",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/keystroke-logger-77682e.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -572,7 +572,7 @@
   {
     "name": "Laser Microphone",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/laser-microphone-859059.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -602,7 +602,7 @@
   {
     "name": "Locator Bugs",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/locator-bugs-d8e044.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -632,7 +632,7 @@
   {
     "name": "Microdrone",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/microdrone-200eda.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -662,7 +662,7 @@
   {
     "name": "Nausea Flash",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/nausea-flash-fae185.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -692,7 +692,7 @@
   {
     "name": "Smart Card",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/smart-card-1a679e.svg",
     "system": {
       "quantity": 1,
       "weight": 0,
@@ -722,7 +722,7 @@
   {
     "name": "T-Ray Scanner",
     "type": "gear",
-    "img": "systems/laundry-rpg/icons/generated/_defaults/gear.svg",
+    "img": "systems/laundry-rpg/icons/generated/gear/t-ray-scanner-2397fb.svg",
     "system": {
       "quantity": 1,
       "weight": 0,

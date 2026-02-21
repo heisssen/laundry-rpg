@@ -156,7 +156,11 @@ export class LaundryActorSheet extends ActorSheet {
         const npcQuickActionSource = Array.isArray(npcRaw.quickActions) && npcRaw.quickActions.length
             ? npcRaw.quickActions
             : (Array.isArray(flaggedNpcQuickActions) ? flaggedNpcQuickActions : []);
-        const npcQuickActions = npcQuickActionSource
+        const generatedNpcQuickActions = this._buildNpcSuggestedQuickActions();
+        const npcQuickActionSeed = npcQuickActionSource.length
+            ? npcQuickActionSource
+            : generatedNpcQuickActions;
+        const npcQuickActions = npcQuickActionSeed
             .map(entry => normalizeNpcQuickAction(entry))
             .map((entry, index, allActions) => ({
                 ...entry,
@@ -258,6 +262,7 @@ export class LaundryActorSheet extends ActorSheet {
                 { id: "spell", name: "Spell" },
                 { id: "test", name: "Test" }
             ],
+            usingSuggestedActions: !npcQuickActionSource.length && npcQuickActions.length > 0,
             canSpawnToScene: npcCanSpawn
         };
 
@@ -317,6 +322,7 @@ export class LaundryActorSheet extends ActorSheet {
         html.find(".npc-import-world").click(this._onNpcImportWorld.bind(this));
         html.find(".npc-preset-apply").click(this._onNpcPresetApply.bind(this));
         html.find(".npc-action-add").click(this._onNpcActionAdd.bind(this));
+        html.find(".npc-action-autofill").click(this._onNpcActionAutofill.bind(this));
         html.find(".npc-action-delete").click(this._onNpcActionDelete.bind(this));
         html.find(".npc-action-duplicate").click(this._onNpcActionDuplicate.bind(this));
         html.find(".npc-action-move").click(this._onNpcActionMove.bind(this));
@@ -763,8 +769,8 @@ export class LaundryActorSheet extends ActorSheet {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
         if (!this._ensureNpcEditable()) return;
-        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
         const actions = this._collectNpcQuickActionsFromSheet();
+        const index = this._resolveNpcActionIndex(ev.currentTarget, actions);
         if (index < 0 || index >= actions.length) return;
         actions.splice(index, 1);
         await this._setNpcQuickActions(actions);
@@ -775,8 +781,8 @@ export class LaundryActorSheet extends ActorSheet {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
         if (!this._ensureNpcEditable()) return;
-        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
         const actions = this._collectNpcQuickActionsFromSheet();
+        const index = this._resolveNpcActionIndex(ev.currentTarget, actions);
         if (index < 0 || index >= actions.length) return;
         const original = actions[index];
         if (!original) return;
@@ -795,12 +801,12 @@ export class LaundryActorSheet extends ActorSheet {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
         if (!this._ensureNpcEditable()) return;
-        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
         const direction = String(ev.currentTarget?.dataset?.direction ?? "").trim().toLowerCase();
         const delta = direction === "up" ? -1 : (direction === "down" ? 1 : 0);
         if (!delta) return;
 
         const actions = this._collectNpcQuickActionsFromSheet();
+        const index = this._resolveNpcActionIndex(ev.currentTarget, actions);
         if (index < 0 || index >= actions.length) return;
         const targetIndex = index + delta;
         if (targetIndex < 0 || targetIndex >= actions.length) return;
@@ -819,10 +825,13 @@ export class LaundryActorSheet extends ActorSheet {
     async _onNpcActionRoll(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
-        const index = Math.trunc(Number(ev.currentTarget?.dataset?.actionIndex) || -1);
         const actions = this._collectNpcQuickActionsFromSheet();
+        const index = this._resolveNpcActionIndex(ev.currentTarget, actions);
         const action = actions[index];
-        if (!action) return;
+        if (!action) {
+            ui.notifications.warn("NPC action could not be resolved. Try reopening the sheet.");
+            return;
+        }
 
         const kind = String(action.kind ?? "attack");
         const isWeaponAttack = kind === "attack";
@@ -866,6 +875,20 @@ export class LaundryActorSheet extends ActorSheet {
         });
     }
 
+    async _onNpcActionAutofill(ev) {
+        ev.preventDefault();
+        if (this.actor.type !== "npc") return;
+        if (!this._ensureNpcEditable()) return;
+        const generated = this._buildNpcSuggestedQuickActions();
+        if (!generated.length) {
+            ui.notifications.warn("No usable loadout found. Add a weapon/spell or use Add Attack/Test/Spell.");
+            return;
+        }
+        await this._setNpcQuickActions(generated);
+        ui.notifications.info(`${this.actor.name}: one-line actions generated from loadout.`);
+        this.render(false);
+    }
+
     async _onNpcResetDefeated(ev) {
         ev.preventDefault();
         if (this.actor.type !== "npc") return;
@@ -886,9 +909,10 @@ export class LaundryActorSheet extends ActorSheet {
             return systemActions.map(entry => normalizeNpcQuickAction(entry));
         }
         const flaggedActions = this.actor.getFlag?.("laundry-rpg", "npcQuickActions");
-        return Array.isArray(flaggedActions)
-            ? flaggedActions.map(entry => normalizeNpcQuickAction(entry))
-            : [];
+        if (Array.isArray(flaggedActions) && flaggedActions.length) {
+            return flaggedActions.map(entry => normalizeNpcQuickAction(entry));
+        }
+        return this._buildNpcSuggestedQuickActions();
     }
 
     _ensureNpcEditable() {
@@ -951,6 +975,78 @@ export class LaundryActorSheet extends ActorSheet {
         });
     }
 
+    _buildNpcSuggestedQuickActions() {
+        if (this.actor?.type !== "npc") return [];
+        const melee = Math.max(1, Math.trunc(Number(this.actor.system?.derived?.melee?.value) || this.actor.system?.attributes?.body?.value || 1));
+        const accuracy = Math.max(1, Math.trunc(Number(this.actor.system?.derived?.accuracy?.value) || this.actor.system?.attributes?.body?.value || 1));
+        const mind = Math.max(1, Math.trunc(Number(this.actor.system?.attributes?.mind?.value) || 1));
+        const out = [];
+
+        const weapons = this.actor.items
+            .filter(item => item.type === "weapon")
+            .sort((a, b) => a.name.localeCompare(b.name));
+        const equippedWeapons = weapons.filter(item => item.system?.equipped === true);
+        const preferredWeapons = (equippedWeapons.length ? equippedWeapons : weapons).slice(0, 4);
+
+        for (const weapon of preferredWeapons) {
+            const skillText = String(weapon.system?.skill ?? "").trim().toLowerCase();
+            const isMelee = skillText.includes("close") || skillText.includes("melee");
+            const pool = isMelee ? melee : accuracy;
+            out.push(normalizeNpcQuickAction({
+                name: String(weapon.name ?? "Weapon Attack").trim() || "Weapon Attack",
+                kind: "attack",
+                pool,
+                dn: 4,
+                complexity: 1,
+                damage: String(weapon.system?.damage ?? "1d6").trim(),
+                traits: String(weapon.system?.traits ?? "").trim(),
+                isMagic: false
+            }));
+        }
+
+        const spells = this.actor.items
+            .filter(item => item.type === "spell")
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .slice(0, 3);
+        for (const spell of spells) {
+            out.push(normalizeNpcQuickAction({
+                name: String(spell.name ?? "Spell").trim() || "Spell",
+                kind: "spell",
+                pool: Math.max(mind, accuracy),
+                dn: Math.max(2, Math.min(6, Math.trunc(Number(spell.system?.dn) || 4))),
+                complexity: Math.max(1, Math.trunc(Number(spell.system?.complexity ?? spell.system?.level) || 1)),
+                damage: "",
+                traits: String(spell.system?.target ?? "").trim(),
+                isMagic: true
+            }));
+        }
+
+        if (!out.length) {
+            out.push(this._createNpcQuickAction("attack"));
+            out.push(this._createNpcQuickAction("test"));
+        }
+
+        const deduped = [];
+        const seen = new Set();
+        for (const action of out) {
+            const key = `${String(action.kind ?? "").toLowerCase()}::${String(action.name ?? "").trim().toLowerCase()}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            deduped.push(action);
+        }
+        return deduped;
+    }
+
+    _resolveNpcActionIndex(node, actions = []) {
+        const actionId = String(node?.dataset?.actionId ?? "").trim();
+        if (actionId) {
+            const idIndex = actions.findIndex(entry => String(entry?.id ?? "").trim() === actionId);
+            if (idIndex >= 0) return idIndex;
+        }
+        const parsed = Math.trunc(Number(node?.dataset?.actionIndex));
+        return Number.isInteger(parsed) ? parsed : -1;
+    }
+
     _collectNpcQuickActionsFromSheet() {
         const fallbackActions = this._getNpcQuickActions();
         const root = this.element?.[0];
@@ -975,11 +1071,16 @@ export class LaundryActorSheet extends ActorSheet {
 
         return rows.map((row, rowOrder) => {
             const index = Math.trunc(Number(row?.dataset?.actionIndex) || -1);
-            const current = index >= 0 && index < fallbackActions.length
-                ? fallbackActions[index]
-                : (fallbackActions[rowOrder] ?? {});
+            const actionId = String(row?.dataset?.actionId ?? "").trim();
+            const currentById = actionId
+                ? fallbackActions.find(entry => String(entry?.id ?? "").trim() === actionId)
+                : null;
+            const current = currentById
+                ?? (index >= 0 && index < fallbackActions.length
+                    ? fallbackActions[index]
+                    : (fallbackActions[rowOrder] ?? {}));
             return normalizeNpcQuickAction({
-                id: current?.id,
+                id: actionId || current?.id,
                 name: collectText(row, "name", current?.name ?? "New Action"),
                 kind: collectText(row, "kind", current?.kind ?? "attack"),
                 pool: collectNumber(row, "pool", current?.pool ?? 0),
@@ -1203,7 +1304,7 @@ export class LaundryNpcSheet extends LaundryActorSheet {
             template: "systems/laundry-rpg/templates/actor/npc-sheet.html",
             width: 620,
             height: 700,
-            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "dossier" }]
+            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "npc-actions" }]
         });
     }
 }

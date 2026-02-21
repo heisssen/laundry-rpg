@@ -410,9 +410,13 @@
                         <button type="button" class="npc-action-add" data-action-kind="attack">Add Attack</button>
                         <button type="button" class="npc-action-add" data-action-kind="spell">Add Spell</button>
                         <button type="button" class="npc-action-add" data-action-kind="test">Add Test</button>
+                        <button type="button" class="npc-action-autofill">Auto-Build from Loadout</button>
                     </div>
                     {{else}}
                     <a class="npc-import-world" href="#" role="button">Create Editable World Copy</a>
+                    {{/if}}
+                    {{#if npcOps.usingSuggestedActions}}
+                    <p class="combat-note">Showing suggested one-line actions from loadout. Click Auto-Build to save them.</p>
                     {{/if}}
                     <ol class="items-list compact-list npc-actions-list">
                         <li class="item flexrow item-header">
@@ -427,7 +431,7 @@
                             <div class="npc-col npc-col-controls">Actions</div>
                         </li>
                         {{#each npcOps.quickActions as |action|}}
-                        <li class="item flexrow npc-action-row" data-action-index="{{action.index}}">
+                        <li class="item flexrow npc-action-row" data-action-index="{{action.index}}" data-action-id="{{action.id}}">
                             <div class="npc-col npc-col-name" data-label="Name">
                                 <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="name" type="text" value="{{action.name}}" />
                             </div>
@@ -457,11 +461,11 @@
                                 <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="isMagic" type="checkbox" {{checked action.isMagic}} />
                             </div>
                             <div class="npc-col npc-col-controls" data-label="Actions">
-                                <button type="button" class="npc-action-roll" data-action-index="{{action.index}}">Roll</button>
-                                <button type="button" class="npc-action-duplicate" data-action-index="{{action.index}}">Dup</button>
-                                <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-direction="up" {{#unless action.canMoveUp}}disabled{{/unless}}>Up</button>
-                                <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-direction="down" {{#unless action.canMoveDown}}disabled{{/unless}}>Down</button>
-                                <button type="button" class="npc-action-delete" data-action-index="{{action.index}}">Delete</button>
+                                <button type="button" class="npc-action-roll" data-action-index="{{action.index}}" data-action-id="{{action.id}}">Roll</button>
+                                <button type="button" class="npc-action-duplicate" data-action-index="{{action.index}}" data-action-id="{{action.id}}">Dup</button>
+                                <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-action-id="{{action.id}}" data-direction="up" {{#unless action.canMoveUp}}disabled{{/unless}}>Up</button>
+                                <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-action-id="{{action.id}}" data-direction="down" {{#unless action.canMoveDown}}disabled{{/unless}}>Down</button>
+                                <button type="button" class="npc-action-delete" data-action-index="{{action.index}}" data-action-id="{{action.id}}">Delete</button>
                             </div>
                         </li>
                         {{/each}}

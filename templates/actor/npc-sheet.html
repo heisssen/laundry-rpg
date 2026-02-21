@@ -37,14 +37,26 @@
                     <label>Mob:</label>
                     <input type="number" name="system.npc.mobSize" value="{{npcOps.mobSize}}" min="1" max="50" data-dtype="Number" />
                 </div>
-                <div class="clearance-select-row">
-                    <label><input type="checkbox" name="system.npc.fastDamage" {{checked npcOps.fastDamage}} /> Fast Damage</label>
-                    <label><input type="checkbox" name="system.npc.trackInjuries" {{checked npcOps.trackInjuries}} /> Track Injuries</label>
-                    <label><input type="checkbox" name="system.npc.defeated" {{checked npcOps.defeated}} /> Defeated</label>
-                    {{#if npcOps.defeated}}
-                    <button type="button" class="npc-reset-defeated">Reset</button>
-                    {{/if}}
-                </div>
+                <details class="npc-advanced-toggle">
+                    <summary>Advanced NPC Controls</summary>
+                    <div class="clearance-select-row npc-advanced-controls">
+                        <label><input type="checkbox" name="system.npc.fastDamage" {{checked npcOps.fastDamage}} /> Fast Damage</label>
+                        <label><input type="checkbox" name="system.npc.trackInjuries" {{checked npcOps.trackInjuries}} /> Track Injuries</label>
+                        <label><input type="checkbox" name="system.npc.defeated" {{checked npcOps.defeated}} /> Defeated</label>
+                        {{#if npcOps.defeated}}
+                        <button type="button" class="npc-reset-defeated">Reset</button>
+                        {{/if}}
+                    </div>
+                    <div class="npc-preset-row">
+                        <select name="npcPreset">
+                            <option value="">Custom</option>
+                            {{#each npcOps.presets as |preset|}}
+                            <option value="{{preset.id}}" {{#if (laundryEq preset.id ../npcOps.archetype)}}selected{{/if}}>{{preset.name}}</option>
+                            {{/each}}
+                        </select>
+                        <button type="button" class="npc-preset-apply">Apply Preset</button>
+                    </div>
+                </details>
             </div>
         </div>
 
@@ -75,6 +87,45 @@
     <section class="sheet-body">
         <div class="tab dossier" data-group="primary" data-tab="dossier">
             <div class="panel-grid npc-ops-grid">
+                <section class="panel">
+                    <h3 class="section-header stamp-red">Quick Control</h3>
+                    <div class="combat-quick-actions">
+                        <button type="button" class="combat-roll-initiative">Roll Initiative</button>
+                        {{#if combat.canManageTurnEconomy}}
+                        <button type="button" class="combat-use-action">Use Action</button>
+                        <button type="button" class="combat-use-move">Use Move</button>
+                        <button type="button" class="combat-adrenaline-action">+Action (ADR)</button>
+                        {{/if}}
+                        {{#if combat.canOpenGmTracker}}
+                        <button type="button" class="combat-open-gm-tracker">Open GM Tracker</button>
+                        {{/if}}
+                    </div>
+                    <div class="npc-actions-toolbar npc-actions-toolbar-inline">
+                        {{#if editable}}
+                        <button type="button" class="npc-action-add" data-action-kind="attack">Add Attack</button>
+                        <button type="button" class="npc-action-add" data-action-kind="spell">Add Spell</button>
+                        <button type="button" class="npc-action-add" data-action-kind="test">Add Test</button>
+                        <button type="button" class="npc-action-autofill">Auto-Build from Loadout</button>
+                        {{else}}
+                        <a class="npc-import-world" href="#" role="button">Create Editable World Copy</a>
+                        {{/if}}
+                    </div>
+                    {{#if npcOps.usingSuggestedActions}}
+                    <p class="combat-note">Showing suggested one-line actions from loadout. Click Auto-Build to save them.</p>
+                    {{/if}}
+                    <div class="npc-quick-rolls">
+                        {{#each npcOps.quickActions as |action|}}
+                        <button type="button" class="npc-action-roll npc-quick-roll" data-action-index="{{action.index}}" data-action-id="{{action.id}}">
+                            <strong>{{action.name}}</strong>
+                            <span>{{action.pool}}d | DN {{action.dn}}:{{action.complexity}}</span>
+                        </button>
+                        {{/each}}
+                    </div>
+                    {{#unless npcOps.quickActions.length}}
+                    <p class="combat-note">No one-line actions yet. Use Add Attack/Spell/Test or Auto-Build from Loadout.</p>
+                    {{/unless}}
+                </section>
+
                 <section class="panel">
                     <h3 class="section-header stamp-red">Combat Snapshot</h3>
                     <div class="combat-snapshot-grid">
@@ -118,46 +169,25 @@
                         {{/each}}
                     </div>
                     <p class="combat-note">{{combat.conditionSummary}}</p>
-                </section>
-
-                <section class="panel">
-                    <h3 class="section-header stamp-red">NPC Ops</h3>
-                    <div class="npc-preset-row">
-                        <select name="npcPreset">
-                            <option value="">Custom</option>
-                            {{#each npcOps.presets as |preset|}}
-                            <option value="{{preset.id}}" {{#if (laundryEq preset.id ../npcOps.archetype)}}selected{{/if}}>{{preset.name}}</option>
+                    <details class="npc-loadout-toggle">
+                        <summary>Loadout (Optional)</summary>
+                        {{#if combat.hasLoadout}}
+                        <ol class="items-list compact-list combat-loadout-list">
+                            {{#each combatLoadout.weapons as |item|}}
+                            <li class="item flexrow" data-item-id="{{item._id}}">
+                                <div class="item-image rollable" data-roll-type="item">
+                                    <img src="{{item.img}}" title="{{item.name}}" width="20" height="20" />
+                                </div>
+                                <h4 class="item-name rollable" data-roll-type="item">{{item.name}}</h4>
+                                <div class="item-formula">DMG {{item.system.damage}}</div>
+                                <div class="item-formula">{{item.system.traits}}</div>
+                            </li>
                             {{/each}}
-                        </select>
-                        <button type="button" class="npc-preset-apply">Apply Preset</button>
-                    </div>
-                    <div class="combat-quick-actions">
-                        <button type="button" class="combat-roll-initiative">Roll Initiative</button>
-                        {{#if combat.canManageTurnEconomy}}
-                        <button type="button" class="combat-use-action">Use Action</button>
-                        <button type="button" class="combat-use-move">Use Move</button>
-                        <button type="button" class="combat-adrenaline-action">+Action (ADR)</button>
+                        </ol>
+                        {{else}}
+                        <p class="combat-note">No equipped loadout.</p>
                         {{/if}}
-                        {{#if combat.canOpenGmTracker}}
-                        <button type="button" class="combat-open-gm-tracker">Open GM Tracker</button>
-                        {{/if}}
-                    </div>
-                    {{#if combat.hasLoadout}}
-                    <ol class="items-list compact-list combat-loadout-list">
-                        {{#each combatLoadout.weapons as |item|}}
-                        <li class="item flexrow" data-item-id="{{item._id}}">
-                            <div class="item-image rollable" data-roll-type="item">
-                                <img src="{{item.img}}" title="{{item.name}}" width="20" height="20" />
-                            </div>
-                            <h4 class="item-name rollable" data-roll-type="item">{{item.name}}</h4>
-                            <div class="item-formula">DMG {{item.system.damage}}</div>
-                            <div class="item-formula">{{item.system.traits}}</div>
-                        </li>
-                        {{/each}}
-                    </ol>
-                    {{else}}
-                    <p class="combat-note">No equipped loadout.</p>
-                    {{/if}}
+                    </details>
                 </section>
             </div>
         </div>
@@ -173,64 +203,60 @@
                     <button type="button" class="npc-action-add" data-action-kind="attack">Add Attack</button>
                     <button type="button" class="npc-action-add" data-action-kind="spell">Add Spell</button>
                     <button type="button" class="npc-action-add" data-action-kind="test">Add Test</button>
+                    <button type="button" class="npc-action-autofill">Auto-Build from Loadout</button>
                 </div>
                 {{else}}
                 <a class="npc-import-world" href="#" role="button">Create Editable World Copy</a>
                 {{/if}}
-                <ol class="items-list compact-list npc-actions-list">
-                    <li class="item flexrow item-header">
-                        <div class="npc-col npc-col-name">Name</div>
-                        <div class="npc-col npc-col-kind">Kind</div>
-                        <div class="npc-col npc-col-num">Pool</div>
-                        <div class="npc-col npc-col-num">DN</div>
-                        <div class="npc-col npc-col-num">Comp</div>
-                        <div class="npc-col npc-col-damage">Damage</div>
-                        <div class="npc-col npc-col-traits">Traits</div>
-                        <div class="npc-col npc-col-magic">Magic</div>
-                        <div class="npc-col npc-col-controls">Actions</div>
-                    </li>
+                {{#if npcOps.usingSuggestedActions}}
+                <p class="combat-note">Showing suggested one-line actions from loadout. Click Auto-Build to save them.</p>
+                {{/if}}
+                <ol class="items-list compact-list npc-actions-list npc-actions-list--compact">
                     {{#each npcOps.quickActions as |action|}}
-                    <li class="item flexrow npc-action-row" data-action-index="{{action.index}}">
-                        <div class="npc-col npc-col-name" data-label="Name">
+                    <li class="item flexrow npc-action-row" data-action-index="{{action.index}}" data-action-id="{{action.id}}">
+                        <div class="npc-action-card-main">
+                            <button type="button" class="npc-action-roll npc-roll-primary" data-action-index="{{action.index}}" data-action-id="{{action.id}}">Roll</button>
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="name" type="text" value="{{action.name}}" />
-                        </div>
-                        <div class="npc-col npc-col-kind" data-label="Kind">
                             <select class="npc-action-field" data-action-index="{{action.index}}" data-action-key="kind">
                                 {{#each @root.npcOps.actionKinds as |kind|}}
                                 <option value="{{kind.id}}" {{#if (laundryEq kind.id ../action.kind)}}selected{{/if}}>{{kind.name}}</option>
                                 {{/each}}
                             </select>
-                        </div>
-                        <div class="npc-col npc-col-num" data-label="Pool">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="pool" type="number" min="0" max="20" value="{{action.pool}}" data-dtype="Number" />
-                        </div>
-                        <div class="npc-col npc-col-num" data-label="DN">
                             <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="dn" type="number" min="2" max="6" value="{{action.dn}}" data-dtype="Number" />
                         </div>
-                        <div class="npc-col npc-col-num" data-label="Complexity">
-                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="complexity" type="number" min="1" max="10" value="{{action.complexity}}" data-dtype="Number" />
+                        <div class="npc-action-card-controls">
+                            <button type="button" class="npc-action-duplicate" data-action-index="{{action.index}}" data-action-id="{{action.id}}">Dup</button>
+                            <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-action-id="{{action.id}}" data-direction="up" {{#unless action.canMoveUp}}disabled{{/unless}}>Up</button>
+                            <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-action-id="{{action.id}}" data-direction="down" {{#unless action.canMoveDown}}disabled{{/unless}}>Down</button>
+                            <button type="button" class="npc-action-delete" data-action-index="{{action.index}}" data-action-id="{{action.id}}">Delete</button>
                         </div>
-                        <div class="npc-col npc-col-damage" data-label="Damage">
-                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="damage" type="text" value="{{action.damage}}" />
-                        </div>
-                        <div class="npc-col npc-col-traits" data-label="Traits">
-                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="traits" type="text" value="{{action.traits}}" />
-                        </div>
-                        <div class="npc-col npc-col-magic" data-label="Magic">
-                            <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="isMagic" type="checkbox" {{checked action.isMagic}} />
-                        </div>
-                        <div class="npc-col npc-col-controls" data-label="Actions">
-                            <button type="button" class="npc-action-roll" data-action-index="{{action.index}}">Roll</button>
-                            <button type="button" class="npc-action-duplicate" data-action-index="{{action.index}}">Dup</button>
-                            <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-direction="up" {{#unless action.canMoveUp}}disabled{{/unless}}>Up</button>
-                            <button type="button" class="npc-action-move" data-action-index="{{action.index}}" data-direction="down" {{#unless action.canMoveDown}}disabled{{/unless}}>Down</button>
-                            <button type="button" class="npc-action-delete" data-action-index="{{action.index}}">Delete</button>
-                        </div>
+                        <details class="npc-action-advanced">
+                            <summary>Advanced</summary>
+                            <div class="npc-action-advanced-grid">
+                                <label>
+                                    <span>Complexity</span>
+                                    <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="complexity" type="number" min="1" max="10" value="{{action.complexity}}" data-dtype="Number" />
+                                </label>
+                                <label>
+                                    <span>Damage</span>
+                                    <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="damage" type="text" value="{{action.damage}}" />
+                                </label>
+                                <label>
+                                    <span>Traits</span>
+                                    <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="traits" type="text" value="{{action.traits}}" />
+                                </label>
+                                <label class="npc-action-advanced-check">
+                                    <input class="npc-action-field" data-action-index="{{action.index}}" data-action-key="isMagic" type="checkbox" {{checked action.isMagic}} />
+                                    <span>Magic</span>
+                                </label>
+                            </div>
+                        </details>
                     </li>
                     {{/each}}
                 </ol>
                 {{#unless npcOps.quickActions.length}}
-                <p class="combat-note">No one-line actions yet. Use Add Attack/Spell/Test.</p>
+                <p class="combat-note">No one-line actions yet. Use Add Attack/Spell/Test or Auto-Build from Loadout.</p>
                 {{/unless}}
             </section>
         </div>

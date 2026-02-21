@@ -12,6 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ICONS_ROOT = ROOT / "icons" / "generated"
+EXTRACTION_ROOT = ROOT / "sources" / "extraction"
+EXTRACTION_STAGES = ("reviewed", "normalized", "raw")
 
 SOURCES = [
     ("skills.json", "skill"),
@@ -19,7 +21,9 @@ SOURCES = [
     ("spells.json", "spell"),
     ("weapons.json", "weapon"),
     ("armour.json", "armour"),
+    ("gear.json", "gear"),
     ("assignments.json", "assignment"),
+    ("enemies.json", "enemy"),
 ]
 
 # Dossier / Laundry palette: muted steel + paper + red-stamp accents.
@@ -31,6 +35,7 @@ TYPE_COLORS = {
     "armour": ("#31363e", "#5e6671"),
     "assignment": ("#4b4336", "#7a6651"),
     "gear": ("#3c3c3c", "#676767"),
+    "enemy": ("#3a262a", "#6f3a42"),
 }
 
 STAMP_RED = ["#7a1f22", "#8a2b2f", "#6f2023", "#9a3135"]
@@ -44,6 +49,7 @@ TYPE_DEFAULT_SYMBOL = {
     "armour": "shield",
     "assignment": "document",
     "gear": "gear",
+    "enemy": "crosshair",
 }
 
 SKILL_SYMBOL = {
@@ -111,6 +117,39 @@ KEYWORD_SYMBOLS = [
     ("field", "compass"),
 ]
 
+ENEMY_KEYWORD_SYMBOLS = [
+    ("cult", "mask"),
+    ("wizard", "rune"),
+    ("sorcer", "rune"),
+    ("priest", "flame"),
+    ("hound", "skull"),
+    ("wolf", "skull"),
+    ("ghoul", "skull"),
+    ("vamp", "skull"),
+    ("zombie", "skull"),
+    ("shoggoth", "burst"),
+    ("elder thing", "burst"),
+    ("deep one", "leaf"),
+    ("soldier", "crosshair"),
+    ("sniper", "crosshair"),
+    ("police", "badge"),
+    ("agent", "badge"),
+    ("assassin", "sword"),
+    ("beast", "skull"),
+    ("entity", "spiral"),
+]
+
+TYPE_DIR = {
+    "skill": "skills",
+    "talent": "talents",
+    "spell": "spells",
+    "weapon": "weapons",
+    "armour": "armours",
+    "gear": "gear",
+    "assignment": "assignments",
+    "enemy": "enemies",
+}
+
 
 def _stable_hash(value: str) -> str:
     return hashlib.sha1(value.encode("utf-8")).hexdigest()
@@ -152,6 +191,26 @@ def _choose_symbol(item_type: str, name: str, system: dict) -> str:
     lowered_name = str(name or "").strip().lower()
     if item_type == "skill":
         return SKILL_SYMBOL.get(lowered_name, TYPE_DEFAULT_SYMBOL["skill"])
+    if item_type == "enemy":
+        blob = " ".join(
+            [
+                lowered_name,
+                str(system.get("category") or "").lower(),
+                str(system.get("threat") or "").lower(),
+                str(system.get("npcClass") or "").lower(),
+                " ".join(str(tag or "").lower() for tag in (system.get("tags") or [])),
+            ]
+        )
+        for keyword, symbol in ENEMY_KEYWORD_SYMBOLS:
+            if keyword in blob:
+                return symbol
+        npc_class = str(system.get("npcClass") or "").strip().lower()
+        threat = str(system.get("threat") or "").strip().lower()
+        if npc_class == "boss" or threat in {"extreme", "major"}:
+            return "skull"
+        if npc_class == "minion":
+            return "mask"
+        return TYPE_DEFAULT_SYMBOL["enemy"]
 
     blob = " ".join(
         [
@@ -406,16 +465,30 @@ def write_json(path: Path, payload: list[dict]) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def generate_for_file(file_name: str, item_type: str) -> tuple[int, int]:
-    source_path = ROOT / file_name
-    if not source_path.exists():
-        return 0, 0
+def _iter_source_paths(file_name: str) -> list[Path]:
+    paths: list[Path] = []
+    for stage in EXTRACTION_STAGES:
+        candidate = EXTRACTION_ROOT / stage / file_name
+        if candidate.exists():
+            paths.append(candidate)
+    candidate = ROOT / file_name
+    if candidate.exists():
+        paths.append(candidate)
+    return paths
 
+
+def _is_expected_record(item: dict, item_type: str) -> bool:
+    if item_type == "enemy":
+        return "attributes" in item and "quickActions" in item
+    return str(item.get("type") or "").strip().lower() == item_type
+
+
+def generate_for_file(source_path: Path, item_type: str) -> tuple[int, int]:
     data = json.loads(source_path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
         return 0, 0
 
-    out_dir = ICONS_ROOT / f"{item_type}s"
+    out_dir = ICONS_ROOT / TYPE_DIR.get(item_type, f"{item_type}s")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     written = 0
@@ -425,10 +498,18 @@ def generate_for_file(file_name: str, item_type: str) -> tuple[int, int]:
         name = str(item.get("name") or "").strip()
         if not name:
             continue
-        if str(item.get("type") or "").strip() != item_type:
+        if not _is_expected_record(item, item_type):
             continue
 
         system = item.get("system") if isinstance(item.get("system"), dict) else {}
+        if item_type == "enemy":
+            system = {
+                **system,
+                "category": item.get("category"),
+                "threat": item.get("threat"),
+                "npcClass": item.get("npcClass"),
+                "tags": item.get("tags") if isinstance(item.get("tags"), list) else []
+            }
         symbol = _choose_symbol(item_type, name, system)
         slug = slugify(name)
         unique = hash_suffix(f"{item_type}:{name}")
@@ -460,9 +541,15 @@ def main() -> None:
     print("wrote defaults in icons/generated/_defaults")
 
     for file_name, item_type in SOURCES:
-        total, written = generate_for_file(file_name, item_type)
-        print(f"{file_name}: updated {written}/{total} images")
-        total_written += written
+        source_paths = _iter_source_paths(file_name)
+        if not source_paths:
+            print(f"{file_name}: source not found")
+            continue
+        for source_path in source_paths:
+            total, written = generate_for_file(source_path, item_type)
+            rel = source_path.relative_to(ROOT).as_posix()
+            print(f"{rel}: updated {written}/{total} images")
+            total_written += written
 
     print(f"done: generated/updated {total_written} item icons")
 

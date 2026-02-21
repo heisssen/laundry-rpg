@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.19.5 - 2026-02-21
+
+### Fixed
+- NPC one-line action rolls now resolve actions by stable `actionId` (with index fallback), fixing cases where `Roll` did nothing after list edits/reordering.
+- NPC action persistence now keeps suggested/loadout-derived actions available when stored quick actions are empty.
+
+### Changed
+- Reworked `npc-sheet` UX for speed: actions tab is now the default, core controls are compact, advanced options are collapsed, and one-line actions use a cleaner card workflow with quick roll buttons.
+- Added `Auto-Build from Loadout` for NPCs to generate prepared one-line actions from equipped weapons/spells in one click.
+- Unified icon style across compendium content: generated/assigned coherent SVG icons for gear and enemies (plus existing item types) under `icons/generated/*`.
+- Normalized compendium-facing names during rebuild for cleaner display consistency (for example previously uppercase enemy names).
+
 ## 1.19.4 - 2026-02-21
 
 ### Fixed
