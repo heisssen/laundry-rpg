@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.20.9 - 2026-02-21
+
+### Added
+- Custom builder talent rows now display short in-list talent descriptions for faster browsing and selection.
+
+### Changed
+- Simplified `Form 2B-C` visual treatment to reduce UI noise: softer palette, cleaner borders, calmer tab controls, and lighter panel/button styling.
+- Refined talent row layout to prioritize readability (name + description + status/action alignment) while keeping filters and prerequisite badges intact.
+
 ## 1.20.8 - 2026-02-21
 
 ### Changed

@@ -2164,25 +2164,26 @@
 
 /* ── Custom Builder Polish ─────────────────────────────────────────────── */
 .laundry-rpg.character-builder .custom-character-builder-form {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.6)),
-        repeating-linear-gradient(
-            -12deg,
-            rgba(0, 0, 0, 0.025) 0,
-            rgba(0, 0, 0, 0.025) 1px,
-            transparent 1px,
-            transparent 13px
-        );
+    --cb-line: #c4bdae;
+    --cb-line-strong: #948d80;
+    --cb-panel: rgba(255, 255, 255, 0.72);
+    --cb-panel-soft: rgba(255, 255, 255, 0.82);
+    --cb-muted: #605a4f;
+    --cb-ink: #1f1c18;
+    --cb-active-bg: #2b2924;
+    --cb-active-fg: #f5f1e9;
+    background: linear-gradient(180deg, rgba(243, 236, 226, 0.95), rgba(235, 227, 213, 0.92));
     gap: 8px;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .builder-choice-group {
-    background: rgba(255, 255, 255, 0.44);
+    background: var(--cb-panel);
+    border: 1px solid var(--cb-line);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-summary-group {
-    border: 2px solid #1b1b1b;
-    background: rgba(255, 255, 255, 0.67);
+    background: var(--cb-panel-soft);
+    border-color: var(--cb-line-strong);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .xp-tracker {
@@ -2190,10 +2191,10 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    border: 2px solid #1b1b1b;
+    border: 1px solid var(--cb-line-strong);
     padding: 6px 8px;
     margin-bottom: 8px;
-    background: rgba(255, 255, 255, 0.66);
+    background: #fffdfa;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .xp-label {
@@ -2217,10 +2218,10 @@
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-summary-cell {
-    border: 1px solid #222;
+    border: 1px solid var(--cb-line);
     padding: 6px 5px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.82);
     display: grid;
     gap: 2px;
 }
@@ -2239,22 +2240,22 @@
 .laundry-rpg.character-builder .custom-character-builder-form .custom-builder-tabs {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    border: 2px solid #1b1b1b;
-    background: rgba(255, 255, 255, 0.52);
+    border: 1px solid var(--cb-line-strong);
+    background: var(--cb-panel-soft);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-tab-btn {
     border: none;
-    border-right: 2px solid #1b1b1b;
+    border-right: 1px solid var(--cb-line);
     margin: 0;
-    padding: 7px 8px;
+    padding: 8px 8px;
     background: transparent;
-    color: #1b1b1b;
+    color: var(--cb-ink);
     font-family: "Courier New", Courier, monospace;
     font-size: 10px;
     font-weight: bold;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-tab-btn:last-child {
@@ -2262,19 +2263,19 @@
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-tab-btn.active {
-    background: #1f1f1f;
-    color: #f4eeed;
+    background: var(--cb-active-bg);
+    color: var(--cb-active-fg);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-builder-panels {
-    border: 2px solid #1b1b1b;
+    border: 1px solid var(--cb-line-strong);
     border-top: none;
-    background: rgba(255, 255, 255, 0.52);
+    background: var(--cb-panel-soft);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-builder-panel {
     display: none;
-    padding: 10px;
+    padding: 10px 10px 8px;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-builder-panel.active {
@@ -2308,6 +2309,7 @@
     margin: 0;
     width: 14px;
     height: 14px;
+    accent-color: #595247;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .skill-result-count,
@@ -2333,8 +2335,8 @@
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .attribute-allocation-row {
-    border: 2px solid #222;
-    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--cb-line);
+    background: rgba(255, 255, 255, 0.84);
     padding: 7px 8px;
     display: grid;
     grid-template-columns: minmax(90px, 1fr) auto;
@@ -2356,7 +2358,7 @@
 
 .laundry-rpg.character-builder .custom-character-builder-form .attribute-next-cost {
     font-size: 10px;
-    color: #333;
+    color: var(--cb-muted);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .attribute-controls {
@@ -2368,11 +2370,11 @@
 
 .laundry-rpg.character-builder .custom-character-builder-form .attribute-controls .attribute-value {
     text-align: center;
-    border: 2px solid #222;
+    border: 1px solid var(--cb-line-strong);
     border-radius: 0;
     font-size: 14px;
     font-weight: bold;
-    background: rgba(255, 255, 255, 0.76);
+    background: #fff;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .skill-allocation-list,
@@ -2387,14 +2389,14 @@
 .laundry-rpg.character-builder .custom-character-builder-form .custom-skill-row {
     grid-template-columns: minmax(120px, 1fr) minmax(130px, 150px) minmax(130px, 150px) auto;
     gap: 8px;
-    border: 2px solid #222;
-    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--cb-line);
+    background: rgba(255, 255, 255, 0.84);
     padding: 7px;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .custom-skill-row .skill-name {
     font-size: 12px;
-    color: #111;
+    color: var(--cb-ink);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .skill-controls {
@@ -2413,8 +2415,8 @@
     display: grid;
     grid-template-columns: 26px 1fr 26px;
     align-items: center;
-    border: 2px solid #222;
-    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--cb-line);
+    background: #fff;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .skill-stepper .skill-rank {
@@ -2426,40 +2428,92 @@
 
 .laundry-rpg.character-builder .custom-character-builder-form .skill-stepper button {
     border: none;
-    border-right: 2px solid #222;
+    border-right: 1px solid var(--cb-line);
     padding: 2px 0;
+    background: #f6f3ec;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .skill-stepper button + .skill-rank + button {
     border-right: none;
-    border-left: 2px solid #222;
+    border-left: 1px solid var(--cb-line);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .skill-step-cost {
     font-size: 9px;
-    color: #333;
+    color: var(--cb-muted);
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .talent-allocation-row {
-    border: 2px solid #222;
-    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--cb-line);
+    background: rgba(255, 255, 255, 0.84);
     padding: 7px;
     display: grid;
-    grid-template-columns: minmax(110px, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 8px;
-    align-items: center;
+    align-items: start;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .talent-allocation-row.is-bought {
-    background: rgba(137, 183, 118, 0.2);
+    background: rgba(138, 175, 120, 0.22);
+}
+
+.laundry-rpg.character-builder .custom-character-builder-form .talent-main {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .talent-name {
     font-size: 12px;
+    font-weight: bold;
+    color: var(--cb-ink);
+}
+
+.laundry-rpg.character-builder .custom-character-builder-form .talent-description {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--cb-muted);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .talent-controls {
+    align-self: start;
     justify-self: end;
+}
+
+.laundry-rpg.character-builder .custom-character-builder-form button {
+    border: 1px solid var(--cb-line-strong);
+    background: #f7f3ec;
+    color: var(--cb-ink);
+    letter-spacing: 0.06em;
+}
+
+.laundry-rpg.character-builder .custom-character-builder-form button:hover:not(:disabled) {
+    background: #e7e0d4;
+    color: #141210;
+}
+
+.laundry-rpg.character-builder .custom-character-builder-form .builder-confirm {
+    border-color: #7f2c2c;
+    color: #7f2c2c;
+    background: #fff4f3;
+}
+
+.laundry-rpg.character-builder .custom-character-builder-form .builder-confirm:hover:not(:disabled) {
+    border-color: #7f2c2c;
+    background: #7f2c2c;
+    color: #fff;
+}
+
+.laundry-rpg.character-builder .custom-character-builder-form .talent-prereq-badge {
+    border-width: 1px;
+    align-self: start;
 }
 
 .laundry-rpg.character-builder .custom-character-builder-form .search-hidden {
@@ -2472,7 +2526,7 @@
     }
     .laundry-rpg.character-builder .custom-character-builder-form .custom-tab-btn {
         border-right: none;
-        border-bottom: 2px solid #1b1b1b;
+        border-bottom: 1px solid var(--cb-line);
     }
     .laundry-rpg.character-builder .custom-character-builder-form .custom-tab-btn:last-child {
         border-bottom: none;
@@ -2484,7 +2538,10 @@
         grid-template-columns: 1fr;
     }
     .laundry-rpg.character-builder .custom-character-builder-form .talent-allocation-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr auto;
+    }
+    .laundry-rpg.character-builder .custom-character-builder-form .talent-controls {
+        justify-self: stretch;
     }
 }
 

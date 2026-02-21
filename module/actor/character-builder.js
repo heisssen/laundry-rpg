@@ -317,6 +317,10 @@ export class LaundryCharacterBuilder extends Application {
             const talentName = String(talent?.name ?? "").trim();
             const safeTalentName = _escapeHtml(talentName);
             const isBought = this.customBuild.talents.some(name => name.toLowerCase() === talentName.toLowerCase());
+            const descriptionRaw = _stripHtml(talent?.system?.description ?? talent?.description ?? "");
+            const descriptionText = descriptionRaw
+                ? _truncateText(descriptionRaw, 200)
+                : i18n.localize("LAUNDRY.NoDescription");
             const prereq = evaluateTalentPrerequisites(mockActor, talent);
             const prereqLabel = prereq.status === "unmet"
                 ? i18n.localize("LAUNDRY.PrereqUnmetLabel")
@@ -326,7 +330,10 @@ export class LaundryCharacterBuilder extends Application {
             const blockedForPlayer = !isBought && prereq.status === "unmet" && !game.user?.isGM;
             return `
                 <div class="talent-allocation-row ${isBought ? "is-bought" : ""}" data-talent-name="${safeTalentName}" data-bought="${isBought ? "1" : "0"}" data-prereq="${_escapeHtml(prereq.status)}" title="${_escapeHtml(describeTalentPrerequisiteResult(prereq))}">
-                    <span class="talent-name">${safeTalentName}</span>
+                    <div class="talent-main">
+                        <span class="talent-name">${safeTalentName}</span>
+                        <p class="talent-description">${_escapeHtml(descriptionText)}</p>
+                    </div>
                     <span class="talent-prereq-badge talent-prereq-${prereq.status}">${_escapeHtml(prereqLabel)}</span>
                     <div class="talent-controls">
                         <button type="button" class="buy-talent" data-talent-name="${safeTalentName}" ${blockedForPlayer ? "disabled" : ""}>
@@ -1946,6 +1953,14 @@ function _findCompendiumMatch(index, name) {
 
 function _stripHtml(value) {
     return String(value ?? "").replace(/(<([^>]+)>)/gi, "").trim();
+}
+
+function _truncateText(value, maxLength = 180) {
+    const text = String(value ?? "").trim();
+    if (!text.length) return "";
+    const limit = Math.max(8, Math.trunc(Number(maxLength) || 180));
+    if (text.length <= limit) return text;
+    return `${text.slice(0, Math.max(0, limit - 3)).trimEnd()}...`;
 }
 
 function _normalizeProfileDraft(input) {
