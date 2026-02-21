@@ -9,13 +9,43 @@ export class LaundryCharacterBuilder extends Application {
         this.actor = actor;
         this._assignmentById = new Map();
         this._talentByName = new Map();
+        this.creationMode = options.creationMode || "assignment";
+    }
+
+    static async create(actor, options = {}) {
+        let creationMode = options.creationMode;
+        if (!creationMode) {
+            creationMode = await new Promise(resolve => {
+                new Dialog({
+                    title: "Character Creation Method",
+                    content: "<p>Choose your character creation method:</p>",
+                    buttons: {
+                        assignment: {
+                            label: "Assignment-based",
+                            callback: () => resolve("assignment")
+                        },
+                        custom: {
+                            label: "Custom (40 XP)",
+                            callback: () => resolve("custom")
+                        }
+                    },
+                    default: "assignment",
+                    close: () => resolve(null)
+                }).render(true);
+            });
+        }
+
+        if (!creationMode) {
+            return null; // User closed the dialog
+        }
+
+        return new LaundryCharacterBuilder(actor, { ...options, creationMode });
     }
 
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "laundry-character-builder",
             classes: ["laundry-rpg", "character-builder", "laundry-dialog"],
-            template: "systems/laundry-rpg/templates/actor/character-builder.html",
             title: "Form 2B: Agent Requisition",
             width: 960,
             height: 860,
@@ -23,7 +53,24 @@ export class LaundryCharacterBuilder extends Application {
         });
     }
 
+    get template() {
+        if (this.creationMode === 'custom') {
+            return 'systems/laundry-rpg/templates/actor/custom-character-builder.html';
+        }
+        return 'systems/laundry-rpg/templates/actor/character-builder.html';
+    }
+
     async getData() {
+        if (this.creationMode === 'custom') {
+            const data = await this._getCustomData();
+            this.skills = data.skills;
+            this.talents = data.talents;
+            return data;
+        }
+        return this._getAssignmentData();
+    }
+
+    async _getAssignmentData() {
         const pack = game.packs.get("laundry-rpg.assignments");
         const talentsPack = game.packs.get("laundry-rpg.talents");
         let assignments = [];
@@ -71,8 +118,38 @@ export class LaundryCharacterBuilder extends Application {
         };
     }
 
+    async _getCustomData() {
+        const skillsPack = game.packs.get("laundry-rpg.skills");
+        const talentsPack = game.packs.get("laundry-rpg.talents");
+        let skills = [];
+        let talents = [];
+
+        if (skillsPack) {
+            skills = (await skillsPack.getDocuments()).map(doc => doc.toObject());
+        }
+
+        if (talentsPack) {
+            talents = (await talentsPack.getDocuments()).map(doc => doc.toObject());
+        }
+
+        return {
+            actorName: this.actor?.name ?? "Agent",
+            skills,
+            talents,
+            initialXp: 40
+        };
+    }
+
     activateListeners(html) {
         super.activateListeners(html);
+        if (this.creationMode === 'custom') {
+            this._activateCustomListeners(html);
+        } else {
+            this._activateAssignmentListeners(html);
+        }
+    }
+
+    _activateAssignmentListeners(html) {
         html.find("form").on("submit", this._onSubmit.bind(this));
         html.find(".builder-confirm").on("click", (ev) => this._onSubmit(ev));
         html.find("form").on("keydown", (ev) => {
@@ -95,6 +172,226 @@ export class LaundryCharacterBuilder extends Application {
         if (select) this._renderAssignmentDetails(select.value);
         this._setBuilderTab("requisition", { force: true });
         this._syncBuilderTabState(this._getSelectedAssignment());
+    }
+
+    _activateCustomListeners(html) {
+        this.customBuild = {
+            attributes: {
+                body: 1,
+                mind: 1,
+                spirit: 1
+            },
+            skills: this.skills.reduce((obj, skill) => {
+                obj[skill.name] = { training: 0, focus: 0 };
+                return obj;
+            }, {}),
+            talents: [], // [talentName]
+            xp: 40
+        };
+
+        this._renderCustomBuilder(html);
+
+        html.find('.builder-confirm').on('click', (ev) => this._onCustomSubmit(ev));
+        html.find('.builder-cancel').on('click', () => this.close());
+        html.on('click', '.increase-attr', (ev) => this._onIncreaseAttribute(ev));
+        html.on('click', '.decrease-attr', (ev) => this._onDecreaseAttribute(ev));
+        html.on('click', '.increase-skill', (ev) => this._onIncreaseSkill(ev));
+        html.on('click', '.decrease-skill', (ev) => this._onDecreaseSkill(ev));
+        html.on('click', '.buy-talent', (ev) => this._onBuyTalent(ev));
+    }
+
+    _renderCustomBuilder(html) {
+        // Render attributes
+        const attributesHtml = Object.keys(this.customBuild.attributes).map(attrName => {
+            const attrValue = this.customBuild.attributes[attrName];
+            return `
+                <div class="attribute-allocation-row" data-attribute="${attrName}">
+                    <span class="attribute-name">${attrName.charAt(0).toUpperCase() + attrName.slice(1)}</span>
+                    <input type="number" class="attribute-value" value="${attrValue}" disabled />
+                    <div class="attribute-controls">
+                        <button type="button" class="increase-attr" data-attribute="${attrName}" ${attrValue >= 4 ? 'disabled' : ''}>+</button>
+                        <button type="button" class="decrease-attr" data-attribute="${attrName}" ${attrValue <= 1 ? 'disabled' : ''}>-</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        html.find('.attribute-allocation-grid').html(attributesHtml);
+
+        // Render skills
+        const skillsHtml = this.skills.map(skill => {
+            const skillData = this.customBuild.skills[skill.name] || { training: 0, focus: 0 };
+            return `
+                <div class="skill-allocation-row" data-skill-name="${skill.name}">
+                    <span class="skill-name">${skill.name}</span>
+                    <div class="skill-controls">
+                        <span>Training: ${skillData.training}</span>
+                        <button type="button" class="increase-skill" data-skill-name="${skill.name}" data-type="training" ${skillData.training >= 4 ? 'disabled' : ''}>+</button>
+                        <button type="button" class="decrease-skill" data-skill-name="${skill.name}" data-type="training" ${skillData.training <= 0 ? 'disabled' : ''}>-</button>
+                    </div>
+                    <div class="skill-controls">
+                        <span>Focus: ${skillData.focus}</span>
+                        <button type="button" class="increase-skill" data-skill-name="${skill.name}" data-type="focus" ${skillData.focus >= 4 ? 'disabled' : ''}>+</button>
+                        <button type="button" class="decrease-skill" data-skill-name="${skill.name}" data-type="focus" ${skillData.focus <= 0 ? 'disabled' : ''}>-</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        html.find('.skill-allocation-list').html(skillsHtml);
+
+        // Render talents
+        const talentsHtml = this.talents.map(talent => {
+            const isBought = this.customBuild.talents.includes(talent.name);
+            return `
+                <div class="talent-allocation-row" data-talent-name="${talent.name}">
+                    <span class="talent-name">${talent.name}</span>
+                    <div class="talent-controls">
+                        <button type="button" class="buy-talent" data-talent-name="${talent.name}" ${isBought ? 'disabled' : ''}>
+                            ${isBought ? 'Bought' : 'Buy (4 XP)'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        html.find('.talent-allocation-list').html(talentsHtml);
+
+        // Render XP
+        html.find('.xp-value').text(this.customBuild.xp);
+    }
+
+    _onBuyTalent(ev) {
+        const talentName = ev.currentTarget.dataset.talentName;
+        if (this.customBuild.talents.includes(talentName)) return;
+
+        const cost = 4;
+        if (this.customBuild.xp < cost) {
+            ui.notifications.warn("Not enough XP!");
+            return;
+        }
+
+        this.customBuild.talents.push(talentName);
+        this.customBuild.xp -= cost;
+        this._renderCustomBuilder(this.element);
+    }
+
+
+    _onIncreaseSkill(ev) {
+        const skillName = ev.currentTarget.dataset.skillName;
+        const type = ev.currentTarget.dataset.type;
+        const skillData = this.customBuild.skills[skillName];
+        const currentValue = skillData[type];
+        if (currentValue >= 4) return;
+
+        const cost = _calculateSkillCost(currentValue + 1, currentValue);
+        if (this.customBuild.xp < cost) {
+            ui.notifications.warn("Not enough XP!");
+            return;
+        }
+
+        skillData[type]++;
+        this.customBuild.xp -= cost;
+        this._renderCustomBuilder(this.element);
+    }
+
+    _onDecreaseSkill(ev) {
+        const skillName = ev.currentTarget.dataset.skillName;
+        const type = ev.currentTarget.dataset.type;
+        const skillData = this.customBuild.skills[skillName];
+        const currentValue = skillData[type];
+        if (currentValue <= 0) return;
+
+        const cost = _calculateSkillCost(currentValue, currentValue - 1);
+        skillData[type]--;
+        this.customBuild.xp += cost;
+        this._renderCustomBuilder(this.element);
+    }
+
+    _getAttributeCost(currentValue) {
+        if (currentValue === 1) return 3;
+        if (currentValue === 2) return 5;
+        if (currentValue === 3) return 10;
+        return Infinity; // Cannot increase past 4
+    }
+
+    _onIncreaseAttribute(ev) {
+        const attrName = ev.currentTarget.dataset.attribute;
+        const currentValue = this.customBuild.attributes[attrName];
+        if (currentValue >= 4) return;
+
+        const cost = this._getAttributeCost(currentValue);
+        if (this.customBuild.xp < cost) {
+            ui.notifications.warn("Not enough XP!");
+            return;
+        }
+
+        this.customBuild.attributes[attrName]++;
+        this.customBuild.xp -= cost;
+        this._renderCustomBuilder(this.element);
+    }
+
+    _onDecreaseAttribute(ev) {
+        const attrName = ev.currentTarget.dataset.attribute;
+        const currentValue = this.customBuild.attributes[attrName];
+        if (currentValue <= 1) return;
+
+        const cost = this._getAttributeCost(currentValue - 1);
+        this.customBuild.attributes[attrName]--;
+        this.customBuild.xp += cost;
+        this._renderCustomBuilder(this.element);
+    }
+
+    async _onCustomSubmit(ev) {
+        const hasItems = (this.actor?.items?.size ?? 0) > 0;
+        if (hasItems) {
+            const confirmed = await Dialog.confirm({
+                title: game.i18n.localize("LAUNDRY.ReinitializeTitle"),
+                content: `<p>${game.i18n.localize("LAUNDRY.ReinitializeBody")}</p>`,
+                classes: ["laundry-rpg", "laundry-dialog"]
+            });
+            if (!confirmed) return;
+        }
+
+        await this._applyCustomBuildToActor();
+        this.close();
+    }
+
+    async _applyCustomBuildToActor() {
+        const build = this.customBuild;
+        const actor = this.actor;
+
+        // Update attributes
+        await actor.update({
+            'system.attributes.body.value': build.attributes.body,
+            'system.attributes.mind.value': build.attributes.mind,
+            'system.attributes.spirit.value': build.attributes.spirit,
+        });
+
+        const itemsToAdd = [];
+
+        // Skills
+        const skillNames = Object.keys(build.skills).filter(
+            (skillName) => build.skills[skillName].training > 0 || build.skills[skillName].focus > 0
+        );
+        if (skillNames.length > 0) {
+            const skillItems = await _fetchCompendiumItems('laundry-rpg.skills', 'skill', skillNames, _stubSkill);
+            for (const item of skillItems) {
+                const skillData = build.skills[item.name];
+                item.system.training = skillData.training;
+                item.system.focus = skillData.focus;
+                itemsToAdd.push(item);
+            }
+        }
+
+        // Talents
+        if (build.talents.length > 0) {
+            const talentItems = await _fetchCompendiumItems('laundry-rpg.talents', 'talent', build.talents, _stubTalent);
+            itemsToAdd.push(...talentItems);
+        }
+        
+        if (itemsToAdd.length > 0) {
+            await actor.createEmbeddedDocuments('Item', itemsToAdd);
+        }
+
+        ui.notifications.info(game.i18n.format("LAUNDRY.AgentInitialized", { assignment: "Custom Build" }));
     }
 
     _onBuilderTabClick(ev) {

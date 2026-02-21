@@ -1,0 +1,50 @@
+<form class="character-builder-form" method="post" action="javascript:void(0);">
+    <header class="builder-header form-2b-header">
+        <div class="form-2b-top">
+            <h2>{{localize "LAUNDRY.CustomCharacterCreation"}}</h2>
+            <span class="form-2b-stamp">{{localize "LAUNDRY.Classified"}}</span>
+        </div>
+        <p class="form-2b-subtitle">{{localize "LAUNDRY.Form2BSubtitle"}}</p>
+        <p>{{localize "LAUNDRY.CustomCharacterCreationHint"}} <strong>{{actorName}}</strong>.</p>
+    </header>
+
+    <div class="builder-xp-counter">
+        <h3>{{localize "LAUNDRY.ExperiencePoints"}}</h3>
+        <div class="xp-tracker">
+            <span class="xp-label">{{localize "LAUNDRY.RemainingXP"}}:</span>
+            <span class="xp-value">40</span>
+        </div>
+    </div>
+
+    <div class="builder-layout">
+        <section class="builder-main-column">
+            <section class="builder-choice-group">
+                <h3>{{localize "LAUNDRY.Attributes"}}</h3>
+                <div class="attribute-allocation-grid">
+                    <!-- Attribute rows will be inserted here by JS -->
+                </div>
+            </section>
+
+            <section class="builder-choice-group">
+                <h3>{{localize "LAUNDRY.Talents"}}</h3>
+                <div class="talent-allocation-list">
+                    <!-- Talent rows will be inserted here by JS -->
+                </div>
+            </section>
+        </section>
+
+        <section class="builder-side-column">
+            <section class="builder-choice-group skill-allocation-group">
+                <h3>{{localize "LAUNDRY.Skills"}}</h3>
+                <div class="skill-allocation-list">
+                    <!-- Skill rows will be inserted here by JS -->
+                </div>
+            </section>
+        </section>
+    </div>
+
+    <div class="builder-actions">
+        <button type="submit" class="builder-confirm">{{localize "LAUNDRY.InitAgent"}}</button>
+        <button type="button" class="builder-cancel" data-action="close">Cancel</button>
+    </div>
+</form>

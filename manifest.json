@@ -2,7 +2,7 @@
   "id": "laundry-rpg",
   "title": "The Laundry RPG",
   "description": "A system for The Laundry Roleplaying Game (Cubicle 7) in Foundry VTT.",
-  "version": "1.20.3",
+  "version": "1.20.5",
   "compatibility": {
     "minimum": 12,
     "verified": 13

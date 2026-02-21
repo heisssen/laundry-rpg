@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.20.5 - 2026-02-21
+
+### Added
+- Character Builder now supports two creation modes: Assignment-based flow and a new Custom (40 XP) flow with direct attribute/skill/talent allocation.
+- Added dedicated custom builder template at `templates/actor/custom-character-builder.html` and launch-time mode picker.
+
+### Changed
+- NPC sheet data prep was split so NPC-only operations context is built in `LaundryNpcSheet`, reducing bleed-over from base actor sheet context.
+- NPC sheet layout was reorganized for faster combat usage (snapshot/loadout/control/conditions grouping and simplified action advanced fields).
+- Regenerated generated item icons with updated shared palette tuning and refreshed output assets across defaults and all item categories.
+- Updated source JSON datasets (`assignments`, `enemies`, `gear`, `skills`, `spells`, `talents`, `weapons`, `armour`) and refreshed related extraction artifacts.
+
+### Fixed
+- Character Builder initialization now uses async factory creation, handling dialog cancellation safely without constructing invalid app state.
+
 ## 1.20.4 - 2026-02-21
 
 ### Fixed

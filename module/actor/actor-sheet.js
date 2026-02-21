@@ -180,35 +180,9 @@ export class LaundryActorSheet extends ActorSheet {
             defence: actorData.derived?.defence?.label ?? "Poor"
         };
 
-        // NPC-only extras
-        context.isNpc       = context.actor.type === "npc";
         context.isCharacter = context.actor.type === "character";
         context.hasAssignment = !!actorData.details?.assignment;
-        const npcRaw = actorData.npc ?? {};
-        const npcClass = String(npcRaw.class ?? "elite");
-        const npcMode = String(npcRaw.mode ?? "lite");
-        const npcFastDamage = Boolean(npcRaw.fastDamage ?? true);
-        const npcTrackInjuries = Boolean(npcRaw.trackInjuries ?? false);
-        const npcMobSize = Math.max(1, Math.trunc(Number(npcRaw.mobSize) || 1));
-        const npcDefeated = Boolean(npcRaw.defeated) || Math.max(0, Math.trunc(Number(actorData.derived?.toughness?.value) || 0)) <= 0;
-        const flaggedNpcQuickActions = this.actor.getFlag?.("laundry-rpg", "npcQuickActions");
-        const npcQuickActionSource = Array.isArray(npcRaw.quickActions) && npcRaw.quickActions.length
-            ? npcRaw.quickActions
-            : (Array.isArray(flaggedNpcQuickActions) ? flaggedNpcQuickActions : []);
-        const generatedNpcQuickActions = this._buildNpcSuggestedQuickActions();
-        const npcQuickActionSeed = npcQuickActionSource.length
-            ? npcQuickActionSource
-            : generatedNpcQuickActions;
-        const npcQuickActions = npcQuickActionSeed
-            .map(entry => normalizeNpcQuickAction(entry))
-            .map((entry, index, allActions) => ({
-                ...entry,
-                index,
-                canMoveUp: index > 0,
-                canMoveDown: index < allActions.length - 1
-            }));
-        const npcCanSpawn = Boolean(game.user?.isGM && canvas?.scene);
-
+        
         const activeCombatant = game.combat?.combatant ?? null;
         const isActorTurn = Boolean(activeCombatant?.actor?.id === this.actor.id);
         const turnEconomy = game.laundry?.getCombatTurnEconomy?.(this.actor) ?? {
@@ -599,7 +573,7 @@ export class LaundryActorSheet extends ActorSheet {
         return created?.[0] ?? this.actor.items.find(i => i.type === "skill" && i.name === skillName);
     }
 
-    _onInitAgent(ev) {
+    async _onInitAgent(ev) {
         ev.preventDefault();
         if (!this.actor.isOwner) return;
         const existing = Object.values(ui.windows).find(app =>
@@ -611,8 +585,8 @@ export class LaundryActorSheet extends ActorSheet {
             existing.bringToTop();
             return;
         }
-        const builder = new LaundryCharacterBuilder(this.actor);
-        builder.render(true);
+        const builder = await LaundryCharacterBuilder.create(this.actor);
+        builder?.render(true);
     }
 
     async _onEndTurn(ev) {
@@ -1705,5 +1679,62 @@ export class LaundryNpcSheet extends LaundryActorSheet {
             height: 700,
             tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "npc-actions" }]
         });
+    }
+
+    /** @override */
+    getData() {
+        const context = super.getData();
+        const actorData = context.actor?.system ?? {};
+
+        context.isNpc = true;
+
+        const npcRaw = actorData.npc ?? {};
+        const npcClass = String(npcRaw.class ?? "elite");
+        const npcMode = String(npcRaw.mode ?? "lite");
+        const npcFastDamage = Boolean(npcRaw.fastDamage ?? true);
+        const npcTrackInjuries = Boolean(npcRaw.trackInjuries ?? false);
+        const npcMobSize = Math.max(1, Math.trunc(Number(npcRaw.mobSize) || 1));
+        const npcDefeated = Boolean(npcRaw.defeated) || Math.max(0, Math.trunc(Number(actorData.derived?.toughness?.value) || 0)) <= 0;
+        const flaggedNpcQuickActions = this.actor.getFlag?.("laundry-rpg", "npcQuickActions");
+        const npcQuickActionSource = Array.isArray(npcRaw.quickActions) && npcRaw.quickActions.length
+            ? npcRaw.quickActions
+            : (Array.isArray(flaggedNpcQuickActions) ? flaggedNpcQuickActions : []);
+        const generatedNpcQuickActions = this._buildNpcSuggestedQuickActions();
+        const npcQuickActionSeed = npcQuickActionSource.length
+            ? npcQuickActionSource
+            : generatedNpcQuickActions;
+        const npcQuickActions = npcQuickActionSeed
+            .map(entry => normalizeNpcQuickAction(entry))
+            .map((entry, index, allActions) => ({
+                ...entry,
+                index,
+                canMoveUp: index > 0,
+                canMoveDown: index < allActions.length - 1
+            }));
+        const npcCanSpawn = Boolean(game.user?.isGM && canvas?.scene);
+
+        context.npcOps = {
+            mode: npcMode,
+            npcClass,
+            mobSize: npcMobSize,
+            fastDamage: npcFastDamage,
+            trackInjuries: npcTrackInjuries,
+            defeated: npcDefeated,
+            archetype: String(npcRaw.archetype ?? ""),
+            quickActions: npcQuickActions,
+            presets: NPC_PRESETS.map(entry => ({
+                id: entry.id,
+                name: entry.name
+            })),
+            actionKinds: [
+                { id: "attack", name: "Attack" },
+                { id: "spell", name: "Spell" },
+                { id: "test", name: "Test" }
+            ],
+            usingSuggestedActions: !npcQuickActionSource.length && npcQuickActions.length > 0,
+            canSpawnToScene: npcCanSpawn
+        };
+
+        return context;
     }
 }
