@@ -401,9 +401,7 @@ export class LaundryCharacterBuilder extends Application {
         let used = _calculateSkillXpUsage(this._readSkillAllocations(form, assignment), assignment);
 
         let changed = false;
-        let guard = 0;
-        while (used < budget && guard < 220) {
-            guard += 1;
+        while (used < budget) {
             let progressed = false;
 
             for (const input of orderedTracks) {
