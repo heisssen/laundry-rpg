@@ -1059,6 +1059,10 @@ def build_servant_journal() -> list[dict]:
     return _build_journal_from_source("servant.json", id_prefix="servant")
 
 
+def build_vashnotik_journal() -> list[dict]:
+    return _build_journal_from_source("vashnotik.json", id_prefix="vashnotik")
+
+
 def build_macros() -> list[dict]:
     path = ROOT / "macros.json"
     if not path.exists():
@@ -1128,6 +1132,7 @@ def main() -> None:
         "enemies.db": enemies,
         "rules.db": build_rules_journal(),
         "servant.db": build_servant_journal(),
+        "vashnotik.db": build_vashnotik_journal(),
         "servant-npcs.db": build_servant_npcs(),
         "servant-tables.db": build_servant_tables(),
         "macros.db": build_macros(),

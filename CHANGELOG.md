@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.23.0 - 2026-02-21
+
+### Added
+- New standalone `Vashnotik One-Shot` journal compendium at `packs/vashnotik.db`, sourced from `vashnotik.json`.
+- Added an original custom adventure framework with GM quickstart, threat clock panel, scene flow, finale choices, rewards, and continuation hooks.
+
+### Changed
+- Pack rebuild pipeline now emits `vashnotik.db` via `scripts/rebuild_packs_from_json.py`.
+- System manifests now register the `vashnotik` JournalEntry pack.
+
 ## 1.22.0 - 2026-02-21
 
 ### Added

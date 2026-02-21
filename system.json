@@ -2,7 +2,7 @@
   "id": "laundry-rpg",
   "title": "The Laundry RPG",
   "description": "A system for The Laundry Roleplaying Game (Cubicle 7) in Foundry VTT.",
-  "version": "1.22.0",
+  "version": "1.23.0",
   "compatibility": {
     "minimum": 12,
     "verified": 13
@@ -100,6 +100,13 @@
       "name": "servant",
       "label": "Servant Cases",
       "path": "packs/servant.db",
+      "type": "JournalEntry",
+      "system": "laundry-rpg"
+    },
+    {
+      "name": "vashnotik",
+      "label": "Vashnotik One-Shot",
+      "path": "packs/vashnotik.db",
       "type": "JournalEntry",
       "system": "laundry-rpg"
     },
