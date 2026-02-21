@@ -2150,11 +2150,21 @@
     gap: 6px;
 }
 
+.laundry-rpg .gm-tracker-block h3 {
+    margin: 0;
+}
+
 .laundry-rpg .threat-controls {
     display: grid;
     grid-template-columns: 1fr 58px;
     gap: 6px;
     align-items: center;
+}
+
+.laundry-rpg .gm-quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
 }
 
 .laundry-rpg .gm-tracker-block button {
@@ -2234,7 +2244,48 @@
     padding: 3px 5px;
 }
 
+.laundry-rpg .gm-combat-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 112px 112px auto;
+    gap: 6px;
+    align-items: center;
+}
+
+.laundry-rpg .gm-combat-toolbar input,
+.laundry-rpg .gm-combat-toolbar select {
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.75);
+    font-family: var(--laundry-font);
+    font-size: 11px;
+    color: var(--laundry-ink);
+    min-height: 30px;
+    padding: 3px 5px;
+}
+
+.laundry-rpg .gm-inline-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--laundry-ink-muted);
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.58);
+    padding: 0 6px;
+    min-height: 30px;
+}
+
 .laundry-rpg .gm-combat-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.laundry-rpg .gm-combat-selection,
+.laundry-rpg .gm-combat-bulk-actions,
+.laundry-rpg .gm-combat-bulk-conditions {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
@@ -2278,6 +2329,44 @@
 .laundry-rpg .gm-combat-main strong {
     color: var(--laundry-stamp);
     letter-spacing: 0.06em;
+}
+
+.laundry-rpg .gm-combat-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--laundry-line);
+    background: rgba(255,255,255,0.58);
+    color: var(--laundry-ink-muted);
+    font-size: 9px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 1px 4px;
+}
+
+.laundry-rpg .gm-combat-conditions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.laundry-rpg .gm-combat-conditions .combat-condition-toggle,
+.laundry-rpg .gm-combat-bulk-conditions .combat-bulk-condition {
+    border: 1px solid var(--laundry-line-dark);
+    background: rgba(255,255,255,0.68);
+    color: var(--laundry-ink);
+    font-family: var(--laundry-font);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    min-height: 24px;
+}
+
+.laundry-rpg .gm-combat-conditions .combat-condition-toggle.active {
+    border-color: var(--laundry-stamp);
+    background: rgba(178,31,31,0.12);
+    color: var(--laundry-stamp);
 }
 
 .laundry-rpg .gm-combat-hints {
@@ -2498,6 +2587,22 @@
 
     .laundry-rpg .gm-spawn-grid {
         grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .gm-quick-actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .gm-combat-toolbar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .laundry-rpg .gm-inline-check {
+        grid-column: 1 / -1;
+    }
+
+    .laundry-rpg .gm-combat-main {
+        gap: 4px;
     }
 }
 
@@ -3552,5 +3657,20 @@
 
     .laundry-rpg .npc-actions-list .npc-action-row {
         grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .gm-combat-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .laundry-rpg .gm-combat-main {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .laundry-rpg .gm-combat-actions button,
+    .laundry-rpg .gm-combat-bulk-actions button,
+    .laundry-rpg .gm-combat-bulk-conditions button {
+        flex: 1 1 100%;
     }
 }

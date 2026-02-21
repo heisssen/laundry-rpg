@@ -15,18 +15,20 @@
 
     <section class="gm-tracker-block">
         <h3>{{localize "LAUNDRY.GMQuickActions"}}</h3>
-        <button type="button" class="award-luck">{{localize "LAUNDRY.AwardLuckAll"}}</button>
-        <button type="button" class="sync-team-luck">{{localize "LAUNDRY.TeamLuckSyncMax"}}</button>
-        <button type="button" class="reset-team-luck" data-mode="max">{{localize "LAUNDRY.TeamLuckResetToMax"}}</button>
-        <button type="button" class="reset-team-luck" data-mode="zero">{{localize "LAUNDRY.TeamLuckResetToZero"}}</button>
-        <button type="button" class="open-mission-generator">Mission Generator</button>
-        <button type="button" class="apply-threat-buffs">Apply Threat Buffs</button>
-        <button type="button" class="max-adrenaline">{{localize "LAUNDRY.MaxAdrenalineAll"}}</button>
-        <button type="button" class="request-bau" {{#unless hasTarget}}disabled{{/unless}}>
-            {{localize "LAUNDRY.RequestBAU"}}
-        </button>
-        <button type="button" class="open-rules">{{localize "LAUNDRY.OpenRulesDossier"}}</button>
-        <button type="button" class="open-spells">{{localize "LAUNDRY.OpenSpellsCompendium"}}</button>
+        <div class="gm-quick-actions-grid">
+            <button type="button" class="award-luck">{{localize "LAUNDRY.AwardLuckAll"}}</button>
+            <button type="button" class="sync-team-luck">{{localize "LAUNDRY.TeamLuckSyncMax"}}</button>
+            <button type="button" class="reset-team-luck" data-mode="max">{{localize "LAUNDRY.TeamLuckResetToMax"}}</button>
+            <button type="button" class="reset-team-luck" data-mode="zero">{{localize "LAUNDRY.TeamLuckResetToZero"}}</button>
+            <button type="button" class="open-mission-generator">Mission Generator</button>
+            <button type="button" class="apply-threat-buffs">Apply Threat Buffs</button>
+            <button type="button" class="max-adrenaline">{{localize "LAUNDRY.MaxAdrenalineAll"}}</button>
+            <button type="button" class="request-bau" {{#unless hasTarget}}disabled{{/unless}}>
+                {{localize "LAUNDRY.RequestBAU"}}
+            </button>
+            <button type="button" class="open-rules">{{localize "LAUNDRY.OpenRulesDossier"}}</button>
+            <button type="button" class="open-spells">{{localize "LAUNDRY.OpenSpellsCompendium"}}</button>
+        </div>
         <p class="notes">{{localize "LAUNDRY.TeamLuck"}}: <strong>{{teamLuck}}/{{teamLuckMax}}</strong> | Auto-sync: <strong>{{#if teamLuckAutoSync}}ON{{else}}OFF{{/if}}</strong></p>
         <p class="notes">{{localize "LAUNDRY.Target"}}: <strong>{{targetName}}</strong></p>
     </section>
@@ -39,6 +41,7 @@
             <div class="gm-pc-row" data-actor-id="{{pc.id}}">
                 <div class="gm-pc-name">{{pc.name}}</div>
                 <div class="gm-pc-resources">
+                    <span class="gm-pc-stat">TGH {{pc.toughnessValue}}/{{pc.toughnessMax}}</span>
                     <span class="gm-pc-stat">ADR {{pc.adrenalineValue}}/{{pc.adrenalineMax}}</span>
                     <button type="button" class="pc-adjust" data-actor-id="{{pc.id}}" data-resource="adrenaline" data-delta="-1">-ADR</button>
                     <button type="button" class="pc-adjust" data-actor-id="{{pc.id}}" data-resource="adrenaline" data-delta="1">+ADR</button>
@@ -80,19 +83,62 @@
 
     <section class="gm-tracker-block">
         <h3>Combat Dashboard</h3>
-        {{#if hasCombat}}
+        {{#if hasCombatStarted}}
+        <div class="gm-combat-toolbar">
+            <input type="text" class="combat-search" value="{{viewState.combatSearch}}" placeholder="Search combatant" />
+            <select class="combat-filter">
+                {{#each combatFilters as |filter|}}
+                <option value="{{filter.id}}" {{#if (laundryEq filter.id @root.viewState.combatFilter)}}selected{{/if}}>{{filter.label}}</option>
+                {{/each}}
+            </select>
+            <select class="combat-sort">
+                {{#each combatSorts as |sort|}}
+                <option value="{{sort.id}}" {{#if (laundryEq sort.id @root.viewState.combatSort)}}selected{{/if}}>{{sort.label}}</option>
+                {{/each}}
+            </select>
+            <label class="gm-inline-check">
+                <input type="checkbox" class="combat-auto-refresh" {{checked viewState.autoRefresh}} />
+                <span>Auto-refresh</span>
+            </label>
+        </div>
         <div class="gm-combat-summary">
+            <span class="gm-pc-stat">Visible {{combatSummary.visible}}/{{combatSummary.total}}</span>
             <span class="gm-pc-stat">Total {{combatSummary.total}}</span>
             <span class="gm-pc-stat">Critical {{combatSummary.critical}}</span>
             <span class="gm-pc-stat">No Action {{combatSummary.noActions}}</span>
             <span class="gm-pc-stat">No Move {{combatSummary.noMove}}</span>
             <button type="button" class="combat-next-turn">Next Turn</button>
         </div>
+        <div class="gm-combat-selection">
+            <button type="button" class="combat-select-all" {{#unless combatants.length}}disabled{{/unless}}>Select Visible</button>
+            <button type="button" class="combat-clear-selection" {{#unless combatHasSelections}}disabled{{/unless}}>Clear Selection</button>
+            <span class="gm-pc-stat">Selected {{combatSummary.selected}}</span>
+        </div>
+        <div class="gm-combat-bulk-actions">
+            <button type="button" class="combat-bulk-action" data-resource="toughness" data-delta="-1" {{#unless combatHasSelections}}disabled{{/unless}}>-TGH Selected</button>
+            <button type="button" class="combat-bulk-action" data-resource="toughness" data-delta="1" {{#unless combatHasSelections}}disabled{{/unless}}>+TGH Selected</button>
+            <button type="button" class="combat-bulk-action" data-resource="adrenaline" data-delta="-1" {{#unless combatHasSelections}}disabled{{/unless}}>-ADR Selected</button>
+            <button type="button" class="combat-bulk-action" data-resource="adrenaline" data-delta="1" {{#unless combatHasSelections}}disabled{{/unless}}>+ADR Selected</button>
+            <button type="button" class="combat-bulk-action" data-resource="action" data-delta="0" {{#unless combatHasSelections}}disabled{{/unless}}>Use Action</button>
+            <button type="button" class="combat-bulk-action" data-resource="move" data-delta="0" {{#unless combatHasSelections}}disabled{{/unless}}>Use Move</button>
+            <button type="button" class="combat-bulk-action" data-resource="adrenaline-action" data-delta="0" {{#unless combatHasSelections}}disabled{{/unless}}>+Action (ADR)</button>
+        </div>
+        <div class="gm-combat-bulk-conditions">
+            {{#each conditionOptions as |condition|}}
+            <button type="button" class="combat-bulk-condition" data-condition-id="{{condition.id}}" {{#unless @root.combatHasSelections}}disabled{{/unless}}>{{condition.label}}</button>
+            {{/each}}
+        </div>
+        {{#if combatants.length}}
         <div class="gm-combat-board">
             {{#each combatants as |entry|}}
-            <div class="gm-combat-row {{#if entry.isActive}}gm-combat-active{{/if}} {{#if entry.isCritical}}gm-combat-critical{{/if}}">
+            <div class="gm-combat-row {{#if entry.isActive}}gm-combat-active{{/if}} {{#if entry.isCritical}}gm-combat-critical{{/if}}" data-actor-id="{{entry.actorId}}">
                 <div class="gm-combat-main">
+                    <label class="gm-combat-selector">
+                        <input type="checkbox" class="combat-select" data-actor-id="{{entry.actorId}}" {{checked entry.selected}} {{#unless entry.actorId}}disabled{{/unless}} />
+                        <span>Sel</span>
+                    </label>
                     <strong>{{entry.name}}</strong>
+                    <span>{{entry.dispositionLabel}}</span>
                     <span>Init {{entry.initiative}}</span>
                     <span>TGH {{entry.toughnessValue}}/{{entry.toughnessMax}}</span>
                     <span>ADR {{entry.adrenalineValue}}/{{entry.adrenalineMax}}</span>
@@ -100,19 +146,27 @@
                     <span>STS {{entry.statuses}}</span>
                     <span class="gm-combat-hints">{{entry.hints}}</span>
                 </div>
+                <div class="gm-combat-conditions">
+                    {{#each entry.conditionButtons as |condition|}}
+                    <button type="button" class="combat-condition-toggle {{#if condition.active}}active{{/if}}" data-actor-id="{{../actorId}}" data-condition-id="{{condition.id}}" {{#unless ../actorId}}disabled{{/unless}}>{{condition.label}}</button>
+                    {{/each}}
+                </div>
                 <div class="gm-combat-actions">
-                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="toughness" data-delta="-1">-TGH</button>
-                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="toughness" data-delta="1">+TGH</button>
-                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline" data-delta="-1">-ADR</button>
-                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline" data-delta="1">+ADR</button>
-                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="action" data-delta="0">Use Action</button>
-                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="move" data-delta="0">Use Move</button>
-                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline-action" data-delta="0">+Action (ADR)</button>
-                    <button type="button" class="combat-open-sheet" data-actor-id="{{entry.actorId}}">Sheet</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="toughness" data-delta="-1" {{#unless entry.actorId}}disabled{{/unless}}>-TGH</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="toughness" data-delta="1" {{#unless entry.actorId}}disabled{{/unless}}>+TGH</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline" data-delta="-1" {{#unless entry.actorId}}disabled{{/unless}}>-ADR</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline" data-delta="1" {{#unless entry.actorId}}disabled{{/unless}}>+ADR</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="action" data-delta="0" {{#unless entry.actorId}}disabled{{/unless}}>Use Action</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="move" data-delta="0" {{#unless entry.actorId}}disabled{{/unless}}>Use Move</button>
+                    <button type="button" class="combat-adjust" data-actor-id="{{entry.actorId}}" data-resource="adrenaline-action" data-delta="0" {{#unless entry.actorId}}disabled{{/unless}}>+Action (ADR)</button>
+                    <button type="button" class="combat-open-sheet" data-actor-id="{{entry.actorId}}" {{#unless entry.actorId}}disabled{{/unless}}>Sheet</button>
                 </div>
             </div>
             {{/each}}
         </div>
+        {{else}}
+        <p class="notes">No combatants match current filter/search.</p>
+        {{/if}}
         {{else}}
         <p class="notes">No active combat dashboard data.</p>
         {{/if}}

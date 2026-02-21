@@ -152,16 +152,18 @@ export class LaundryActorSheet extends ActorSheet {
         const npcTrackInjuries = Boolean(npcRaw.trackInjuries ?? false);
         const npcMobSize = Math.max(1, Math.trunc(Number(npcRaw.mobSize) || 1));
         const npcDefeated = Boolean(npcRaw.defeated) || Math.max(0, Math.trunc(Number(actorData.derived?.toughness?.value) || 0)) <= 0;
-        const npcQuickActions = Array.isArray(npcRaw.quickActions)
+        const flaggedNpcQuickActions = this.actor.getFlag?.("laundry-rpg", "npcQuickActions");
+        const npcQuickActionSource = Array.isArray(npcRaw.quickActions) && npcRaw.quickActions.length
             ? npcRaw.quickActions
-                .map(entry => normalizeNpcQuickAction(entry))
-                .map((entry, index, allActions) => ({
-                    ...entry,
-                    index,
-                    canMoveUp: index > 0,
-                    canMoveDown: index < allActions.length - 1
-                }))
-            : [];
+            : (Array.isArray(flaggedNpcQuickActions) ? flaggedNpcQuickActions : []);
+        const npcQuickActions = npcQuickActionSource
+            .map(entry => normalizeNpcQuickAction(entry))
+            .map((entry, index, allActions) => ({
+                ...entry,
+                index,
+                canMoveUp: index > 0,
+                canMoveDown: index < allActions.length - 1
+            }));
         const npcCanSpawn = Boolean(game.user?.isGM && canvas?.scene);
 
         const activeCombatant = game.combat?.combatant ?? null;
@@ -879,14 +881,23 @@ export class LaundryActorSheet extends ActorSheet {
     }
 
     _getNpcQuickActions() {
-        const actions = this.actor.system?.npc?.quickActions;
-        return Array.isArray(actions)
-            ? actions.map(entry => normalizeNpcQuickAction(entry))
+        const systemActions = this.actor.system?.npc?.quickActions;
+        if (Array.isArray(systemActions) && systemActions.length) {
+            return systemActions.map(entry => normalizeNpcQuickAction(entry));
+        }
+        const flaggedActions = this.actor.getFlag?.("laundry-rpg", "npcQuickActions");
+        return Array.isArray(flaggedActions)
+            ? flaggedActions.map(entry => normalizeNpcQuickAction(entry))
             : [];
     }
 
     _ensureNpcEditable() {
-        if (this.isEditable) return true;
+        const canModify = Boolean(
+            this.isEditable
+            || this.actor?.isOwner
+            || this.actor?.canUserModify?.(game.user, "update")
+        );
+        if (canModify) return true;
         ui.notifications.warn("This NPC is read-only. Import or duplicate it into the world before editing one-line actions.");
         return false;
     }
@@ -982,9 +993,31 @@ export class LaundryActorSheet extends ActorSheet {
     }
 
     async _setNpcQuickActions(actions = []) {
-        await this.actor.update({
-            "system.npc.quickActions": actions.map(entry => normalizeNpcQuickAction(entry))
-        });
+        const normalized = actions.map(entry => normalizeNpcQuickAction(entry));
+        const syncLocalSource = () => {
+            try {
+                this.actor.updateSource?.({
+                    "system.npc.quickActions": normalized,
+                    "flags.laundry-rpg.npcQuickActions": normalized
+                });
+            } catch (error) {
+                console.warn("Laundry RPG | Failed to sync local NPC quick action source.", error);
+            }
+        };
+        try {
+            await this.actor.update({
+                "system.npc.quickActions": normalized,
+                "flags.laundry-rpg.npcQuickActions": normalized
+            });
+            syncLocalSource();
+        } catch (error) {
+            console.error("Laundry RPG | Failed to write system.npc.quickActions, falling back to flags.", error);
+            await this.actor.update({
+                "flags.laundry-rpg.npcQuickActions": normalized
+            });
+            syncLocalSource();
+            ui.notifications.warn("Saved NPC one-line actions to fallback storage (flags).");
+        }
     }
 
     async _onBioAutofill(ev) {

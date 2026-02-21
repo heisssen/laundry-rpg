@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.19.4 - 2026-02-21
+
+### Fixed
+- NPC `One-line Actions` now render from fallback flags when `system.npc.quickActions` is unavailable, preventing missing rows after `Add Attack/Test/Spell`.
+- NPC sheet edit checks now rely on effective update permission (`isEditable`, `isOwner`, `canUserModify`) to avoid false read-only blocks.
+- NPC quick action writes now sync local actor source after persistence/fallback updates, improving immediate sheet refresh reliability.
+
+### Changed
+- Upgraded `Operations Threat Tracker` into a fuller GM control surface: combat search, filter, sort, actor selection, bulk resource actions, and bulk condition toggles.
+- Added per-combatant condition toggles and richer combat telemetry (visible/selected counters, disposition labels, quick condition strip).
+- Added optional GM Tracker auto-refresh and rebuilt tracker layout for better cross-device structure on desktop, tablet, and mobile.
+
+## 1.19.3 - 2026-02-21
+
+### Fixed
+- Hardened NPC one-line action persistence: quick actions now save to both `system.npc.quickActions` and fallback `flags.laundry-rpg.npcQuickActions`, preventing silent data loss on some Foundry document states.
+- NPC data prep now restores quick actions from fallback flags when system data is empty, so `Add Attack/Test/Spell` entries remain visible and usable.
+- Preset application now uses the same dual-write strategy for quick actions, keeping NPC action data consistent across imported and world actors.
+
 ## 1.19.2 - 2026-02-21
 
 ### Fixed

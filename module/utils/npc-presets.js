@@ -503,7 +503,7 @@ export async function applyNpcPreset(actor, presetId, { replaceActions = true } 
         ? preset.quickActions.map(entry => normalizeNpcQuickAction(entry))
         : [..._readActions(npcSystem.quickActions), ...preset.quickActions.map(entry => normalizeNpcQuickAction(entry))];
 
-    await actor.update({
+    const baseUpdate = {
         "system.attributes.body.value": Math.max(1, Math.trunc(Number(preset.attributes?.body) || 1)),
         "system.attributes.mind.value": Math.max(1, Math.trunc(Number(preset.attributes?.mind) || 1)),
         "system.attributes.spirit.value": Math.max(1, Math.trunc(Number(preset.attributes?.spirit) || 1)),
@@ -515,8 +515,20 @@ export async function applyNpcPreset(actor, presetId, { replaceActions = true } 
         "system.npc.trackInjuries": Boolean(preset.trackInjuries),
         "system.npc.archetype": preset.id,
         "system.npc.defeated": false,
-        "system.npc.quickActions": nextActions
-    });
+        "system.npc.quickActions": nextActions,
+        "flags.laundry-rpg.npcQuickActions": nextActions
+    };
+
+    try {
+        await actor.update(baseUpdate);
+    } catch (error) {
+        console.error("Laundry RPG | Failed to persist preset quick actions to system path, using flags fallback.", error);
+        await actor.update({
+            ...baseUpdate,
+            "system.npc.quickActions": actor.system?.npc?.quickActions ?? [],
+            "flags.laundry-rpg.npcQuickActions": nextActions
+        });
+    }
 
     await _applyPresetSkillTraining(actor, preset.skillTraining ?? {});
     return preset;

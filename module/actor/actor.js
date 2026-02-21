@@ -117,6 +117,10 @@ export class LaundryActor extends Actor {
         sys.npc.archetype = String(sys.npc.archetype ?? "");
         sys.npc.defeated = Boolean(sys.npc.defeated);
         sys.npc.quickActions = Array.isArray(sys.npc.quickActions) ? sys.npc.quickActions : [];
+        const flaggedQuickActions = this.getFlag?.("laundry-rpg", "npcQuickActions");
+        if (!sys.npc.quickActions.length && Array.isArray(flaggedQuickActions)) {
+            sys.npc.quickActions = flaggedQuickActions;
+        }
 
         // NPCs derive core combat values from the same baseline as characters.
         this._prepareCharacterData(sys);
