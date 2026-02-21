@@ -17,15 +17,15 @@ export class LaundryCharacterBuilder extends Application {
         if (!creationMode) {
             creationMode = await new Promise(resolve => {
                 new Dialog({
-                    title: "Character Creation Method",
-                    content: "<p>Choose your character creation method:</p>",
+                    title: game.i18n.localize("LAUNDRY.CharacterCreationMethodTitle"),
+                    content: `<p>${game.i18n.localize("LAUNDRY.CharacterCreationMethodPrompt")}</p>`,
                     buttons: {
                         assignment: {
-                            label: "Assignment-based",
+                            label: game.i18n.localize("LAUNDRY.CharacterCreationModeAssignment"),
                             callback: () => resolve("assignment")
                         },
                         custom: {
-                            label: "Custom (40 XP)",
+                            label: game.i18n.localize("LAUNDRY.CharacterCreationModeCustom"),
                             callback: () => resolve("custom")
                         }
                     },
@@ -53,6 +53,12 @@ export class LaundryCharacterBuilder extends Application {
         });
     }
 
+    get title() {
+        return this.creationMode === "custom"
+            ? game.i18n.localize("LAUNDRY.CustomCharacterCreation")
+            : game.i18n.localize("LAUNDRY.Form2BTitle");
+    }
+
     get template() {
         if (this.creationMode === 'custom') {
             return 'systems/laundry-rpg/templates/actor/custom-character-builder.html';
@@ -65,6 +71,7 @@ export class LaundryCharacterBuilder extends Application {
             const data = await this._getCustomData();
             this.skills = data.skills;
             this.talents = data.talents;
+            this.customInitialXp = Number(data.initialXp ?? 40);
             return data;
         }
         return this._getAssignmentData();
@@ -125,11 +132,15 @@ export class LaundryCharacterBuilder extends Application {
         let talents = [];
 
         if (skillsPack) {
-            skills = (await skillsPack.getDocuments()).map(doc => doc.toObject());
+            skills = (await skillsPack.getDocuments())
+                .map(doc => doc.toObject())
+                .sort((a, b) => String(a?.name ?? "").localeCompare(String(b?.name ?? "")));
         }
 
         if (talentsPack) {
-            talents = (await talentsPack.getDocuments()).map(doc => doc.toObject());
+            talents = (await talentsPack.getDocuments())
+                .map(doc => doc.toObject())
+                .sort((a, b) => String(a?.name ?? "").localeCompare(String(b?.name ?? "")));
         }
 
         return {
@@ -175,100 +186,286 @@ export class LaundryCharacterBuilder extends Application {
     }
 
     _activateCustomListeners(html) {
-        this.customBuild = {
-            attributes: {
-                body: 1,
-                mind: 1,
-                spirit: 1
-            },
-            skills: this.skills.reduce((obj, skill) => {
-                obj[skill.name] = { training: 0, focus: 0 };
-                return obj;
-            }, {}),
-            talents: [], // [talentName]
-            xp: 40
-        };
+        if (!this.customBuild) {
+            this.customBuild = {
+                attributes: {
+                    body: 1,
+                    mind: 1,
+                    spirit: 1
+                },
+                skills: this.skills.reduce((obj, skill) => {
+                    obj[skill.name] = { training: 0, focus: 0 };
+                    return obj;
+                }, {}),
+                talents: [],
+                xp: 40
+            };
+        }
+
+        this.customInitialXp = Number.isFinite(this.customInitialXp)
+            ? this.customInitialXp
+            : 40;
 
         this._renderCustomBuilder(html);
 
-        html.find('.builder-confirm').on('click', (ev) => this._onCustomSubmit(ev));
-        html.find('.builder-cancel').on('click', () => this.close());
-        html.on('click', '.increase-attr', (ev) => this._onIncreaseAttribute(ev));
-        html.on('click', '.decrease-attr', (ev) => this._onDecreaseAttribute(ev));
-        html.on('click', '.increase-skill', (ev) => this._onIncreaseSkill(ev));
-        html.on('click', '.decrease-skill', (ev) => this._onDecreaseSkill(ev));
-        html.on('click', '.buy-talent', (ev) => this._onBuyTalent(ev));
+        html.find("form").on("submit", (ev) => this._onCustomSubmit(ev));
+        html.find(".builder-confirm").on("click", (ev) => this._onCustomSubmit(ev));
+        html.find("form").on("keydown", (ev) => {
+            if (ev.key !== "Enter") return;
+            if (ev.target?.tagName === "TEXTAREA") return;
+            ev.preventDefault();
+            this._onCustomSubmit(ev);
+        });
+        html.find(".builder-cancel").on("click", () => this.close());
+        html.on("click", ".increase-attr", (ev) => this._onIncreaseAttribute(ev));
+        html.on("click", ".decrease-attr", (ev) => this._onDecreaseAttribute(ev));
+        html.on("click", ".increase-skill", (ev) => this._onIncreaseSkill(ev));
+        html.on("click", ".decrease-skill", (ev) => this._onDecreaseSkill(ev));
+        html.on("click", ".buy-talent", (ev) => this._onBuyTalent(ev));
+        html.on("input", ".skill-search-input", () => this._applyCustomFilters(html));
+        html.on("input", ".talent-search-input", () => this._applyCustomFilters(html));
     }
 
     _renderCustomBuilder(html) {
-        // Render attributes
+        const i18n = game.i18n;
+        const attrLabels = {
+            body: i18n.localize("LAUNDRY.Body"),
+            mind: i18n.localize("LAUNDRY.Mind"),
+            spirit: i18n.localize("LAUNDRY.Spirit")
+        };
+
         const attributesHtml = Object.keys(this.customBuild.attributes).map(attrName => {
             const attrValue = this.customBuild.attributes[attrName];
+            const nextCost = attrValue < 4 ? this._getAttributeCost(attrValue) : 0;
             return `
                 <div class="attribute-allocation-row" data-attribute="${attrName}">
-                    <span class="attribute-name">${attrName.charAt(0).toUpperCase() + attrName.slice(1)}</span>
-                    <input type="number" class="attribute-value" value="${attrValue}" disabled />
+                    <div class="attribute-meta">
+                        <span class="attribute-name">${_escapeHtml(attrLabels[attrName] ?? attrName)}</span>
+                        <span class="attribute-next-cost">
+                            ${nextCost > 0
+                                ? i18n.format("LAUNDRY.CustomSkillNextCost", { cost: nextCost })
+                                : i18n.localize("LAUNDRY.CustomSkillAtCap")}
+                        </span>
+                    </div>
                     <div class="attribute-controls">
-                        <button type="button" class="increase-attr" data-attribute="${attrName}" ${attrValue >= 4 ? 'disabled' : ''}>+</button>
-                        <button type="button" class="decrease-attr" data-attribute="${attrName}" ${attrValue <= 1 ? 'disabled' : ''}>-</button>
+                        <button type="button" class="decrease-attr" data-attribute="${attrName}" ${attrValue <= 1 ? "disabled" : ""}>-</button>
+                        <input type="number" class="attribute-value" value="${attrValue}" disabled />
+                        <button type="button" class="increase-attr" data-attribute="${attrName}" ${attrValue >= 4 ? "disabled" : ""}>+</button>
                     </div>
                 </div>
             `;
-        }).join('');
-        html.find('.attribute-allocation-grid').html(attributesHtml);
+        }).join("");
+        html.find(".attribute-allocation-grid").html(attributesHtml);
 
-        // Render skills
         const skillsHtml = this.skills.map(skill => {
-            const skillData = this.customBuild.skills[skill.name] || { training: 0, focus: 0 };
+            const skillName = String(skill?.name ?? "").trim();
+            const safeSkillName = _escapeHtml(skillName);
+            const skillData = this.customBuild.skills[skillName] || { training: 0, focus: 0 };
+            const trainingStepCost = skillData.training < 4
+                ? _calculateSkillCost(skillData.training + 1, skillData.training)
+                : 0;
+            const focusStepCost = skillData.focus < 4
+                ? _calculateSkillCost(skillData.focus + 1, skillData.focus)
+                : 0;
+            const totalSkillCost = _calculateSkillCost(skillData.training, 0) + _calculateSkillCost(skillData.focus, 0);
             return `
-                <div class="skill-allocation-row" data-skill-name="${skill.name}">
-                    <span class="skill-name">${skill.name}</span>
+                <div class="skill-allocation-row custom-skill-row" data-skill-name="${safeSkillName}">
+                    <div class="skill-name"><span>${safeSkillName}</span></div>
                     <div class="skill-controls">
-                        <span>Training: ${skillData.training}</span>
-                        <button type="button" class="increase-skill" data-skill-name="${skill.name}" data-type="training" ${skillData.training >= 4 ? 'disabled' : ''}>+</button>
-                        <button type="button" class="decrease-skill" data-skill-name="${skill.name}" data-type="training" ${skillData.training <= 0 ? 'disabled' : ''}>-</button>
+                        <label>${_escapeHtml(i18n.localize("LAUNDRY.Training"))}</label>
+                        <div class="skill-stepper">
+                            <button type="button" class="decrease-skill" data-skill-name="${safeSkillName}" data-type="training" ${skillData.training <= 0 ? "disabled" : ""}>-</button>
+                            <span class="skill-rank">${skillData.training}</span>
+                            <button type="button" class="increase-skill" data-skill-name="${safeSkillName}" data-type="training" ${skillData.training >= 4 ? "disabled" : ""}>+</button>
+                        </div>
+                        <small class="skill-step-cost">${trainingStepCost > 0
+                            ? _escapeHtml(i18n.format("LAUNDRY.CustomSkillNextCost", { cost: trainingStepCost }))
+                            : _escapeHtml(i18n.localize("LAUNDRY.CustomSkillAtCap"))}</small>
                     </div>
                     <div class="skill-controls">
-                        <span>Focus: ${skillData.focus}</span>
-                        <button type="button" class="increase-skill" data-skill-name="${skill.name}" data-type="focus" ${skillData.focus >= 4 ? 'disabled' : ''}>+</button>
-                        <button type="button" class="decrease-skill" data-skill-name="${skill.name}" data-type="focus" ${skillData.focus <= 0 ? 'disabled' : ''}>-</button>
+                        <label>${_escapeHtml(i18n.localize("LAUNDRY.Focus"))}</label>
+                        <div class="skill-stepper">
+                            <button type="button" class="decrease-skill" data-skill-name="${safeSkillName}" data-type="focus" ${skillData.focus <= 0 ? "disabled" : ""}>-</button>
+                            <span class="skill-rank">${skillData.focus}</span>
+                            <button type="button" class="increase-skill" data-skill-name="${safeSkillName}" data-type="focus" ${skillData.focus >= 4 ? "disabled" : ""}>+</button>
+                        </div>
+                        <small class="skill-step-cost">${focusStepCost > 0
+                            ? _escapeHtml(i18n.format("LAUNDRY.CustomSkillNextCost", { cost: focusStepCost }))
+                            : _escapeHtml(i18n.localize("LAUNDRY.CustomSkillAtCap"))}</small>
                     </div>
+                    <span class="skill-allocation-cost">${_escapeHtml(i18n.format("LAUNDRY.CustomSkillTotalCost", { cost: totalSkillCost }))}</span>
                 </div>
             `;
-        }).join('');
-        html.find('.skill-allocation-list').html(skillsHtml);
+        }).join("");
+        html.find(".skill-allocation-list").html(skillsHtml);
 
-        // Render talents
+        const mockActor = this._buildCustomMockActor();
         const talentsHtml = this.talents.map(talent => {
-            const isBought = this.customBuild.talents.includes(talent.name);
+            const talentName = String(talent?.name ?? "").trim();
+            const safeTalentName = _escapeHtml(talentName);
+            const isBought = this.customBuild.talents.some(name => name.toLowerCase() === talentName.toLowerCase());
+            const prereq = evaluateTalentPrerequisites(mockActor, talent);
+            const prereqLabel = prereq.status === "unmet"
+                ? i18n.localize("LAUNDRY.PrereqUnmetLabel")
+                : (prereq.status === "review"
+                    ? i18n.localize("LAUNDRY.PrereqReviewLabel")
+                    : i18n.localize("LAUNDRY.PrereqMetLabel"));
+            const blockedForPlayer = !isBought && prereq.status === "unmet" && !game.user?.isGM;
             return `
-                <div class="talent-allocation-row" data-talent-name="${talent.name}">
-                    <span class="talent-name">${talent.name}</span>
+                <div class="talent-allocation-row ${isBought ? "is-bought" : ""}" data-talent-name="${safeTalentName}" title="${_escapeHtml(describeTalentPrerequisiteResult(prereq))}">
+                    <span class="talent-name">${safeTalentName}</span>
+                    <span class="talent-prereq-badge talent-prereq-${prereq.status}">${_escapeHtml(prereqLabel)}</span>
                     <div class="talent-controls">
-                        <button type="button" class="buy-talent" data-talent-name="${talent.name}" ${isBought ? 'disabled' : ''}>
-                            ${isBought ? 'Bought' : 'Buy (4 XP)'}
+                        <button type="button" class="buy-talent" data-talent-name="${safeTalentName}" ${blockedForPlayer ? "disabled" : ""}>
+                            ${isBought
+                                ? _escapeHtml(i18n.localize("LAUNDRY.CustomTalentRefund"))
+                                : _escapeHtml(i18n.localize("LAUNDRY.CustomTalentBuy"))}
                         </button>
                     </div>
                 </div>
             `;
-        }).join('');
-        html.find('.talent-allocation-list').html(talentsHtml);
+        }).join("");
+        html.find(".talent-allocation-list").html(talentsHtml);
 
-        // Render XP
-        html.find('.xp-value').text(this.customBuild.xp);
+        const remainingXp = Math.max(0, Math.trunc(Number(this.customBuild?.xp) || 0));
+        const initialXp = Math.max(0, Math.trunc(Number(this.customInitialXp) || 40));
+        const spentXp = Math.max(0, initialXp - remainingXp);
+        const skillsSpentCount = Object.values(this.customBuild.skills ?? {}).filter(
+            entry => Number(entry?.training ?? 0) > 0 || Number(entry?.focus ?? 0) > 0
+        ).length;
+
+        html.find(".xp-value").text(String(remainingXp));
+        html.find(".xp-spent-value").text(String(spentXp));
+        html.find(".talent-count-value").text(String(this.customBuild.talents.length));
+        html.find(".skill-count-value").text(String(skillsSpentCount));
+        this._applyCustomFilters(html);
     }
 
-    _onBuyTalent(ev) {
-        const talentName = ev.currentTarget.dataset.talentName;
-        if (this.customBuild.talents.includes(talentName)) return;
+    _applyCustomFilters(html = this.element) {
+        const skillQuery = String(html?.find?.(".skill-search-input")?.val?.() ?? "").trim().toLowerCase();
+        const talentQuery = String(html?.find?.(".talent-search-input")?.val?.() ?? "").trim().toLowerCase();
 
-        const cost = 4;
-        if (this.customBuild.xp < cost) {
-            ui.notifications.warn("Not enough XP!");
+        html?.find?.(".skill-allocation-row")?.each((_, row) => {
+            const name = String(row.dataset?.skillName ?? "").trim().toLowerCase();
+            row.classList.toggle("search-hidden", skillQuery.length > 0 && !name.includes(skillQuery));
+        });
+
+        html?.find?.(".talent-allocation-row")?.each((_, row) => {
+            const name = String(row.dataset?.talentName ?? "").trim().toLowerCase();
+            row.classList.toggle("search-hidden", talentQuery.length > 0 && !name.includes(talentQuery));
+        });
+    }
+
+    _buildCustomMockActor() {
+        const sourceItems = Array.from(this.actor?.items ?? []);
+        const mockItems = sourceItems.map(item => (
+            typeof item?.toObject === "function"
+                ? item.toObject()
+                : foundry.utils.deepClone(item)
+        ));
+        const mockActor = {
+            system: foundry.utils.deepClone(this.actor?.system ?? {}),
+            items: mockItems
+        };
+
+        mockActor.system = mockActor.system ?? {};
+        mockActor.system.attributes = mockActor.system.attributes ?? {};
+        for (const key of ["body", "mind", "spirit"]) {
+            mockActor.system.attributes[key] = mockActor.system.attributes[key] ?? { value: 1 };
+            mockActor.system.attributes[key].value = Number(this.customBuild?.attributes?.[key] ?? 1);
+        }
+
+        const byTypeAndName = new Map(
+            mockItems.map(item => [`${item.type}:${String(item.name ?? "").toLowerCase()}`, item])
+        );
+
+        for (const [skillName, levels] of Object.entries(this.customBuild?.skills ?? {})) {
+            const training = Number(levels?.training ?? 0);
+            const focus = Number(levels?.focus ?? 0);
+            if (training <= 0 && focus <= 0) continue;
+            const key = `skill:${skillName.toLowerCase()}`;
+            const existing = byTypeAndName.get(key);
+            if (existing) {
+                existing.system = existing.system ?? {};
+                existing.system.training = training;
+                existing.system.focus = focus;
+                continue;
+            }
+            const draftSkill = {
+                type: "skill",
+                name: skillName,
+                system: {
+                    training,
+                    focus
+                }
+            };
+            mockItems.push(draftSkill);
+            byTypeAndName.set(key, draftSkill);
+        }
+
+        for (const talentName of _uniqueList(this.customBuild?.talents ?? [])) {
+            const key = `talent:${talentName.toLowerCase()}`;
+            if (byTypeAndName.has(key)) continue;
+            const draftTalent = {
+                type: "talent",
+                name: talentName
+            };
+            mockItems.push(draftTalent);
+            byTypeAndName.set(key, draftTalent);
+        }
+
+        return mockActor;
+    }
+
+    async _onBuyTalent(ev) {
+        ev.preventDefault();
+        const talentName = String(ev.currentTarget?.dataset?.talentName ?? "").trim();
+        if (!talentName) return;
+
+        const currentIndex = this.customBuild.talents.findIndex(
+            name => String(name).toLowerCase() === talentName.toLowerCase()
+        );
+        if (currentIndex >= 0) {
+            this.customBuild.talents.splice(currentIndex, 1);
+            this.customBuild.xp += 4;
+            this._renderCustomBuilder(this.element);
             return;
         }
 
-        this.customBuild.talents.push(talentName);
+        const cost = 4;
+        if (this.customBuild.xp < cost) {
+            ui.notifications.warn(game.i18n.format("LAUNDRY.CustomNotEnoughXp", {
+                cost,
+                have: this.customBuild.xp
+            }));
+            return;
+        }
+
+        const talent = this.talents.find(doc => String(doc?.name ?? "").toLowerCase() === talentName.toLowerCase());
+        if (talent) {
+            const prereq = evaluateTalentPrerequisites(this._buildCustomMockActor(), talent);
+            if (!prereq.enforceMet) {
+                const details = describeTalentPrerequisiteResult(prereq);
+                if (!game.user?.isGM) {
+                    ui.notifications.warn(game.i18n.format("LAUNDRY.TalentPrereqBlocked", {
+                        talent: talent.name
+                    }));
+                    ui.notifications.warn(details);
+                    return;
+                }
+
+                const override = await Dialog.confirm({
+                    title: game.i18n.localize("LAUNDRY.TalentPrereqOverrideTitle"),
+                    content: `<p>${game.i18n.format("LAUNDRY.TalentPrereqOverrideBody", {
+                        talent: talent.name
+                    })}</p><p>${_escapeHtml(details)}</p>`,
+                    classes: ["laundry-rpg", "laundry-dialog"]
+                });
+                if (!override) return;
+            }
+        }
+
+        this.customBuild.talents.push(talent?.name ?? talentName);
         this.customBuild.xp -= cost;
         this._renderCustomBuilder(this.element);
     }
@@ -277,13 +474,18 @@ export class LaundryCharacterBuilder extends Application {
     _onIncreaseSkill(ev) {
         const skillName = ev.currentTarget.dataset.skillName;
         const type = ev.currentTarget.dataset.type;
+        if (type !== "training" && type !== "focus") return;
         const skillData = this.customBuild.skills[skillName];
+        if (!skillData) return;
         const currentValue = skillData[type];
         if (currentValue >= 4) return;
 
         const cost = _calculateSkillCost(currentValue + 1, currentValue);
         if (this.customBuild.xp < cost) {
-            ui.notifications.warn("Not enough XP!");
+            ui.notifications.warn(game.i18n.format("LAUNDRY.CustomNotEnoughXp", {
+                cost,
+                have: this.customBuild.xp
+            }));
             return;
         }
 
@@ -295,7 +497,9 @@ export class LaundryCharacterBuilder extends Application {
     _onDecreaseSkill(ev) {
         const skillName = ev.currentTarget.dataset.skillName;
         const type = ev.currentTarget.dataset.type;
+        if (type !== "training" && type !== "focus") return;
         const skillData = this.customBuild.skills[skillName];
+        if (!skillData) return;
         const currentValue = skillData[type];
         if (currentValue <= 0) return;
 
@@ -314,12 +518,16 @@ export class LaundryCharacterBuilder extends Application {
 
     _onIncreaseAttribute(ev) {
         const attrName = ev.currentTarget.dataset.attribute;
+        if (!Object.prototype.hasOwnProperty.call(this.customBuild.attributes, attrName)) return;
         const currentValue = this.customBuild.attributes[attrName];
         if (currentValue >= 4) return;
 
         const cost = this._getAttributeCost(currentValue);
         if (this.customBuild.xp < cost) {
-            ui.notifications.warn("Not enough XP!");
+            ui.notifications.warn(game.i18n.format("LAUNDRY.CustomNotEnoughXp", {
+                cost,
+                have: this.customBuild.xp
+            }));
             return;
         }
 
@@ -330,6 +538,7 @@ export class LaundryCharacterBuilder extends Application {
 
     _onDecreaseAttribute(ev) {
         const attrName = ev.currentTarget.dataset.attribute;
+        if (!Object.prototype.hasOwnProperty.call(this.customBuild.attributes, attrName)) return;
         const currentValue = this.customBuild.attributes[attrName];
         if (currentValue <= 1) return;
 
@@ -340,6 +549,9 @@ export class LaundryCharacterBuilder extends Application {
     }
 
     async _onCustomSubmit(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+
         const hasItems = (this.actor?.items?.size ?? 0) > 0;
         if (hasItems) {
             const confirmed = await Dialog.confirm({
@@ -357,41 +569,90 @@ export class LaundryCharacterBuilder extends Application {
     async _applyCustomBuildToActor() {
         const build = this.customBuild;
         const actor = this.actor;
+        const assignmentLabel = game.i18n.localize("LAUNDRY.CustomBuildAssignment");
 
-        // Update attributes
         await actor.update({
-            'system.attributes.body.value': build.attributes.body,
-            'system.attributes.mind.value': build.attributes.mind,
-            'system.attributes.spirit.value': build.attributes.spirit,
+            "system.attributes.body.value": build.attributes.body,
+            "system.attributes.mind.value": build.attributes.mind,
+            "system.attributes.spirit.value": build.attributes.spirit,
+            "system.details.assignment": assignmentLabel
         });
 
-        const itemsToAdd = [];
+        const existingByTypeAndName = new Map(
+            actor.items.map(item => [`${item.type}:${String(item.name ?? "").toLowerCase()}`, item])
+        );
+        const creates = [];
+        const updates = [];
 
-        // Skills
         const skillNames = Object.keys(build.skills).filter(
             (skillName) => build.skills[skillName].training > 0 || build.skills[skillName].focus > 0
         );
         if (skillNames.length > 0) {
-            const skillItems = await _fetchCompendiumItems('laundry-rpg.skills', 'skill', skillNames, _stubSkill);
+            const skillItems = await _fetchCompendiumItems("laundry-rpg.skills", "skill", skillNames, _stubSkill);
             for (const item of skillItems) {
-                const skillData = build.skills[item.name];
-                item.system.training = skillData.training;
-                item.system.focus = skillData.focus;
-                itemsToAdd.push(item);
+                const cloned = foundry.utils.deepClone(item);
+                const skillData = build.skills[cloned.name];
+                if (!skillData) continue;
+                cloned.system = cloned.system ?? {};
+                cloned.system.training = Number(skillData.training ?? 0);
+                cloned.system.focus = Number(skillData.focus ?? 0);
+
+                const key = `skill:${String(cloned.name ?? "").toLowerCase()}`;
+                const existing = existingByTypeAndName.get(key);
+                if (existing) {
+                    const update = { _id: existing.id };
+                    let changed = false;
+                    if (Number(existing.system?.training ?? 0) !== cloned.system.training) {
+                        update["system.training"] = cloned.system.training;
+                        changed = true;
+                    }
+                    if (Number(existing.system?.focus ?? 0) !== cloned.system.focus) {
+                        update["system.focus"] = cloned.system.focus;
+                        changed = true;
+                    }
+                    if (changed) updates.push(update);
+                    continue;
+                }
+                creates.push(cloned);
+                existingByTypeAndName.set(key, cloned);
             }
         }
 
-        // Talents
+        const skippedTalents = [];
         if (build.talents.length > 0) {
-            const talentItems = await _fetchCompendiumItems('laundry-rpg.talents', 'talent', build.talents, _stubTalent);
-            itemsToAdd.push(...talentItems);
-        }
-        
-        if (itemsToAdd.length > 0) {
-            await actor.createEmbeddedDocuments('Item', itemsToAdd);
+            const mockActor = this._buildCustomMockActor();
+            const talentItems = await _fetchCompendiumItems("laundry-rpg.talents", "talent", _uniqueList(build.talents), _stubTalent);
+            for (const talentItem of talentItems) {
+                const key = `talent:${String(talentItem?.name ?? "").toLowerCase()}`;
+                if (existingByTypeAndName.has(key)) continue;
+
+                const prereq = evaluateTalentPrerequisites(mockActor, talentItem);
+                if (!prereq.enforceMet) {
+                    skippedTalents.push(`${talentItem.name}: ${describeTalentPrerequisiteResult(prereq)}`);
+                    continue;
+                }
+
+                creates.push(talentItem);
+                existingByTypeAndName.set(key, talentItem);
+            }
         }
 
-        ui.notifications.info(game.i18n.format("LAUNDRY.AgentInitialized", { assignment: "Custom Build" }));
+        if (updates.length > 0) {
+            await actor.updateEmbeddedDocuments("Item", updates);
+        }
+        if (creates.length > 0) {
+            await actor.createEmbeddedDocuments("Item", creates);
+        }
+        if (skippedTalents.length) {
+            const details = skippedTalents.slice(0, 3).join(" | ");
+            ui.notifications.warn(game.i18n.format("LAUNDRY.TalentPrereqSkipped", {
+                count: skippedTalents.length,
+                details
+            }));
+            console.warn("Laundry RPG | Skipped talents due to unmet prerequisites:", skippedTalents);
+        }
+
+        ui.notifications.info(game.i18n.format("LAUNDRY.AgentInitialized", { assignment: assignmentLabel }));
     }
 
     _onBuilderTabClick(ev) {

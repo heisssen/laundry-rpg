@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.20.7 - 2026-02-21
+
+### Fixed
+- Custom Character Builder now consistently uses localized UI text and notifications, including creation-mode picker labels.
+- Custom Character Builder form submission is now robust for button click and Enter key handling.
+- Re-initializing through Custom Character Builder no longer creates duplicate skill/talent items; existing skill entries are updated in place.
+- Custom talent selection now enforces prerequisites with GM override flow and clear skip reporting for unmet prerequisites.
+
+### Changed
+- Redesigned `Form 2B-C` custom builder layout with clearer allocation sections, searchable skills/talents lists, and stronger visual hierarchy.
+- Added live custom-build summary metrics (remaining/spent XP, improved skills count, purchased talents count) plus per-row XP cost visibility.
+- Custom talent actions now support buy/refund toggling with immediate XP recalculation.
+
 ## 1.20.6 - 2026-02-21
 
 ### Fixed

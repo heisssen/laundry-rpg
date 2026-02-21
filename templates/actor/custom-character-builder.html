@@ -1,4 +1,4 @@
-<form class="character-builder-form" method="post" action="javascript:void(0);">
+<form class="character-builder-form custom-character-builder-form" method="post" action="javascript:void(0);">
     <header class="builder-header form-2b-header">
         <div class="form-2b-top">
             <h2>{{localize "LAUNDRY.CustomCharacterCreation"}}</h2>
@@ -8,43 +8,70 @@
         <p>{{localize "LAUNDRY.CustomCharacterCreationHint"}} <strong>{{actorName}}</strong>.</p>
     </header>
 
-    <div class="builder-xp-counter">
-        <h3>{{localize "LAUNDRY.ExperiencePoints"}}</h3>
-        <div class="xp-tracker">
-            <span class="xp-label">{{localize "LAUNDRY.RemainingXP"}}:</span>
-            <span class="xp-value">40</span>
-        </div>
-    </div>
-
-    <div class="builder-layout">
-        <section class="builder-main-column">
-            <section class="builder-choice-group">
-                <h3>{{localize "LAUNDRY.Attributes"}}</h3>
-                <div class="attribute-allocation-grid">
-                    <!-- Attribute rows will be inserted here by JS -->
+    <div class="builder-layout custom-builder-layout">
+        <section class="builder-main-column custom-builder-main">
+            <section class="builder-choice-group custom-attributes-group">
+                <div class="builder-choice-head">
+                    <h3>{{localize "LAUNDRY.Attributes"}}</h3>
+                    <span class="builder-choice-counter">{{localize "LAUNDRY.CustomAttributeCostHint"}}</span>
                 </div>
+                <p class="builder-choice-hint">{{localize "LAUNDRY.CustomAttributeHint"}}</p>
+                <div class="attribute-allocation-grid"></div>
             </section>
 
-            <section class="builder-choice-group">
-                <h3>{{localize "LAUNDRY.Talents"}}</h3>
-                <div class="talent-allocation-list">
-                    <!-- Talent rows will be inserted here by JS -->
+            <section class="builder-choice-group custom-skills-group">
+                <div class="builder-choice-head">
+                    <h3>{{localize "LAUNDRY.Skills"}}</h3>
+                    <span class="builder-choice-counter">{{localize "LAUNDRY.CustomSkillCostHint"}}</span>
                 </div>
-            </section>
-        </section>
-
-        <section class="builder-side-column">
-            <section class="builder-choice-group skill-allocation-group">
-                <h3>{{localize "LAUNDRY.Skills"}}</h3>
-                <div class="skill-allocation-list">
-                    <!-- Skill rows will be inserted here by JS -->
-                </div>
+                <label class="custom-search-row">
+                    <span>{{localize "LAUNDRY.SearchSkills"}}</span>
+                    <input type="text" class="skill-search-input" placeholder="{{localize 'LAUNDRY.SearchByName'}}" />
+                </label>
+                <div class="skill-allocation-list"></div>
             </section>
         </section>
+
+        <aside class="builder-side-column custom-builder-side">
+            <section class="builder-choice-group builder-xp-counter custom-summary-group">
+                <h3>{{localize "LAUNDRY.ExperiencePoints"}}</h3>
+                <div class="xp-tracker">
+                    <span class="xp-label">{{localize "LAUNDRY.RemainingXP"}}</span>
+                    <span class="xp-value">40</span>
+                </div>
+                <div class="custom-summary-grid">
+                    <div class="custom-summary-cell">
+                        <span class="custom-summary-label">{{localize "LAUNDRY.SpentXP"}}</span>
+                        <strong class="xp-spent-value">0</strong>
+                    </div>
+                    <div class="custom-summary-cell">
+                        <span class="custom-summary-label">{{localize "LAUNDRY.CustomSkillsImproved"}}</span>
+                        <strong class="skill-count-value">0</strong>
+                    </div>
+                    <div class="custom-summary-cell">
+                        <span class="custom-summary-label">{{localize "LAUNDRY.CustomTalentsPurchased"}}</span>
+                        <strong class="talent-count-value">0</strong>
+                    </div>
+                </div>
+                <p class="builder-choice-hint custom-summary-hint">{{localize "LAUNDRY.CustomXpHint"}}</p>
+            </section>
+
+            <section class="builder-choice-group custom-talents-group">
+                <div class="builder-choice-head">
+                    <h3>{{localize "LAUNDRY.Talents"}}</h3>
+                    <span class="builder-choice-counter">{{localize "LAUNDRY.CustomTalentCost"}}</span>
+                </div>
+                <label class="custom-search-row">
+                    <span>{{localize "LAUNDRY.SearchTalents"}}</span>
+                    <input type="text" class="talent-search-input" placeholder="{{localize 'LAUNDRY.SearchByName'}}" />
+                </label>
+                <div class="talent-allocation-list"></div>
+            </section>
+        </aside>
     </div>
 
     <div class="builder-actions">
         <button type="submit" class="builder-confirm">{{localize "LAUNDRY.InitAgent"}}</button>
-        <button type="button" class="builder-cancel" data-action="close">Cancel</button>
+        <button type="button" class="builder-cancel" data-action="close">{{localize "Cancel"}}</button>
     </div>
 </form>
