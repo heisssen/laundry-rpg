@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.20.3 - 2026-02-21
+
+### Changed
+- Unified the system UI under one cleaner responsive layout language (sheet tabs/panels/buttons/workbenches), with better spacing and readability across desktop/tablet/mobile.
+- Reworked `Endeavours` UI into a clearer builder flow with structured preview cards and adaptive form grids.
+- Upgraded `GM Tracker` presentation into a denser operations board layout with improved KPI/combat readability and mobile behavior.
+
+### Fixed
+- Added global overflow hardening to prevent text and controls from breaking out of containers in sheets/apps.
+- Extended compendium QA to validate icon binding paths and file existence for source JSON and pack artifacts.
+
 ## 1.20.2 - 2026-02-21
 
 ### Fixed
