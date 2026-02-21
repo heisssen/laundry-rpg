@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.21.0 - 2026-02-21
+
+### Added
+- New `Servant Cases` journal compendium at `packs/servant.db`, sourced from `servant.json`, with a full playable `A Man of the People` adventure package.
+- Added an original-text appendix entry for `A Man of the People` (pp.4-26) in the new `Servant Cases` pack.
+- Extracted adventure image assets from the uploaded PDF into `icons/adventures/man-of-the-people/` for handouts and visual references.
+- Added extraction-pipeline staging data for the new adventure source:
+  - `sources/extraction/raw/servant.json`
+  - `sources/extraction/normalized/servant.json`
+  - `sources/extraction/reviewed/servant.json`
+
+### Changed
+- Pack rebuild pipeline now supports generating `servant.db` from `servant.json` via `scripts/rebuild_packs_from_json.py`.
+- System manifests now register the new `servant` JournalEntry pack.
+
+### Fixed
+- Endeavours UI text stacking/overlap issues in the downtime catalogue and preview panel by tightening typography and wrapping behavior.
+
 ## 1.20.10 - 2026-02-21
 
 ### Fixed

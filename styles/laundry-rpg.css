@@ -4450,9 +4450,10 @@
     color: var(--laundry-ink);
     text-align: left;
     padding: 0.42rem 0.45rem;
-    min-height: 40px;
+    min-height: 58px;
     display: grid;
-    gap: 0.16rem;
+    gap: 0.26rem;
+    align-content: start;
     border-left-width: 3px;
     border-left-color: transparent;
     transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
@@ -4471,18 +4472,24 @@
 .laundry-endeavours-app .endeavour-select strong,
 .laundry-support-request-app .department-select-card strong,
 .laundry-support-request-app .gear-select-card strong {
+    display: block;
     font-size: 0.76rem;
     line-height: 1.22;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 .laundry-endeavours-app .endeavour-select span,
 .laundry-support-request-app .department-select-card span,
 .laundry-support-request-app .gear-select-card span {
+    display: block;
     font-size: 0.67rem;
     color: var(--laundry-ink-muted);
     text-transform: none;
     letter-spacing: 0;
     line-height: 1.3;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 .laundry-endeavours-app .endeavour-select.is-selected,
@@ -4562,7 +4569,7 @@
 .laundry-endeavours-app .laundry-endeavour-brief {
     display: grid;
     gap: 0.35rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .laundry-endeavours-app .laundry-endeavour-brief-item {
@@ -4585,6 +4592,8 @@
     font-size: 0.73rem;
     line-height: 1.3;
     color: var(--laundry-ink);
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 .laundry-endeavours-app .laundry-endeavour-config-grid {
@@ -4616,11 +4625,12 @@
 
 .laundry-endeavours-app .endeavour-select-summary {
     display: block;
-    display: -webkit-box;
     overflow: hidden;
-    text-overflow: ellipsis;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    max-height: 2.6em;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 .laundry-endeavours-app .endeavour-select.is-selected {

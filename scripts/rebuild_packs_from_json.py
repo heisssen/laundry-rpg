@@ -753,12 +753,12 @@ def build_all_items(item_collections: list[list[dict]]) -> list[dict]:
     return docs
 
 
-def build_rules_journal() -> list[dict]:
-    path = ROOT / "gm.json"
+def _build_journal_from_source(source_name: str, id_prefix: str = "rule") -> list[dict]:
+    path = ROOT / source_name
     if not path.exists():
         return []
 
-    data = _read_source("gm.json")
+    data = _read_source(source_name)
     if not isinstance(data, list):
         return []
 
@@ -770,9 +770,9 @@ def build_rules_journal() -> list[dict]:
         if not name:
             continue
         content = str(entry.get("content") or "").strip()
-        page_id = _stable_id("rule-page", name)
+        page_id = _stable_id(f"{id_prefix}-page", name)
         docs.append({
-            "_id": _stable_id("rule", name),
+            "_id": _stable_id(id_prefix, name),
             "name": name,
             "pages": [
                 {
@@ -798,6 +798,14 @@ def build_rules_journal() -> list[dict]:
         })
 
     return docs
+
+
+def build_rules_journal() -> list[dict]:
+    return _build_journal_from_source("gm.json", id_prefix="rule")
+
+
+def build_servant_journal() -> list[dict]:
+    return _build_journal_from_source("servant.json", id_prefix="servant")
 
 
 def build_macros() -> list[dict]:
@@ -868,6 +876,7 @@ def main() -> None:
         "all-items.db": all_items,
         "enemies.db": enemies,
         "rules.db": build_rules_journal(),
+        "servant.db": build_servant_journal(),
         "macros.db": build_macros(),
     }
 
